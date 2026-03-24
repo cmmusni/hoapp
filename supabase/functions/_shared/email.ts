@@ -20,7 +20,7 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
     return false
   }
 
-  const { to, subject, html, from = 'HOApp <noreply@puso-spaze.org>' } = params
+  const { to, subject, html, from = 'HOApp <noreply@hoapp.net>' } = params
 
   try {
     const response = await fetch('https://api.resend.com/emails', {
