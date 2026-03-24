@@ -7,7 +7,6 @@
 **/.pub-cache/
 **/.pub/
 **/build/
-**/*.g.dart
 **/*.freezed.dart
 
 # Android

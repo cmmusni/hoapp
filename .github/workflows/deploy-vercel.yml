@@ -1,0 +1,37 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: |
+          cd packages/core_domain && flutter pub get
+          cd ../core_data && flutter pub get
+          cd ../core_ui && flutter pub get
+          cd ../../apps/web_portal && flutter pub get
+
+      - name: Build web
+        run: |
+          cd apps/web_portal
+          flutter build web --release --no-tree-shake-icons
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: apps/web_portal/build/web
+          vercel-args: --prod
