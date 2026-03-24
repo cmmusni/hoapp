@@ -1,0 +1,766 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:core_data/core_data.dart';
+import 'package:core_domain/core_domain.dart';
+import 'package:core_ui/core_ui.dart';
+
+class AmenitiesPage extends StatefulWidget {
+  const AmenitiesPage({super.key});
+
+  @override
+  State<AmenitiesPage> createState() => _AmenitiesPageState();
+}
+
+class _AmenitiesPageState extends State<AmenitiesPage> {
+  Future<List<Amenity>>? _amenitiesFuture;
+  Amenity? _selectedAmenity;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAmenities();
+  }
+
+  void _loadAmenities() {
+    final appState = context.read<AppState>();
+    final repo = context.read<AmenityRepository>();
+    
+    if (appState.activeCommunityId != null) {
+      setState(() {
+        _amenitiesFuture = repo.getAmenities(appState.activeCommunityId!);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final isStaff = appState.isStaff;
+
+    return Scaffold(
+      body: FutureBuilder<List<Amenity>>(
+        future: _amenitiesFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const LoadingIndicator(message: 'Loading amenities...');
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: ${snapshot.error}'),
+                  const SizedBox(height: 16),
+                  HOAppButton(
+                    label: 'Retry',
+                    onPressed: _loadAmenities,
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final amenities = snapshot.data ?? [];
+
+          if (amenities.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.event_seat_outlined, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  const Text('No amenities yet'),
+                  if (isStaff) ...[
+                    const SizedBox(height: 8),
+                    const Text('Add your first amenity'),
+                  ],
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async => _loadAmenities(),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 1000;
+
+                if (isWide) {
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: 350,
+                        child: ListView.builder(
+                          itemCount: amenities.length,
+                          itemBuilder: (context, index) {
+                            final amenity = amenities[index];
+                            final isSelected = _selectedAmenity?.id == amenity.id;
+
+                            return ListTile(
+                              selected: isSelected,
+                              leading: const Icon(Icons.event_seat),
+                              title: Text(amenity.name),
+                              subtitle: Text(
+                                '${amenity.capacity} capacity • ${amenity.ratePerHour.toStringAsFixed(2)}/hr',
+                              ),
+                              onTap: () => setState(() => _selectedAmenity = amenity),
+                            );
+                          },
+                        ),
+                      ),
+                      const VerticalDivider(width: 1),
+                      Expanded(
+                        child: _selectedAmenity != null
+                            ? _AmenityDetail(amenity: _selectedAmenity!)
+                            : const Center(
+                                child: Text('Select an amenity to view bookings'),
+                              ),
+                      ),
+                    ],
+                  );
+                }
+
+                // Mobile/narrow layout
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: amenities.length,
+                  itemBuilder: (context, index) {
+                    final amenity = amenities[index];
+                    return _AmenityCard(
+                      amenity: amenity,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AmenityDetailPage(amenity: amenity),
+                        ),
+                      ),
+                      onEdit: isStaff
+                          ? () => _showEditDialog(context, amenity)
+                          : null,
+                      onDelete: isStaff
+                          ? () => _deleteAmenity(context, amenity)
+                          : null,
+                    );
+                  },
+                );
+              },
+            ),
+          );
+        },
+      ),
+      floatingActionButton: isStaff
+          ? FloatingActionButton(
+              onPressed: () => _showEditDialog(context, null),
+              child: const Icon(Icons.add),
+            )
+          : null,
+    );
+  }
+
+  void _showEditDialog(BuildContext context, Amenity? amenity) {
+    showDialog(
+      context: context,
+      builder: (context) => _EditAmenityDialog(
+        amenity: amenity,
+        onSave: _loadAmenities,
+      ),
+    );
+  }
+
+  Future<void> _deleteAmenity(BuildContext context, Amenity amenity) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Amenity?'),
+        content: Text('This will permanently delete "${amenity.name}".'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final repo = context.read<AmenityRepository>();
+      await repo.deleteAmenity(amenity.id);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Amenity deleted')),
+        );
+        _loadAmenities();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+}
+
+class _AmenityCard extends StatelessWidget {
+  final Amenity amenity;
+  final VoidCallback onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  const _AmenityCard({
+    required this.amenity,
+    required this.onTap,
+    this.onEdit,
+    this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return HOAppCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  amenity.name,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                if (amenity.description != null)
+                  Text(
+                    amenity.description!,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.people, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${amenity.capacity} capacity',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(Icons.attach_money, size: 16, color: Colors.grey[600]),
+                    Text(
+                      '${amenity.ratePerHour.toStringAsFixed(2)}/hr',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (onEdit != null || onDelete != null)
+            PopupMenuButton(
+              itemBuilder: (context) => [
+                if (onEdit != null)
+                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                if (onDelete != null)
+                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
+              ],
+              onSelected: (value) {
+                if (value == 'edit') onEdit?.call();
+                if (value == 'delete') onDelete?.call();
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AmenityDetail extends StatefulWidget {
+  final Amenity amenity;
+
+  const _AmenityDetail({required this.amenity});
+
+  @override
+  State<_AmenityDetail> createState() => _AmenityDetailState();
+}
+
+class _AmenityDetailState extends State<_AmenityDetail> {
+  DateTime _selectedDate = DateTime.now();
+  Future<List<AmenityBooking>>? _bookingsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookings();
+  }
+
+  void _loadBookings() {
+    final repo = context.read<AmenityRepository>();
+    setState(() {
+      _bookingsFuture = repo.getBookings(
+        widget.amenity.id,
+        startDate: _selectedDate,
+        endDate: _selectedDate.add(const Duration(days: 7)),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Date selector
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedDate = _selectedDate.subtract(const Duration(days: 7));
+                  });
+                  _loadBookings();
+                },
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Expanded(
+                child: Text(
+                  'Week of ${_formatDate(_selectedDate)}',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedDate = _selectedDate.add(const Duration(days: 7));
+                  });
+                  _loadBookings();
+                },
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ),
+        ),
+
+        // Bookings list
+        Expanded(
+          child: FutureBuilder<List<AmenityBooking>>(
+            future: _bookingsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const LoadingIndicator();
+              }
+
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              final bookings = snapshot.data ?? [];
+
+              if (bookings.isEmpty) {
+                return const Center(
+                  child: Text('No bookings for this week'),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: bookings.length,
+                itemBuilder: (context, index) {
+                  final booking = bookings[index];
+                  return _BookingCard(booking: booking);
+                },
+              );
+            },
+          ),
+        ),
+
+        // Book button
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: HOAppButton(
+            label: 'Book This Amenity',
+            onPressed: () => _showBookingDialog(context),
+            
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  void _showBookingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _BookingDialog(
+        amenity: widget.amenity,
+        onBooked: _loadBookings,
+      ),
+    );
+  }
+}
+
+class _BookingCard extends StatelessWidget {
+  final AmenityBooking booking;
+
+  const _BookingCard({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.event),
+        title: Text(_formatDate(booking.bookingDate)),
+        subtitle: Text(
+          '${_formatTime(booking.startTime)} - ${_formatTime(booking.endTime)}',
+        ),
+        trailing: Text(
+          'Unit ${booking.unitNumber ?? 'Unknown'}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  String _formatTime(DateTime time) {
+    final hour = time.hour > 12 ? time.hour - 12 : time.hour;
+    final ampm = time.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:${time.minute.toString().padLeft(2, '0')} $ampm';
+  }
+}
+
+class _BookingDialog extends StatefulWidget {
+  final Amenity amenity;
+  final VoidCallback onBooked;
+
+  const _BookingDialog({required this.amenity, required this.onBooked});
+
+  @override
+  State<_BookingDialog> createState() => _BookingDialogState();
+}
+
+class _BookingDialogState extends State<_BookingDialog> {
+  final _formKey = GlobalKey<FormState>();
+  DateTime _selectedDate = DateTime.now();
+  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Book ${widget.amenity.name}'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: Text(_formatDate(_selectedDate)),
+              onTap: _selectDate,
+            ),
+            ListTile(
+              leading: const Icon(Icons.access_time),
+              title: Text('${_startTime.format(context)} - ${_endTime.format(context)}'),
+              onTap: _selectTime,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Rate: ${widget.amenity.ratePerHour.toStringAsFixed(2)}/hr',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Confirm',
+          onPressed: _handleBook,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+    );
+
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
+  Future<void> _selectTime() async {
+    final start = await showTimePicker(
+      context: context,
+      initialTime: _startTime,
+    );
+
+    if (start == null) return;
+
+    if (mounted) {
+      final end = await showTimePicker(
+        context: context,
+        initialTime: _endTime,
+      );
+
+      if (end != null) {
+        setState(() {
+          _startTime = start;
+          _endTime = end;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleBook() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final appState = context.read<AppState>();
+      final repo = context.read<AmenityRepository>();
+
+      final startDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _startTime.hour,
+        _startTime.minute,
+      );
+
+      final endDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _endTime.hour,
+        _endTime.minute,
+      );
+
+      await repo.bookAmenity(
+        amenityId: widget.amenity.id,
+        communityId: appState.activeCommunityId!,
+        startTime: startDateTime,
+        endTime: endDateTime,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Booking created')),
+        );
+        widget.onBooked();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _EditAmenityDialog extends StatefulWidget {
+  final Amenity? amenity;
+  final VoidCallback onSave;
+
+  const _EditAmenityDialog({this.amenity, required this.onSave});
+
+  @override
+  State<_EditAmenityDialog> createState() => _EditAmenityDialogState();
+}
+
+class _EditAmenityDialogState extends State<_EditAmenityDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _capacityController;
+  late final TextEditingController _rateController;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.amenity?.name);
+    _descriptionController = TextEditingController(text: widget.amenity?.description);
+    _capacityController = TextEditingController(
+      text: widget.amenity?.capacity.toString() ?? '10',
+    );
+    _rateController = TextEditingController(
+      text: widget.amenity?.ratePerHour.toString() ?? '100.00',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _capacityController.dispose();
+    _rateController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.amenity == null ? 'Add Amenity' : 'Edit Amenity'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _capacityController,
+                decoration: const InputDecoration(
+                  labelText: 'Capacity',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) =>
+                    int.tryParse(value ?? '') == null ? 'Invalid' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _rateController,
+                decoration: const InputDecoration(
+                  labelText: 'Rate per Hour',
+                  border: OutlineInputBorder(),
+                  prefixText: '₱',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) =>
+                    double.tryParse(value ?? '') == null ? 'Invalid' : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Save',
+          onPressed: _handleSave,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final appState = context.read<AppState>();
+      final repo = context.read<AmenityRepository>();
+
+      final amenity = Amenity(
+        id: widget.amenity?.id ?? '',
+        communityId: appState.activeCommunityId!,
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        capacity: int.parse(_capacityController.text),
+        ratePerHour: double.parse(_rateController.text),
+        createdAt: widget.amenity?.createdAt ?? DateTime.now(),
+      );
+
+      if (widget.amenity == null) {
+        await repo.createAmenity(amenity);
+      } else {
+        await repo.updateAmenity(amenity);
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Amenity saved')),
+        );
+        widget.onSave();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _AmenityDetailPage extends StatelessWidget {
+  final Amenity amenity;
+
+  const _AmenityDetailPage({required this.amenity});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(amenity.name)),
+      body: _AmenityDetail(amenity: amenity),
+    );
+  }
+}

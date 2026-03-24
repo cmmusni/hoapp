@@ -1,0 +1,628 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:core_data/core_data.dart';
+import 'package:core_domain/core_domain.dart';
+import 'package:core_ui/core_ui.dart';
+
+class PoolAccessPage extends StatefulWidget {
+  const PoolAccessPage({super.key});
+
+  @override
+  State<PoolAccessPage> createState() => _PoolAccessPageState();
+}
+
+class _PoolAccessPageState extends State<PoolAccessPage> {
+  Future<PoolAccess?>? _registrationFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRegistration();
+  }
+
+  void _loadRegistration() {
+    final repo = context.read<PoolAccessRepository>();
+    setState(() {
+      _registrationFuture = repo.getMyRegistration();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: FutureBuilder<PoolAccess?>(
+        future: _registrationFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const LoadingIndicator(message: 'Loading registration...');
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: ${snapshot.error}'),
+                  const SizedBox(height: 16),
+                  HOAppButton(label: 'Retry', onPressed: _loadRegistration),
+                ],
+              ),
+            );
+          }
+
+          final registration = snapshot.data;
+
+          if (registration == null) {
+            return _NoRegistrationView(onRegister: () => _showRegistrationForm(context));
+          }
+
+          return _RegistrationDetailView(
+            registration: registration,
+            onEdit: () => _showRegistrationForm(context, existing: registration),
+            onRefresh: _loadRegistration,
+          );
+        },
+      ),
+    );
+  }
+
+  void _showRegistrationForm(BuildContext context, {PoolAccess? existing}) {
+    showDialog(
+      context: context,
+      builder: (context) => _RegistrationFormDialog(
+        existing: existing,
+        onSaved: _loadRegistration,
+      ),
+    );
+  }
+}
+
+class _NoRegistrationView extends StatelessWidget {
+  final VoidCallback onRegister;
+
+  const _NoRegistrationView({required this.onRegister});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.pool, size: 100, color: Colors.blue[300]),
+          const SizedBox(height: 24),
+          Text(
+            'Pool Access Registration',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Register for pool access to enjoy the swimming pool amenity.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Requirements:',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                const _BulletPoint(text: 'Valid contact information'),
+                const _BulletPoint(text: 'Emergency contact details'),
+                const _BulletPoint(text: 'Signed waiver form'),
+                const SizedBox(height: 16),
+                Text(
+                  'Note: Registration can only be edited within 3 months. After approval, changes require staff assistance.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          HOAppButton(
+            label: 'Register Now',
+            onPressed: onRegister,
+            
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BulletPoint extends StatelessWidget {
+  final String text;
+
+  const _BulletPoint({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle, size: 16, color: Color.fromRGBO(39, 99, 67, 1)),
+          const SizedBox(width: 8),
+          Text(text),
+        ],
+      ),
+    );
+  }
+}
+
+class _RegistrationDetailView extends StatelessWidget {
+  final PoolAccess registration;
+  final VoidCallback onEdit;
+  final VoidCallback onRefresh;
+
+  const _RegistrationDetailView({
+    required this.registration,
+    required this.onEdit,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = context.read<PoolAccessRepository>();
+    final canEdit = repo.canEdit(registration);
+    final isApproved = registration.approvedAt != null;
+
+    return RefreshIndicator(
+      onRefresh: () async => onRefresh(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status card
+            Card(
+              color: isApproved ? Color.fromRGBO(39, 99, 67, 1)[50] : Colors.orange[50],
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      isApproved ? Icons.check_circle : Icons.pending,
+                      color: isApproved ? Color.fromRGBO(39, 99, 67, 1) : Colors.orange,
+                      size: 48,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isApproved ? 'Approved' : 'Pending Approval',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: isApproved ? Color.fromRGBO(39, 99, 67, 1) : Colors.orange,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isApproved
+                                ? 'Your pool access is active'
+                                : 'Waiting for staff approval',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Contact information
+            Text(
+              'Contact Information',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            _InfoCard(children: [
+              _InfoRow(label: 'Phone', value: registration.phoneNumber),
+              _InfoRow(label: 'Email', value: registration.email),
+            ]),
+
+            const SizedBox(height: 24),
+
+            // Emergency contact
+            Text(
+              'Emergency Contact',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            _InfoCard(children: [
+              _InfoRow(label: 'Name', value: registration.emergencyContactName),
+              _InfoRow(
+                label: 'Relationship',
+                value: registration.emergencyContactRelationship,
+              ),
+              _InfoRow(
+                label: 'Phone',
+                value: registration.emergencyContactPhone,
+              ),
+            ]),
+
+            const SizedBox(height: 24),
+
+            // Signed document
+            Text(
+              'Waiver Document',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: ListTile(
+                leading: Icon(
+                  registration.signedDocumentUrl != null
+                      ? Icons.check_circle
+                      : Icons.upload_file,
+                  color: registration.signedDocumentUrl != null
+                      ? Color.fromRGBO(39, 99, 67, 1)
+                      : Colors.grey,
+                ),
+                title: Text(
+                  registration.signedDocumentUrl != null
+                      ? 'Document uploaded'
+                      : 'No document uploaded',
+                ),
+                trailing: registration.signedDocumentUrl != null
+                    ? const Icon(Icons.download)
+                    : null,
+                onTap: registration.signedDocumentUrl != null
+                    ? () {
+                        // TODO: Download document
+                      }
+                    : null,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Registration dates
+            Text(
+              'Registration Timeline',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            _InfoCard(children: [
+              _InfoRow(
+                label: 'Registered',
+                value: _formatDate(registration.createdAt),
+              ),
+              if (isApproved)
+                _InfoRow(
+                  label: 'Approved',
+                  value: _formatDate(registration.approvedAt!),
+                ),
+              if (!canEdit)
+                _InfoRow(
+                  label: 'Locked',
+                  value: 'Cannot edit (3+ months old)',
+                ),
+            ]),
+
+            const SizedBox(height: 32),
+
+            // Actions
+            if (canEdit && !isApproved) ...[
+              HOAppButton(
+                label: 'Edit Registration',
+                onPressed: onEdit,
+                
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (registration.signedDocumentUrl == null)
+              HOAppButton(
+                label: 'Upload Signed Waiver',
+                onPressed: () => _showUploadDialog(context),
+                
+                variant: ButtonVariant.outlined,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  void _showUploadDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Upload Waiver'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Select the signed waiver document to upload.'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Accepted formats: PDF\nMax size: 5MB',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          HOAppButton(
+            label: 'Choose File',
+            onPressed: () {
+              // TODO: Implement file picker and upload
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('File upload not yet implemented')),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final List<Widget> children;
+
+  const _InfoCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RegistrationFormDialog extends StatefulWidget {
+  final PoolAccess? existing;
+  final VoidCallback onSaved;
+
+  const _RegistrationFormDialog({this.existing, required this.onSaved});
+
+  @override
+  State<_RegistrationFormDialog> createState() => _RegistrationFormDialogState();
+}
+
+class _RegistrationFormDialogState extends State<_RegistrationFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _emergencyNameController;
+  late final TextEditingController _emergencyRelationshipController;
+  late final TextEditingController _emergencyPhoneController;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneController = TextEditingController(text: widget.existing?.phoneNumber);
+    _emailController = TextEditingController(text: widget.existing?.email);
+    _emergencyNameController = TextEditingController(
+      text: widget.existing?.emergencyContactName,
+    );
+    _emergencyRelationshipController = TextEditingController(
+      text: widget.existing?.emergencyContactRelationship,
+    );
+    _emergencyPhoneController = TextEditingController(
+      text: widget.existing?.emergencyContactPhone,
+    );
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _emailController.dispose();
+    _emergencyNameController.dispose();
+    _emergencyRelationshipController.dispose();
+    _emergencyPhoneController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.existing == null ? 'Register' : 'Edit Registration'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Contact Information',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.phone),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value?.isEmpty ?? true) return 'Required';
+                  if (!value!.contains('@')) return 'Invalid email';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Emergency Contact',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emergencyNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emergencyRelationshipController,
+                decoration: const InputDecoration(
+                  labelText: 'Relationship',
+                  border: OutlineInputBorder(),
+                  hintText: 'e.g., Spouse, Parent, Sibling',
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emergencyPhoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.phone),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Required' : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Save',
+          onPressed: _handleSave,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final appState = context.read<AppState>();
+      final repo = context.read<PoolAccessRepository>();
+
+      final registration = PoolAccess(
+        id: widget.existing?.id ?? '',
+        communityId: appState.activeCommunityId!,
+        userId: '', // Will be set by repository
+        phoneNumber: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        emergencyContactName: _emergencyNameController.text.trim(),
+        emergencyContactRelationship: _emergencyRelationshipController.text.trim(),
+        emergencyContactPhone: _emergencyPhoneController.text.trim(),
+        signedDocumentUrl: widget.existing?.signedDocumentUrl,
+        approvedAt: widget.existing?.approvedAt,
+        approvedBy: widget.existing?.approvedBy,
+        createdAt: widget.existing?.createdAt ?? DateTime.now(),
+      );
+
+      await repo.upsertRegistration(registration);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration saved')),
+        );
+        widget.onSaved();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}

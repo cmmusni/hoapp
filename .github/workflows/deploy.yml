@@ -1,0 +1,214 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: |
+          cd packages/core_domain && flutter pub get
+          cd ../core_data && flutter pub get
+          cd ../core_ui && flutter pub get
+          cd ../../apps/web_portal && flutter pub get
+      
+      - name: Build models
+        run: |
+          cd packages/core_domain
+          flutter pub run build_runner build --delete-conflicting-outputs
+      
+      - name: Generate test mocks
+        run: |
+          cd packages/core_data
+          flutter pub run build_runner build --delete-conflicting-outputs
+          cd ../core_ui
+          flutter pub run build_runner build --delete-conflicting-outputs
+      
+      - name: Run unit tests
+        run: |
+          cd packages/core_data
+          flutter test
+          cd ../core_ui
+          flutter test
+      
+      - name: Generate coverage report
+        run: |
+          cd packages/core_data
+          flutter test --coverage
+          cd ../core_ui
+          flutter test --coverage
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: |
+            packages/core_data/coverage/lcov.info
+            packages/core_ui/coverage/lcov.info
+          fail_ci_if_error: false
+
+  build-web:
+    name: Build Web Application
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+      
+      - name: Install dependencies
+        run: |
+          cd packages/core_domain && flutter pub get
+          cd ../core_data && flutter pub get
+          cd ../core_ui && flutter pub get
+          cd ../../apps/web_portal && flutter pub get
+      
+      - name: Build models
+        run: |
+          cd packages/core_domain
+          flutter pub run build_runner build --delete-conflicting-outputs
+      
+      - name: Build web application
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          cd apps/web_portal
+          flutter build web --release \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-build
+          path: apps/web_portal/build/web
+          retention-days: 7
+
+  build-android:
+    name: Build Android APK
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Install dependencies
+        run: |
+          cd packages/core_domain && flutter pub get
+          cd ../core_data && flutter pub get
+          cd ../core_ui && flutter pub get
+          cd ../../apps/mobile && flutter pub get
+      
+      - name: Build models
+        run: |
+          cd packages/core_domain
+          flutter pub run build_runner build --delete-conflicting-outputs
+      
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/keystore.jks
+      
+      - name: Create key.properties
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          cat > apps/mobile/android/key.properties << EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=keystore.jks
+          EOF
+      
+      - name: Build Android APK
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          cd apps/mobile
+          flutter build apk --release \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+  deploy-supabase:
+    name: Deploy Supabase Functions
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      
+      - name: Link Supabase project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          supabase link --project-ref $SUPABASE_PROJECT_ID
+      
+      - name: Push database migrations
+        run: |
+          cd supabase
+          supabase db push
+      
+      - name: Deploy Edge Functions
+        run: |
+          cd supabase
+          supabase functions deploy create_community
+          supabase functions deploy create_invite
+          supabase functions deploy accept_invite
+          supabase functions deploy verify_payment
+          supabase functions deploy book_amenity

@@ -1,0 +1,812 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:core_data/core_data.dart';
+import 'package:core_domain/core_domain.dart';
+import 'package:core_ui/core_ui.dart';
+
+class BillingPage extends StatefulWidget {
+  const BillingPage({super.key});
+
+  @override
+  State<BillingPage> createState() => _BillingPageState();
+}
+
+class _BillingPageState extends State<BillingPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  Future<List<Invoice>>? _invoicesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadInvoices();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _loadInvoices() {
+    final appState = context.read<AppState>();
+    final repo = context.read<BillingRepository>();
+    
+    if (appState.activeCommunityId != null) {
+      setState(() {
+        _invoicesFuture = repo.getInvoices(appState.activeCommunityId!);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final isStaff = appState.isStaff;
+
+    return Scaffold(
+      body: Column(
+        children: [
+          Material(
+            color: Theme.of(context).colorScheme.surface,
+            elevation: 1,
+            child: TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'My Invoices'),
+                Tab(text: 'All Invoices'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+        controller: _tabController,
+        children: [
+          _InvoiceList(
+            invoicesFuture: _invoicesFuture,
+            filterMyUnit: true,
+            onRefresh: _loadInvoices,
+          ),
+          if (isStaff)
+            _InvoiceList(
+              invoicesFuture: _invoicesFuture,
+              filterMyUnit: false,
+              onRefresh: _loadInvoices,
+            )
+          else
+            const Center(child: Text('Staff only')),
+        ],
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: isStaff
+          ? FloatingActionButton(
+              onPressed: () => _showCreateInvoiceDialog(context),
+              child: const Icon(Icons.add),
+            )
+          : null,
+    );
+  }
+
+  void _showCreateInvoiceDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _CreateInvoiceDialog(onCreate: _loadInvoices),
+    );
+  }
+}
+
+class _InvoiceList extends StatelessWidget {
+  final Future<List<Invoice>>? invoicesFuture;
+  final bool filterMyUnit;
+  final VoidCallback onRefresh;
+
+  const _InvoiceList({
+    required this.invoicesFuture,
+    required this.filterMyUnit,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Invoice>>(
+      future: invoicesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingIndicator(message: 'Loading invoices...');
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Error: ${snapshot.error}'),
+                const SizedBox(height: 16),
+                HOAppButton(label: 'Retry', onPressed: onRefresh),
+              ],
+            ),
+          );
+        }
+
+        var invoices = snapshot.data ?? [];
+
+        // TODO: Filter by current user's unit if filterMyUnit is true
+        // For now showing all
+
+        if (invoices.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                const Text('No invoices yet'),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async => onRefresh(),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: invoices.length,
+            itemBuilder: (context, index) {
+              final invoice = invoices[index];
+              return _InvoiceCard(
+                invoice: invoice,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => _InvoiceDetailPage(invoice: invoice),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _InvoiceCard extends StatelessWidget {
+  final Invoice invoice;
+  final VoidCallback onTap;
+
+  const _InvoiceCard({required this.invoice, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isPaid = invoice.paidAt != null;
+
+    return HOAppCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getInvoiceTitle(invoice.type),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Unit ${invoice.unitNumber ?? 'N/A'}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '₱${invoice.amount.toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isPaid
+                          ? Color.fromRGBO(39, 99, 67, 1).withOpacity(0.2)
+                          : Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      isPaid ? 'PAID' : 'UNPAID',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isPaid ? Color.fromRGBO(39, 99, 67, 1) : Colors.orange,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                'Due: ${_formatDate(invoice.dueDate)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              if (isPaid) ...[
+                const Spacer(),
+                Text(
+                  'Paid: ${_formatDate(invoice.paidAt!)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getInvoiceTitle(String type) {
+    switch (type) {
+      case 'monthly_dues':
+        return 'Monthly Association Dues';
+      case 'amenity_booking':
+        return 'Amenity Booking Fee';
+      case 'other':
+        return 'Other Charges';
+      default:
+        return type;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+}
+
+class _InvoiceDetailPage extends StatefulWidget {
+  final Invoice invoice;
+
+  const _InvoiceDetailPage({required this.invoice});
+
+  @override
+  State<_InvoiceDetailPage> createState() => _InvoiceDetailPageState();
+}
+
+class _InvoiceDetailPageState extends State<_InvoiceDetailPage> {
+  Future<List<Payment>>? _paymentsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPayments();
+  }
+
+  void _loadPayments() {
+    final repo = context.read<BillingRepository>();
+    setState(() {
+      _paymentsFuture = repo.getPaymentsForInvoice(widget.invoice.id);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isPaid = widget.invoice.paidAt != null;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Invoice Details'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Invoice header
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Invoice #${widget.invoice.id.substring(0, 8)}',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 4),
+                              Text('Unit ${widget.invoice.unitNumber ?? 'N/A'}'),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isPaid
+                                ? Color.fromRGBO(39, 99, 67, 1).withOpacity(0.2)
+                                : Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            isPaid ? 'PAID' : 'UNPAID',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isPaid ? Color.fromRGBO(39, 99, 67, 1) : Colors.orange,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 32),
+                    _InfoRow(
+                      label: 'Amount',
+                      value: '₱${widget.invoice.amount.toStringAsFixed(2)}',
+                      valueStyle: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    _InfoRow(label: 'Type', value: widget.invoice.type),
+                    const SizedBox(height: 8),
+                    _InfoRow(
+                      label: 'Due Date',
+                      value: _formatDate(widget.invoice.dueDate),
+                    ),
+                    if (isPaid) ...[
+                      const SizedBox(height: 8),
+                      _InfoRow(
+                        label: 'Paid Date',
+                        value: _formatDate(widget.invoice.paidAt!),
+                      ),
+                    ],
+                    if (widget.invoice.notes != null) ...[
+                      const Divider(height: 24),
+                      Text(
+                        'Notes',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(widget.invoice.notes!),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Payments section
+            Text(
+              'Payment History',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+
+            FutureBuilder<List<Payment>>(
+              future: _paymentsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const LoadingIndicator();
+                }
+
+                if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                }
+
+                final payments = snapshot.data ?? [];
+
+                if (payments.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Text('No payment records yet'),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: payments.map((payment) {
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(
+                          payment.verifiedAt != null
+                              ? Icons.check_circle
+                              : Icons.pending,
+                          color: payment.verifiedAt != null
+                              ? Color.fromRGBO(39, 99, 67, 1)
+                              : Colors.orange,
+                        ),
+                        title: Text('₱${payment.amount.toStringAsFixed(2)}'),
+                        subtitle: Text(
+                          payment.method +
+                              (payment.referenceNumber != null
+                                  ? ' - ${payment.referenceNumber}'
+                                  : ''),
+                        ),
+                        trailing: Text(
+                          payment.verifiedAt != null ? 'Verified' : 'Pending',
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // Pay button
+            if (!isPaid)
+              HOAppButton(
+                label: 'Submit Payment',
+                onPressed: () => _showPaymentDialog(context),
+                
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  void _showPaymentDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _SubmitPaymentDialog(
+        invoice: widget.invoice,
+        onSubmitted: _loadPayments,
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final TextStyle? valueStyle;
+
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.valueStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: Colors.grey[600]),
+        ),
+        Text(value, style: valueStyle),
+      ],
+    );
+  }
+}
+
+class _CreateInvoiceDialog extends StatefulWidget {
+  final VoidCallback onCreate;
+
+  const _CreateInvoiceDialog({required this.onCreate});
+
+  @override
+  State<_CreateInvoiceDialog> createState() => _CreateInvoiceDialogState();
+}
+
+class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _unitNumberController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _notesController = TextEditingController();
+  String _selectedType = 'monthly_dues';
+  DateTime _dueDate = DateTime.now().add(const Duration(days: 7));
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _unitNumberController.dispose();
+    _amountController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create Invoice'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _unitNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Unit Number',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedType,
+                decoration: const InputDecoration(
+                  labelText: 'Type',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'monthly_dues',
+                    child: Text('Monthly Dues'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'amenity_booking',
+                    child: Text('Amenity Booking'),
+                  ),
+                  DropdownMenuItem(value: 'other', child: Text('Other')),
+                ],
+                onChanged: (value) => setState(() => _selectedType = value!),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _amountController,
+                decoration: const InputDecoration(
+                  labelText: 'Amount',
+                  border: OutlineInputBorder(),
+                  prefixText: '₱',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) =>
+                    double.tryParse(value ?? '') == null ? 'Invalid' : null,
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('Due Date'),
+                subtitle: Text(_formatDate(_dueDate)),
+                onTap: _selectDueDate,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Create',
+          onPressed: _handleCreate,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  Future<void> _selectDueDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (picked != null) {
+      setState(() => _dueDate = picked);
+    }
+  }
+
+  Future<void> _handleCreate() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final appState = context.read<AppState>();
+      final repo = context.read<BillingRepository>();
+
+      final invoice = Invoice(
+        id: '',
+        communityId: appState.activeCommunityId!,
+        unitId: '', // TODO: lookup from unit number
+        unitNumber: _unitNumberController.text.trim(),
+        type: _selectedType,
+        amount: double.parse(_amountController.text),
+        dueDate: _dueDate,
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        paidAt: null,
+        createdAt: DateTime.now(),
+      );
+
+      await repo.createInvoice(invoice);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invoice created')),
+        );
+        widget.onCreate();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _SubmitPaymentDialog extends StatefulWidget {
+  final Invoice invoice;
+  final VoidCallback onSubmitted;
+
+  const _SubmitPaymentDialog({
+    required this.invoice,
+    required this.onSubmitted,
+  });
+
+  @override
+  State<_SubmitPaymentDialog> createState() => _SubmitPaymentDialogState();
+}
+
+class _SubmitPaymentDialogState extends State<_SubmitPaymentDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _referenceController = TextEditingController();
+  String _selectedMethod = 'gcash';
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _referenceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Submit Payment'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Amount: ₱${widget.invoice.amount.toStringAsFixed(2)}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 24),
+            DropdownButtonFormField<String>(
+              value: _selectedMethod,
+              decoration: const InputDecoration(
+                labelText: 'Payment Method',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'gcash', child: Text('GCash')),
+                DropdownMenuItem(value: 'bank', child: Text('Bank Transfer')),
+                DropdownMenuItem(value: 'cash', child: Text('Cash')),
+              ],
+              onChanged: (value) => setState(() => _selectedMethod = value!),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _referenceController,
+              decoration: const InputDecoration(
+                labelText: 'Reference Number',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Required' : null,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Your payment will be verified by staff within 24 hours.',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Submit',
+          onPressed: _handleSubmit,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repo = context.read<BillingRepository>();
+
+      await repo.submitPayment(
+        invoiceId: widget.invoice.id,
+        amount: widget.invoice.amount,
+        method: _selectedMethod,
+        referenceNumber: _referenceController.text.trim(),
+        proofUrl: null, // TODO: Add file upload
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment submitted for verification')),
+        );
+        widget.onSubmitted();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}

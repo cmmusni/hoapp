@@ -1,0 +1,122 @@
+.PHONY: help install clean
+.PHONY: db-push db-reset fn-deploy seed
+.PHONY: run-web build-web run-mobile build-apk
+.PHONY: test test-mocks test-unit test-widget test-integration test-coverage
+.PHONY: deploy-supabase deploy-prod
+
+help:
+	@echo "HOApp Development Commands"
+	@echo "=========================="
+	@echo ""
+	@echo "Development:"
+	@echo "  run-web           - Run web portal in dev mode"
+	@echo "  run-mobile        - Run mobile app"
+	@echo "  install           - Install all dependencies"
+	@echo "  clean             - Clean build artifacts"
+	@echo ""
+	@echo "Database & Backend:"
+	@echo "  db-push           - Apply Supabase migrations"
+	@echo "  db-reset          - Reset database (WARNING: DELETES ALL DATA)"
+	@echo "  fn-deploy         - Deploy Edge Functions"
+	@echo "  seed              - Seed demo data"
+	@echo "  deploy-supabase   - Full Supabase deployment"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test              - Run all tests"
+	@echo "  test-unit         - Run unit tests"
+	@echo "  test-widget       - Run widget tests"
+	@echo "  test-integration  - Run integration tests"
+	@echo "  test-coverage     - Run tests with coverage"
+	@echo "  test-mocks        - Generate test mocks"
+	@echo ""
+	@echo "Production Builds:"
+	@echo "  build-web         - Build web portal for production"
+	@echo "  build-apk         - Build Android APK"
+	@echo "  deploy-prod       - Build & show deployment instructions"
+
+db-push:
+	@echo "Applying database migrations..."
+	cd supabase && supabase db push
+
+db-reset:
+	@echo "Resetting database to clean state..."
+	./reset_database.sh
+
+fn-deploy:
+	@echo "Deploying Edge Functions..."
+	cd supabase && supabase functions deploy create_community
+	cd supabase && supabase functions deploy create_invite
+	cd supabase && supabase functions deploy accept_invite
+	cd supabase && supabase functions deploy verify_payment
+	cd supabase && supabase functions deploy book_amenity
+
+seed:
+	@echo "Seeding demo data..."
+	cd supabase && supabase db reset --seed
+
+run-web:
+	@echo "Running web portal..."
+	cd apps/web_portal && flutter run -d chrome --web-port 3000
+
+build-web:
+	@echo "Building web portal..."
+	cd apps/web_portal && flutter build web --release
+
+run-mobile:
+	@echo "Running mobile app..."
+	cd apps/mobile && flutter run
+
+build-apk:
+	@echo "Building Android APK..."
+	cd apps/mobile && flutter build apk --release
+
+install:
+	@echo "Installing dependencies..."
+	cd packages/core_ui && flutter pub get
+	cd packages/core_domain && flutter pub get
+	cd packages/core_data && flutter pub get
+	cd apps/web_portal && flutter pub get
+	cd apps/mobile && flutter pub get
+
+clean:
+	@echo "Cleaning build artifacts..."
+	cd packages/core_ui && flutter clean
+	cd packages/core_domain && flutter clean
+	cd packages/core_data && flutter clean
+	cd apps/web_portal && flutter clean
+	cd apps/mobile && flutter clean
+
+test-mocks:
+	@echo "Generating test mocks..."
+	cd packages/core_data && flutter pub run build_runner build --delete-conflicting-outputs
+	cd packages/core_ui && flutter pub run build_runner build --delete-conflicting-outputs
+
+test-unit:
+	@echo "Running unit tests..."
+	cd packages/core_data && flutter test
+	cd packages/core_ui && flutter test
+
+test-widget:
+	@echo "Running widget tests..."
+	cd packages/core_ui && flutter test test/widgets
+
+test-integration:
+	@echo "Running integration tests..."
+	cd apps/web_portal && flutter test integration_test
+
+test-coverage:
+	@echo "Running tests with coverage..."
+	cd packages/core_data && flutter test --coverage
+	cd packages/core_ui && flutter test --coverage
+	@echo "Coverage reports generated in packages/*/coverage/"
+
+test: test-mocks test-unit test-widget
+	@echo "All tests completed!"
+
+deploy-supabase:
+	@echo "Deploying to Supabase..."
+	./deploy_supabase.sh
+
+deploy-prod:
+	@echo "Building for production deployment..."
+	./build_prod.sh

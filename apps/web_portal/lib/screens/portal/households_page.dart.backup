@@ -1,0 +1,805 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:core_data/core_data.dart';
+import 'package:core_domain/core_domain.dart';
+import 'package:core_ui/core_ui.dart';
+
+class HouseholdsPage extends StatefulWidget {
+  const HouseholdsPage({super.key});
+
+  @override
+  State<HouseholdsPage> createState() => _HouseholdsPageState();
+}
+
+class _HouseholdsPageState extends State<HouseholdsPage> {
+  Future<List<Unit>>? _unitsFuture;
+  Unit? _selectedUnit;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnits();
+  }
+
+  void _loadUnits() {
+    final appState = context.read<AppState>();
+    final repo = context.read<HouseholdRepository>();
+    
+    if (appState.activeCommunityId != null) {
+      setState(() {
+        _unitsFuture = repo.getUnits(appState.activeCommunityId!);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final isStaff = appState.isStaff;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 1000;
+
+        if (isWide) {
+          return Row(
+            children: [
+              SizedBox(
+                width: 300,
+                child: _UnitList(
+                  unitsFuture: _unitsFuture,
+                  selectedUnit: _selectedUnit,
+                  onUnitSelected: (unit) {
+                    setState(() => _selectedUnit = unit);
+                  },
+                  onRefresh: _loadUnits,
+                ),
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: _selectedUnit != null
+                    ? _HouseholdDetail(unit: _selectedUnit!)
+                    : const Center(
+                        child: Text('Select a unit to view household'),
+                      ),
+              ),
+            ],
+          );
+        }
+
+        // Mobile/narrow layout
+        if (_selectedUnit != null) {
+          return _HouseholdDetailPage(
+            unit: _selectedUnit!,
+            onBack: () => setState(() => _selectedUnit = null),
+          );
+        }
+
+        return _UnitList(
+          unitsFuture: _unitsFuture,
+          selectedUnit: _selectedUnit,
+          onUnitSelected: (unit) {
+            setState(() => _selectedUnit = unit);
+          },
+          onRefresh: _loadUnits,
+        );
+      },
+    );
+  }
+}
+
+class _UnitList extends StatelessWidget {
+  final Future<List<Unit>>? unitsFuture;
+  final Unit? selectedUnit;
+  final Function(Unit) onUnitSelected;
+  final VoidCallback onRefresh;
+
+  const _UnitList({
+    required this.unitsFuture,
+    required this.selectedUnit,
+    required this.onUnitSelected,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final isStaff = appState.isStaff;
+
+    return Scaffold(
+      body: FutureBuilder<List<Unit>>(
+        future: unitsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const LoadingIndicator(message: 'Loading units...');
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: ${snapshot.error}'),
+                  const SizedBox(height: 16),
+                  HOAppButton(label: 'Retry', onPressed: onRefresh),
+                ],
+              ),
+            );
+          }
+
+          final units = snapshot.data ?? [];
+
+          if (units.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.home_outlined, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  const Text('No units yet'),
+                  if (isStaff) ...[
+                    const SizedBox(height: 8),
+                    const Text('Add the first unit'),
+                  ],
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            itemCount: units.length,
+            itemBuilder: (context, index) {
+              final unit = units[index];
+              final isSelected = selectedUnit?.id == unit.id;
+
+              return ListTile(
+                selected: isSelected,
+                leading: const Icon(Icons.home),
+                title: Text('Unit ${unit.unitNumber}'),
+                subtitle: unit.ownerName != null
+                    ? Text(unit.ownerName!)
+                    : const Text('No owner'),
+                onTap: () => onUnitSelected(unit),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: isStaff
+          ? FloatingActionButton(
+              onPressed: () => _showCreateUnitDialog(context),
+              child: const Icon(Icons.add),
+            )
+          : null,
+    );
+  }
+
+  void _showCreateUnitDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _CreateUnitDialog(onCreate: onRefresh),
+    );
+  }
+}
+
+class _HouseholdDetail extends StatefulWidget {
+  final Unit unit;
+
+  const _HouseholdDetail({required this.unit});
+
+  @override
+  State<_HouseholdDetail> createState() => _HouseholdDetailState();
+}
+
+class _HouseholdDetailState extends State<_HouseholdDetail> {
+  Future<List<HouseholdMember>>? _membersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  @override
+  void didUpdateWidget(_HouseholdDetail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.unit.id != widget.unit.id) {
+      _loadMembers();
+    }
+  }
+
+  void _loadMembers() {
+    final repo = context.read<HouseholdRepository>();
+    setState(() {
+      _membersFuture = repo.getHouseholdMembers(widget.unit.id);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final isStaff = appState.isStaff;
+    // TODO: Check if current user is primary member of this unit
+    final canManage = isStaff;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Unit ${widget.unit.unitNumber}'),
+        elevation: 0,
+        actions: [
+          if (canManage)
+            PopupMenuButton(
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'edit', child: Text('Edit Unit')),
+                const PopupMenuItem(value: 'delete', child: Text('Delete Unit')),
+              ],
+              onSelected: (value) {
+                if (value == 'edit') {
+                  // TODO: Edit unit
+                } else if (value == 'delete') {
+                  // TODO: Delete unit
+                }
+              },
+            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Unit info
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Theme.of(context).colorScheme.surfaceVariant,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Unit ${widget.unit.unitNumber}',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                if (widget.unit.ownerName != null) ...[
+                  const SizedBox(height: 4),
+                  Text('Owner: ${widget.unit.ownerName}'),
+                ],
+                if (widget.unit.floor != null) ...[
+                  const SizedBox(height: 4),
+                  Text('Floor: ${widget.unit.floor}'),
+                ],
+              ],
+            ),
+          ),
+
+          // Members list
+          Expanded(
+            child: FutureBuilder<List<HouseholdMember>>(
+              future: _membersFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const LoadingIndicator();
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                final members = snapshot.data ?? [];
+
+                if (members.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        const Text('No household members yet'),
+                        if (canManage) ...[
+                          const SizedBox(height: 8),
+                          const Text('Add the first member'),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: members.length,
+                  itemBuilder: (context, index) {
+                    final member = members[index];
+                    return _MemberCard(
+                      member: member,
+                      canManage: canManage,
+                      onEdit: () => _showEditMemberDialog(context, member),
+                      onDelete: () => _deleteMember(context, member),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: canManage
+          ? FloatingActionButton(
+              onPressed: () => _showEditMemberDialog(context, null),
+              child: const Icon(Icons.person_add),
+            )
+          : null,
+    );
+  }
+
+  void _showEditMemberDialog(BuildContext context, HouseholdMember? member) {
+    showDialog(
+      context: context,
+      builder: (context) => _EditMemberDialog(
+        unitId: widget.unit.id,
+        member: member,
+        onSaved: _loadMembers,
+      ),
+    );
+  }
+
+  Future<void> _deleteMember(BuildContext context, HouseholdMember member) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Member?'),
+        content: Text('Remove "${member.fullName}" from this household?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final repo = context.read<HouseholdRepository>();
+      await repo.removeHouseholdMember(member.id);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Member removed')),
+        );
+        _loadMembers();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+}
+
+class _MemberCard extends StatelessWidget {
+  final HouseholdMember member;
+  final bool canManage;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _MemberCard({
+    required this.member,
+    required this.canManage,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return HOAppCard(
+      child: Row(
+        children: [
+          CircleAvatar(
+            child: Text(_getInitials(member.fullName)),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.fullName,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    _RoleBadge(role: member.role),
+                    if (member.dateOfBirth != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        'Age: ${_calculateAge(member.dateOfBirth!)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (canManage)
+            PopupMenuButton(
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                const PopupMenuItem(value: 'delete', child: Text('Remove')),
+              ],
+              onSelected: (value) {
+                if (value == 'edit') onEdit();
+                if (value == 'delete') onDelete();
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _getInitials(String name) {
+    final parts = name.split(' ');
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
+}
+
+class _RoleBadge extends StatelessWidget {
+  final HouseholdRole role;
+
+  const _RoleBadge({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    switch (role) {
+      case HouseholdRole.primary:
+        color = Colors.blue;
+        break;
+      case HouseholdRole.member:
+        color = Color.fromRGBO(39, 99, 67, 1);
+        break;
+      case HouseholdRole.child:
+        color = Colors.orange;
+        break;
+      case HouseholdRole.tenant:
+        color = Colors.purple;
+        break;
+      case HouseholdRole.other:
+        color = Colors.grey;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        role.name.toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _CreateUnitDialog extends StatefulWidget {
+  final VoidCallback onCreate;
+
+  const _CreateUnitDialog({required this.onCreate});
+
+  @override
+  State<_CreateUnitDialog> createState() => _CreateUnitDialogState();
+}
+
+class _CreateUnitDialogState extends State<_CreateUnitDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _unitNumberController = TextEditingController();
+  final _floorController = TextEditingController();
+  final _ownerNameController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _unitNumberController.dispose();
+    _floorController.dispose();
+    _ownerNameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create Unit'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _unitNumberController,
+              decoration: const InputDecoration(
+                labelText: 'Unit Number',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Required' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _floorController,
+              decoration: const InputDecoration(
+                labelText: 'Floor (optional)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _ownerNameController,
+              decoration: const InputDecoration(
+                labelText: 'Owner Name (optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Create',
+          onPressed: _handleCreate,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleCreate() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final appState = context.read<AppState>();
+      final repo = context.read<HouseholdRepository>();
+
+      final unit = Unit(
+        id: '',
+        communityId: appState.activeCommunityId!,
+        unitNumber: _unitNumberController.text.trim(),
+        floor: _floorController.text.isEmpty
+            ? null
+            : int.tryParse(_floorController.text),
+        ownerName: _ownerNameController.text.isEmpty
+            ? null
+            : _ownerNameController.text.trim(),
+        createdAt: DateTime.now(),
+      );
+
+      await repo.createUnit(unit);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unit created')),
+        );
+        widget.onCreate();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _EditMemberDialog extends StatefulWidget {
+  final String unitId;
+  final HouseholdMember? member;
+  final VoidCallback onSaved;
+
+  const _EditMemberDialog({
+    required this.unitId,
+    this.member,
+    required this.onSaved,
+  });
+
+  @override
+  State<_EditMemberDialog> createState() => _EditMemberDialogState();
+}
+
+class _EditMemberDialogState extends State<_EditMemberDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  HouseholdRole _selectedRole = HouseholdRole.member;
+  DateTime? _dateOfBirth;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.member?.fullName);
+    _selectedRole = widget.member?.role ?? HouseholdRole.member;
+    _dateOfBirth = widget.member?.dateOfBirth;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.member == null ? 'Add Member' : 'Edit Member'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<HouseholdRole>(
+                value: _selectedRole,
+                decoration: const InputDecoration(
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
+                items: HouseholdRole.values.map((role) {
+                  return DropdownMenuItem(
+                    value: role,
+                    child: Text(role.name),
+                  );
+                }).toList(),
+                onChanged: (value) => setState(() => _selectedRole = value!),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.cake),
+                title: const Text('Date of Birth (optional)'),
+                subtitle: Text(
+                  _dateOfBirth != null
+                      ? _formatDate(_dateOfBirth!)
+                      : 'Not set',
+                ),
+                onTap: _selectDate,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Save',
+          onPressed: _handleSave,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateOfBirth ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() => _dateOfBirth = picked);
+    }
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repo = context.read<HouseholdRepository>();
+
+      final member = HouseholdMember(
+        id: widget.member?.id ?? '',
+        unitId: widget.unitId,
+        userId: widget.member?.userId,
+        fullName: _nameController.text.trim(),
+        role: _selectedRole,
+        dateOfBirth: _dateOfBirth,
+        createdAt: widget.member?.createdAt ?? DateTime.now(),
+      );
+
+      if (widget.member == null) {
+        await repo.addHouseholdMember(member);
+      } else {
+        await repo.updateHouseholdMember(member);
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Member saved')),
+        );
+        widget.onSaved();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _HouseholdDetailPage extends StatelessWidget {
+  final Unit unit;
+  final VoidCallback onBack;
+
+  const _HouseholdDetailPage({required this.unit, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (_) => onBack(),
+      child: _HouseholdDetail(unit: unit),
+    );
+  }
+}

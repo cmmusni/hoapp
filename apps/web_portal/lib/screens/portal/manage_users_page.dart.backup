@@ -1,0 +1,676 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:core_data/core_data.dart';
+import 'package:core_domain/core_domain.dart';
+import 'package:core_ui/core_ui.dart';
+
+class ManageUsersPage extends StatefulWidget {
+  const ManageUsersPage({super.key});
+
+  @override
+  State<ManageUsersPage> createState() => _ManageUsersPageState();
+}
+
+class _ManageUsersPageState extends State<ManageUsersPage> {
+  Future<List<UserRole>>? _rolesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoles();
+  }
+
+  void _loadRoles() {
+    final appState = context.read<AppState>();
+    final repo = context.read<UserRepository>();
+    
+    if (appState.activeCommunityId != null) {
+      setState(() {
+        _rolesFuture = repo.getUserRoles(appState.activeCommunityId!);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final isAdmin = appState.isAdmin;
+
+    if (!isAdmin) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Admin access required'),
+        ),
+      );
+    }
+
+    return Scaffold(
+      body: FutureBuilder<List<UserRole>>(
+        future: _rolesFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const LoadingIndicator(message: 'Loading users...');
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: ${snapshot.error}'),
+                  const SizedBox(height: 16),
+                  HOAppButton(label: 'Retry', onPressed: _loadRoles),
+                ],
+              ),
+            );
+          }
+
+          final roles = snapshot.data ?? [];
+
+          if (roles.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  const Text('No users yet'),
+                  const SizedBox(height: 8),
+                  const Text('Invite the first user'),
+                ],
+              ),
+            );
+          }
+
+          // Group by role type
+          final admins = roles.where((r) => r.role == 'admin').toList();
+          final staff = roles.where((r) => r.role == 'staff').toList();
+          final residents = roles.where((r) => r.role == 'resident').toList();
+
+          return RefreshIndicator(
+            onRefresh: () async => _loadRoles(),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (admins.isNotEmpty) ...[
+                  _SectionHeader(
+                    title: 'Administrators',
+                    count: admins.length,
+                    icon: Icons.admin_panel_settings,
+                  ),
+                  const SizedBox(height: 8),
+                  ...admins.map((role) => _UserRoleCard(
+                        role: role,
+                        onEdit: () => _showEditRoleDialog(context, role),
+                        onDelete: () => _deleteRole(context, role),
+                      )),
+                  const SizedBox(height: 24),
+                ],
+                if (staff.isNotEmpty) ...[
+                  _SectionHeader(
+                    title: 'Staff',
+                    count: staff.length,
+                    icon: Icons.support_agent,
+                  ),
+                  const SizedBox(height: 8),
+                  ...staff.map((role) => _UserRoleCard(
+                        role: role,
+                        onEdit: () => _showEditRoleDialog(context, role),
+                        onDelete: () => _deleteRole(context, role),
+                      )),
+                  const SizedBox(height: 24),
+                ],
+                if (residents.isNotEmpty) ...[
+                  _SectionHeader(
+                    title: 'Residents',
+                    count: residents.length,
+                    icon: Icons.home,
+                  ),
+                  const SizedBox(height: 8),
+                  ...residents.map((role) => _UserRoleCard(
+                        role: role,
+                        onEdit: () => _showEditRoleDialog(context, role),
+                        onDelete: () => _deleteRole(context, role),
+                      )),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showInviteDialog(context),
+        icon: const Icon(Icons.person_add),
+        label: const Text('Invite User'),
+      ),
+    );
+  }
+
+  void _showInviteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _InviteUserDialog(onInvited: _loadRoles),
+    );
+  }
+
+  void _showEditRoleDialog(BuildContext context, UserRole role) {
+    showDialog(
+      context: context,
+      builder: (context) => _EditRoleDialog(role: role, onSaved: _loadRoles),
+    );
+  }
+
+  Future<void> _deleteRole(BuildContext context, UserRole role) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove User?'),
+        content: const Text('This will revoke access to this community.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final repo = context.read<UserRepository>();
+      await repo.deleteUserRole(role.id);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User removed')),
+        );
+        _loadRoles();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final int count;
+  final IconData icon;
+
+  const _SectionHeader({
+    required this.title,
+    required this.count,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 8),
+        Text(
+          '$title ($count)',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+      ],
+    );
+  }
+}
+
+class _UserRoleCard extends StatelessWidget {
+  final UserRole role;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _UserRoleCard({
+    required this.role,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return HOAppCard(
+      child: Row(
+        children: [
+          CircleAvatar(
+            child: Icon(_getRoleIcon(role.role)),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  role.userId,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                if (role.unitNumber != null)
+                  Text(
+                    'Unit ${role.unitNumber}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
+            ),
+          ),
+          _RoleBadge(role: role.role),
+          const SizedBox(width: 8),
+          PopupMenuButton(
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit Role')),
+              const PopupMenuItem(value: 'delete', child: Text('Remove')),
+            ],
+            onSelected: (value) {
+              if (value == 'edit') onEdit();
+              if (value == 'delete') onDelete();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getRoleIcon(String role) {
+    switch (role) {
+      case 'admin':
+        return Icons.admin_panel_settings;
+      case 'staff':
+        return Icons.support_agent;
+      case 'resident':
+        return Icons.home;
+      default:
+        return Icons.person;
+    }
+  }
+}
+
+class _RoleBadge extends StatelessWidget {
+  final String role;
+
+  const _RoleBadge({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    switch (role) {
+      case 'admin':
+        color = Colors.red;
+        break;
+      case 'staff':
+        color = Colors.blue;
+        break;
+      case 'resident':
+        color = Color.fromRGBO(39, 99, 67, 1);
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        role.toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _InviteUserDialog extends StatefulWidget {
+  final VoidCallback onInvited;
+
+  const _InviteUserDialog({required this.onInvited});
+
+  @override
+  State<_InviteUserDialog> createState() => _InviteUserDialogState();
+}
+
+class _InviteUserDialogState extends State<_InviteUserDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  String _selectedRole = 'resident';
+  Future<List<Unit>>? _unitsFuture;
+  String? _selectedUnitId;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnits();
+  }
+
+  void _loadUnits() {
+    final appState = context.read<AppState>();
+    final repo = context.read<HouseholdRepository>();
+    
+    if (appState.activeCommunityId != null) {
+      _unitsFuture = repo.getUnits(appState.activeCommunityId!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Invite User'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email Address',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value?.isEmpty ?? true) return 'Required';
+                  if (!value!.contains('@')) return 'Invalid email';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                decoration: const InputDecoration(
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'resident', child: Text('Resident')),
+                  DropdownMenuItem(value: 'staff', child: Text('Staff')),
+                  DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                ],
+                onChanged: (value) => setState(() => _selectedRole = value!),
+              ),
+              const SizedBox(height: 16),
+              if (_selectedRole == 'resident') ...[
+                const Text(
+                  'Assign Unit',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                FutureBuilder<List<Unit>>(
+                  future: _unitsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const LinearProgressIndicator();
+                    }
+
+                    final units = snapshot.data ?? [];
+
+                    if (units.isEmpty) {
+                      return const Text('No units available. Create units first.');
+                    }
+
+                    return DropdownButtonFormField<String>(
+                      value: _selectedUnitId,
+                      decoration: const InputDecoration(
+                        labelText: 'Unit',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: units.map((unit) {
+                        return DropdownMenuItem(
+                          value: unit.id,
+                          child: Text('Unit ${unit.unitNumber}'),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setState(() => _selectedUnitId = value),
+                      validator: (value) =>
+                          _selectedRole == 'resident' && value == null
+                              ? 'Required for residents'
+                              : null,
+                    );
+                  },
+                ),
+              ],
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 20, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'An email invitation will be sent to this address.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Send Invite',
+          onPressed: _handleInvite,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleInvite() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final appState = context.read<AppState>();
+      final authRepo = context.read<AuthRepository>();
+
+      // Call Edge Function to create invite
+      await authRepo.inviteUser(
+        email: _emailController.text.trim(),
+        communityId: appState.activeCommunityId!,
+        role: _selectedRole,
+        unitId: _selectedUnitId,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invitation sent')),
+        );
+        widget.onInvited();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _EditRoleDialog extends StatefulWidget {
+  final UserRole role;
+  final VoidCallback onSaved;
+
+  const _EditRoleDialog({required this.role, required this.onSaved});
+
+  @override
+  State<_EditRoleDialog> createState() => _EditRoleDialogState();
+}
+
+class _EditRoleDialogState extends State<_EditRoleDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late String _selectedRole;
+  Future<List<Unit>>? _unitsFuture;
+  String? _selectedUnitId;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRole = widget.role.role;
+    _selectedUnitId = widget.role.unitId;
+    _loadUnits();
+  }
+
+  void _loadUnits() {
+    final appState = context.read<AppState>();
+    final repo = context.read<HouseholdRepository>();
+    
+    if (appState.activeCommunityId != null) {
+      _unitsFuture = repo.getUnits(appState.activeCommunityId!);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit User Role'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              value: _selectedRole,
+              decoration: const InputDecoration(
+                labelText: 'Role',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'resident', child: Text('Resident')),
+                DropdownMenuItem(value: 'staff', child: Text('Staff')),
+                DropdownMenuItem(value: 'admin', child: Text('Admin')),
+              ],
+              onChanged: (value) => setState(() => _selectedRole = value!),
+            ),
+            const SizedBox(height: 16),
+            if (_selectedRole == 'resident')
+              FutureBuilder<List<Unit>>(
+                future: _unitsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const LinearProgressIndicator();
+                  }
+
+                  final units = snapshot.data ?? [];
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedUnitId,
+                    decoration: const InputDecoration(
+                      labelText: 'Unit',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: units.map((unit) {
+                      return DropdownMenuItem(
+                        value: unit.id,
+                        child: Text('Unit ${unit.unitNumber}'),
+                      );
+                    }).toList(),
+                    onChanged: (value) => setState(() => _selectedUnitId = value),
+                    validator: (value) =>
+                        _selectedRole == 'resident' && value == null
+                            ? 'Required for residents'
+                            : null,
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Save',
+          onPressed: _handleSave,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repo = context.read<UserRepository>();
+
+      final updatedRole = UserRole(
+        id: widget.role.id,
+        communityId: widget.role.communityId,
+        userId: widget.role.userId,
+        role: _selectedRole,
+        unitId: _selectedUnitId,
+        unitNumber: null, // Will be populated by repository
+        createdAt: widget.role.createdAt,
+      );
+
+      await repo.updateUserRole(updatedRole);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Role updated')),
+        );
+        widget.onSaved();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}

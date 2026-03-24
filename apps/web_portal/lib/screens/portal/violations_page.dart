@@ -1,0 +1,626 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:core_data/core_data.dart';
+import 'package:core_domain/core_domain.dart';
+import 'package:core_ui/core_ui.dart';
+
+class ViolationsPage extends StatefulWidget {
+  const ViolationsPage({super.key});
+
+  @override
+  State<ViolationsPage> createState() => _ViolationsPageState();
+}
+
+class _ViolationsPageState extends State<ViolationsPage> {
+  Future<List<Violation>>? _violationsFuture;
+  ViolationStatus? _filterStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadViolations();
+  }
+
+  void _loadViolations() {
+    final appState = context.read<AppState>();
+    final repo = context.read<ViolationRepository>();
+
+    if (appState.activeCommunityId != null) {
+      setState(() {
+        if (_filterStatus != null) {
+          _violationsFuture = repo.getViolationsByStatus(
+            appState.activeCommunityId!,
+            _filterStatus!,
+          );
+        } else {
+          _violationsFuture = repo.getViolations(appState.activeCommunityId!);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+
+    return Scaffold(
+      body: Column(
+        children: [
+          // Filter bar
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Theme.of(context).colorScheme.surfaceVariant,
+            child: Row(
+              children: [
+                Text(
+                  'Filter:',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(width: 16),
+                _FilterChip(
+                  label: 'All',
+                  selected: _filterStatus == null,
+                  onSelected: () {
+                    setState(() => _filterStatus = null);
+                    _loadViolations();
+                  },
+                ),
+                const SizedBox(width: 12),
+                _FilterChip(
+                  label: 'New',
+                  selected: _filterStatus == ViolationStatus.newStatus,
+                  onSelected: () {
+                    setState(() => _filterStatus = ViolationStatus.newStatus);
+                    _loadViolations();
+                  },
+                ),
+                const SizedBox(width: 12),
+                _FilterChip(
+                  label: 'Under Review',
+                  selected: _filterStatus == ViolationStatus.underReview,
+                  onSelected: () {
+                    setState(() => _filterStatus = ViolationStatus.underReview);
+                    _loadViolations();
+                  },
+                ),
+                const SizedBox(width: 12),
+                _FilterChip(
+                  label: 'Resolved',
+                  selected: _filterStatus == ViolationStatus.resolved,
+                  onSelected: () {
+                    setState(() => _filterStatus = ViolationStatus.resolved);
+                    _loadViolations();
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // List
+          Expanded(
+            child: FutureBuilder<List<Violation>>(
+              future: _violationsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const LoadingIndicator(
+                      message: 'Loading violations...');
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                final violations = snapshot.data ?? [];
+
+                if (violations.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.report_outlined,
+                            size: 64, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No violations reported',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('Submit a report to get started'),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: violations.length,
+                  itemBuilder: (context, index) => _ViolationCard(
+                    violation: violations[index],
+                    isStaff: appState.isStaff,
+                    onUpdated: _loadViolations,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showReportDialog(context),
+        icon: const Icon(Icons.add),
+        label: const Text('Report Violation'),
+      ),
+    );
+  }
+
+  void _showReportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _ReportViolationDialog(onReported: _loadViolations),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onSelected(),
+    );
+  }
+}
+
+class _ViolationCard extends StatelessWidget {
+  final Violation violation;
+  final bool isStaff;
+  final VoidCallback onUpdated;
+
+  const _ViolationCard({
+    required this.violation,
+    required this.isStaff,
+    required this.onUpdated,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return HOAppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _StatusChip(status: violation.status),
+              const Spacer(),
+              Text(
+                _formatDate(violation.createdAt),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            violation.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(violation.body),
+
+          // Display attachments if available
+          if (violation.attachments != null &&
+              violation.attachments!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Builder(
+              builder: (context) {
+                // Filter out null values and convert to strings
+                final imageUrls = violation.attachments!
+                    .where((item) => item != null && item.toString().isNotEmpty)
+                    .map((item) => item.toString())
+                    .toList();
+
+                if (imageUrls.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return SizedBox(
+                  height: 100,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: imageUrls.length,
+                    separatorBuilder: (context, _) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final imageUrl = imageUrls[index];
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          imageUrl,
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stack) {
+                            return Container(
+                              width: 100,
+                              height: 100,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.broken_image),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
+
+          if (isStaff) ...[
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                if (violation.reporterUserId != null)
+                  Text(
+                    'Reporter: ${violation.reporterUserId}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                const Spacer(),
+                if (violation.status != ViolationStatus.resolved)
+                  PopupMenuButton<ViolationStatus>(
+                    child: Chip(
+                      avatar: const Icon(Icons.edit, size: 16),
+                      label: const Text('Update Status'),
+                    ),
+                    onSelected: (status) => _updateStatus(context, status),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: ViolationStatus.underReview,
+                        child: Text('Under Review'),
+                      ),
+                      const PopupMenuItem(
+                        value: ViolationStatus.resolved,
+                        child: Text('Resolved'),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  Future<void> _updateStatus(
+      BuildContext context, ViolationStatus status) async {
+    try {
+      final repo = context.read<ViolationRepository>();
+      await repo.updateViolation(id: violation.id, status: status);
+      onUpdated();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Status updated')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final ViolationStatus status;
+
+  const _StatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    String label;
+
+    switch (status) {
+      case ViolationStatus.newStatus:
+        color = Colors.orange;
+        label = 'NEW';
+        break;
+      case ViolationStatus.underReview:
+        color = Colors.blue;
+        label = 'UNDER REVIEW';
+        break;
+      case ViolationStatus.resolved:
+        color = Color.fromRGBO(39, 99, 67, 1);
+        label = 'RESOLVED';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportViolationDialog extends StatefulWidget {
+  final VoidCallback onReported;
+
+  const _ReportViolationDialog({required this.onReported});
+
+  @override
+  State<_ReportViolationDialog> createState() => _ReportViolationDialogState();
+}
+
+class _ReportViolationDialogState extends State<_ReportViolationDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _bodyController = TextEditingController();
+  bool _isLoading = false;
+  final List<String> _uploadedImageUrls = [];
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final communityId = context.read<AppState>().activeCommunityId ?? '';
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          const Icon(Icons.report_outlined, color: Colors.orange, size: 24),
+          const SizedBox(width: 12),
+          const Text('Report Violation',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 500,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.privacy_tip, color: Colors.amber[700]),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Your identity will remain anonymous to other residents',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.amber[900],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'Brief description',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a title';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _bodyController,
+                decoration: const InputDecoration(
+                  labelText: 'Details',
+                  hintText: 'Provide detailed information',
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 5,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please provide details';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // Image upload section
+              if (_uploadedImageUrls.length < 5) ...[
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Add Photos (Optional)',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ImageUploadWidget(
+                  bucket: 'violation-photos',
+                  folder: communityId.isNotEmpty ? communityId : null,
+                  onUploadComplete: (url) {
+                    if (url.isNotEmpty) {
+                      setState(() {
+                        _uploadedImageUrls.add(url);
+                      });
+                    }
+                  },
+                ),
+              ],
+              // Display uploaded images
+              if (_uploadedImageUrls.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: List.generate(_uploadedImageUrls.length, (index) {
+                    final url = _uploadedImageUrls[index];
+                    if (url.isEmpty) return const SizedBox.shrink();
+
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            url,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stack) {
+                              return Container(
+                                width: 80,
+                                height: 80,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.broken_image, size: 40),
+                              );
+                            },
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _uploadedImageUrls.removeAt(index);
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${_uploadedImageUrls.length}/5 photos uploaded',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        HOAppButton(
+          label: 'Submit Report',
+          onPressed: _handleSubmit,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final appState = context.read<AppState>();
+    if (appState.activeCommunityId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: No community selected')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repo = context.read<ViolationRepository>();
+
+      await repo.createViolation(
+        communityId: appState.activeCommunityId!,
+        title: _titleController.text.trim(),
+        body: _bodyController.text.trim(),
+        attachmentUrls:
+            _uploadedImageUrls.isNotEmpty ? _uploadedImageUrls : null,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Violation reported')),
+        );
+        widget.onReported();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
