@@ -258,7 +258,7 @@ AppTheme.buildTheme(
 SUPABASE_URL=https://xxxxx.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUz... # Edge Functions only
-WEB_BASE_URL=https://hoapp.com
+WEB_BASE_URL=https://hoapp.net
 MOBILE_SCHEME=hoapp
 ```
 

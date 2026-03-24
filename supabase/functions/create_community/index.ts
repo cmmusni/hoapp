@@ -205,7 +205,7 @@ async function createCommunityWithUser(req: Request, user: any, supabaseAdmin: a
       meta: { name, slug }
     })
 
-  const portalUrl = `${Deno.env.get('WEB_BASE_URL') || 'https://hoapp.com'}/${slug}/login.html`
+  const portalUrl = `${Deno.env.get('WEB_BASE_URL') || 'https://hoapp.net'}/${slug}/login.html`
 
   return jsonResponse<CreateCommunityResponse>({
     ok: true,

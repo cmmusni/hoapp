@@ -146,7 +146,7 @@ serve(async (req) => {
         .maybeSingle()
 
       if (payerProfile?.email && community && payment.invoices) {
-        const baseUrl = Deno.env.get('WEB_BASE_URL') || 'https://hoapp.com'
+        const baseUrl = Deno.env.get('WEB_BASE_URL') || 'https://hoapp.net'
         const portalLink = `${baseUrl}/${community.slug}/billing`
 
         sendEmail({

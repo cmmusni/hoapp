@@ -8,7 +8,7 @@ Production-ready Flutter + Supabase platform for HOA and condominium communities
 - **Backend:** Supabase (Auth, Postgres, Storage, Realtime, Edge Functions)
 - **Multi-tenancy:** Single database with Row Level Security (RLS)
 - **Deployment:** 
-  - Web: hoapp.com (SPA with path routing)
+  - Web: hoapp.net (SPA with path routing)
   - Mobile: Android APK (sideload) + iOS (dev device testing)
 
 ## 📁 Project Structure
@@ -211,7 +211,7 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`):
 - Sign up at `/signup`
 - Create community with unique slug
 - Automatic admin role assignment
-- Custom portal URL: `hoapp.com/<slug>/login.html`
+- Custom portal URL: `hoapp.net/<slug>/login.html`
 
 ### 2. Universal Build + Auto Community Detection
 - One codebase for all communities
@@ -349,7 +349,7 @@ supabase functions logs function_name --tail
 
 Mobile app supports invite deep links:
 - Custom scheme: `hoapp://accept-invite?token=...`
-- Web fallback: `hoapp.com/:community/login.html?invite=...`
+- Web fallback: `hoapp.net/:community/login.html?invite=...`
 
 ## 🎨 Branding
 
@@ -379,4 +379,4 @@ Proprietary - All rights reserved
 
 ## 🆘 Support
 
-For issues or questions, contact: support@hoapp.com
+For issues or questions, contact: support@hoapp.net

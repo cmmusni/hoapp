@@ -94,7 +94,7 @@ cp .env.example .env
 #   SUPABASE_URL=https://your-project.supabase.co
 #   SUPABASE_ANON_KEY=your-anon-key
 #   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-#   WEB_BASE_URL=https://hoapp.com (or your domain)
+#   WEB_BASE_URL=https://hoapp.net (or your domain)
 
 # 2. Install Supabase CLI (if not installed)
 brew install supabase/tap/supabase
@@ -223,7 +223,7 @@ Before going live:
 │                                                          │
 │  Frontend (Flutter Web)                                  │
 │  ├─ Hosted on: Netlify/Vercel/Cloudflare Pages         │
-│  ├─ Domain: hoapp.com                                   │
+│  ├─ Domain: hoapp.net                                   │
 │  ├─ Routes: SPA with path-based routing                │
 │  └─ Assets: Static files + WASM bundle                 │
 │                                                          │
@@ -418,11 +418,11 @@ git push origin main
 ./deploy_supabase.sh
 
 # Stage 2: Web to staging
-# Deploy to staging.hoapp.com
+# Deploy to staging.hoapp.net
 # Test thoroughly
 
 # Stage 3: Web to production
-# Deploy to hoapp.com
+# Deploy to hoapp.net
 # Monitor closely
 
 # Stage 4: Mobile apps

@@ -66,7 +66,7 @@ Required secrets for each platform:
 - [ ] `SUPABASE_URL` - Your Supabase project URL
 - [ ] `SUPABASE_ANON_KEY` - Public anon key (safe for client-side)
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` - Service role key (Edge Functions only)
-- [ ] `WEB_BASE_URL` - Production domain (e.g., https://hoapp.com)
+- [ ] `WEB_BASE_URL` - Production domain (e.g., https://hoapp.net)
 
 **For CI/CD (GitHub Secrets)**:
 - [ ] `SUPABASE_URL`
@@ -162,7 +162,7 @@ supabase functions deploy book_amenity
 **Set Edge Function Secrets**:
 ```bash
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-supabase secrets set WEB_BASE_URL=https://hoapp.com
+supabase secrets set WEB_BASE_URL=https://hoapp.net
 ```
 
 ### Step 6: Seed Demo Data (Optional)

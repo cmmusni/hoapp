@@ -24,7 +24,7 @@ supabase secrets set RESEND_API_KEY=re_your_api_key_here
 
 ### 3. Configure Sender Domain (Optional but Recommended)
 
-By default, emails are sent from `noreply@hoapp.com`. To use your own domain:
+By default, emails are sent from `noreply@hoapp.net`. To use your own domain:
 
 1. In Resend dashboard, add and verify your domain
 2. Update the `from` parameter in `_shared/email.ts`:

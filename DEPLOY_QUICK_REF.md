@@ -61,7 +61,7 @@ supabase functions deploy book_amenity
 
 # Set secrets
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-key
-supabase secrets set WEB_BASE_URL=https://hoapp.com
+supabase secrets set WEB_BASE_URL=https://hoapp.net
 ```
 
 ## 🌐 Deploy Web Application
@@ -305,7 +305,7 @@ SUPABASE_ANON_KEY=eyJhbGc...  # Public anon key (safe for client)
 
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...  # Server-only, never expose
-WEB_BASE_URL=https://hoapp.com        # Production domain
+WEB_BASE_URL=https://hoapp.net        # Production domain
 ```
 
 ### Optional

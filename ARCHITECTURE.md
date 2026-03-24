@@ -7,7 +7,7 @@
 │                         PRESENTATION LAYER                       │
 ├─────────────────────┬───────────────────────────────────────────┤
 │   Flutter Web App   │       Flutter Mobile App                  │
-│   (hoapp.com)       │       (Android APK / iOS)                 │
+│   (hoapp.net)       │       (Android APK / iOS)                 │
 │                     │                                           │
 │ • Marketing Site    │ • Resident-focused                        │
 │ • SaaS Signup       │ • Auto community detection                │

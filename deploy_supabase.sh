@@ -91,7 +91,7 @@ if [ ! -f "../.env" ]; then
     echo -e "${YELLOW}No .env file found. Skipping secret configuration.${NC}"
     echo "You can manually set secrets with:"
     echo "  supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-key"
-    echo "  supabase secrets set WEB_BASE_URL=https://hoapp.com"
+    echo "  supabase secrets set WEB_BASE_URL=https://hoapp.net"
 else
     # Load environment variables
     export $(grep -v '^#' ../.env | xargs)

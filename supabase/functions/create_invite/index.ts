@@ -211,7 +211,7 @@ serve(async (req) => {
       .eq('id', community_id)
       .maybeSingle()
 
-    const baseUrl = Deno.env.get('WEB_BASE_URL') || 'https://hoapp.com'
+    const baseUrl = Deno.env.get('WEB_BASE_URL') || 'https://hoapp.net'
     // Base64url-encode the email so it's not plainly visible in the URL
     const encodedEmail = btoa(email).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
     const inviteLink = community
