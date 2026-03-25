@@ -607,38 +607,122 @@ class _CreateTicketDialogState extends State<_CreateTicketDialog> {
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('What do you need help with?'),
-          const SizedBox(height: 16),
-          RadioListTile<TicketType>(
-            value: TicketType.billing,
-            groupValue: _selectedType,
-            onChanged: (value) => setState(() => _selectedType = value!),
-            title: const Text('Billing Question'),
-          ),
-          RadioListTile<TicketType>(
-            value: TicketType.repair,
-            groupValue: _selectedType,
-            onChanged: (value) => setState(() => _selectedType = value!),
-            title: const Text('Repair Request'),
-          ),
-          RadioListTile<TicketType>(
-            value: TicketType.general,
-            groupValue: _selectedType,
-            onChanged: (value) => setState(() => _selectedType = value!),
-            title: const Text('General Inquiry'),
-          ),
-        ],
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'What do you need help with?',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildTicketTypeOption(
+              type: TicketType.billing,
+              icon: Icons.payment_outlined,
+              label: 'Billing Question',
+              description: 'Payment issues, invoices, or fees',
+            ),
+            const SizedBox(height: 8),
+            _buildTicketTypeOption(
+              type: TicketType.repair,
+              icon: Icons.build_outlined,
+              label: 'Repair Request',
+              description: 'Maintenance or facility repairs',
+            ),
+            const SizedBox(height: 8),
+            _buildTicketTypeOption(
+              type: TicketType.general,
+              icon: Icons.help_outline,
+              label: 'General Inquiry',
+              description: 'Questions, feedback, or other concerns',
+            ),
+          ],
+        ),
       ),
       actions: [
         HOAppButton(
-          label: 'Create',
+          label: 'Create Ticket',
           onPressed: _handleCreate,
           isLoading: _isLoading,
         ),
       ],
+    );
+  }
+
+  Widget _buildTicketTypeOption({
+    required TicketType type,
+    required IconData icon,
+    required String label,
+    required String description,
+  }) {
+    final isSelected = _selectedType == type;
+    final primaryColor = const Color(0xff215e3f);
+
+    return InkWell(
+      onTap: () => setState(() => _selectedType = type),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? primaryColor : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          color: isSelected ? primaryColor.withOpacity(0.05) : Colors.white,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? primaryColor.withOpacity(0.1)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isSelected ? primaryColor : Colors.grey[500],
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: isSelected ? primaryColor : Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: primaryColor, size: 22),
+          ],
+        ),
+      ),
     );
   }
 

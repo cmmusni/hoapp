@@ -17,6 +17,13 @@ Invoice _$InvoiceFromJson(Map<String, dynamic> json) => Invoice(
       dueDate: DateTime.parse(json['due_date'] as String),
       status: $enumDecode(_$InvoiceStatusEnumMap, json['status']),
       metadata: json['metadata'] as Map<String, dynamic>?,
+      description: json['description'] as String?,
+      periodStart: json['period_start'] == null
+          ? null
+          : DateTime.parse(json['period_start'] as String),
+      periodEnd: json['period_end'] == null
+          ? null
+          : DateTime.parse(json['period_end'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
 
@@ -31,12 +38,17 @@ Map<String, dynamic> _$InvoiceToJson(Invoice instance) => <String, dynamic>{
       'due_date': instance.dueDate.toIso8601String(),
       'status': _$InvoiceStatusEnumMap[instance.status]!,
       'metadata': instance.metadata,
+      'description': instance.description,
+      'period_start': instance.periodStart?.toIso8601String(),
+      'period_end': instance.periodEnd?.toIso8601String(),
       'created_at': instance.createdAt.toIso8601String(),
     };
 
 const _$InvoiceCategoryEnumMap = {
   InvoiceCategory.dues: 'dues',
+  InvoiceCategory.water: 'water',
   InvoiceCategory.amenity: 'amenity',
+  InvoiceCategory.insurance: 'insurance',
   InvoiceCategory.other: 'other',
 };
 

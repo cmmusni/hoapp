@@ -488,6 +488,25 @@ class _InvoiceCard extends StatelessWidget {
     final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final dateFormat = DateFormat('MMM dd, yyyy');
 
+    String categoryLabel;
+    switch (invoice.category) {
+      case InvoiceCategory.dues:
+        categoryLabel = 'MONTHLY DUES';
+        break;
+      case InvoiceCategory.water:
+        categoryLabel = 'WATER BILLING';
+        break;
+      case InvoiceCategory.amenity:
+        categoryLabel = 'AMENITY';
+        break;
+      case InvoiceCategory.insurance:
+        categoryLabel = 'FIRE INSURANCE';
+        break;
+      case InvoiceCategory.other:
+        categoryLabel = 'OTHER';
+        break;
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -504,7 +523,7 @@ class _InvoiceCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          invoice.category.name.toUpperCase(),
+                          categoryLabel,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -532,6 +551,27 @@ class _InvoiceCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (invoice.description != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        invoice.description!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                    if (invoice.periodStart != null &&
+                        invoice.periodEnd != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${dateFormat.format(invoice.periodStart!)} – ${dateFormat.format(invoice.periodEnd!)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Text(
                       currencyFormat.format(invoice.amount),
@@ -592,11 +632,20 @@ class _InvoiceDetailsDialog extends StatefulWidget {
 
 class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
   Future<List<Payment>>? _paymentsFuture;
+  Future<List<InvoiceLineItem>>? _lineItemsFuture;
 
   @override
   void initState() {
     super.initState();
     _loadPayments();
+    _loadLineItems();
+  }
+
+  void _loadLineItems() {
+    final repo = context.read<BillingRepository>();
+    setState(() {
+      _lineItemsFuture = repo.getLineItems(widget.invoice.id);
+    });
   }
 
   void _loadPayments() {
@@ -636,34 +685,204 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _InfoRow(
-                label: 'Category',
-                value: widget.invoice.category.name.toUpperCase(),
-              ),
-              _InfoRow(
-                label: 'Amount',
-                value: currencyFormat.format(widget.invoice.amount),
-              ),
-              _InfoRow(
-                label: 'Due Date',
-                value: dateFormat.format(widget.invoice.dueDate),
-              ),
-              _InfoRow(
-                label: 'Status',
-                value: widget.invoice.status.name.toUpperCase(),
-                valueColor: widget.invoice.status == InvoiceStatus.paid
-                    ? Color.fromRGBO(39, 99, 67, 1)
-                    : Colors.orange,
-              ),
-              if (widget.invoice.notes != null) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'Notes:',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+              // Period info
+              if (widget.invoice.periodStart != null ||
+                  widget.invoice.periodEnd != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      if (widget.invoice.description != null)
+                        Text(
+                          widget.invoice.description!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      if (widget.invoice.periodStart != null &&
+                          widget.invoice.periodEnd != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Period: ${dateFormat.format(widget.invoice.periodStart!)} – ${dateFormat.format(widget.invoice.periodEnd!)}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Text(widget.invoice.notes!),
+                const SizedBox(height: 16),
               ],
+
+              // Summary row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getCategoryLabel(widget.invoice.category),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Due: ${dateFormat.format(widget.invoice.dueDate)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: widget.invoice.isOverdue
+                              ? Colors.red
+                              : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (widget.invoice.status == InvoiceStatus.paid
+                              ? const Color(0xff215e3f)
+                              : widget.invoice.isOverdue
+                                  ? Colors.red
+                                  : Colors.orange)
+                          .withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      widget.invoice.status == InvoiceStatus.paid
+                          ? 'PAID'
+                          : widget.invoice.isOverdue
+                              ? 'OVERDUE'
+                              : 'UNPAID',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: widget.invoice.status == InvoiceStatus.paid
+                            ? const Color(0xff215e3f)
+                            : widget.invoice.isOverdue
+                                ? Colors.red
+                                : Colors.orange,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+
+              // Line items breakdown
+              FutureBuilder<List<InvoiceLineItem>>(
+                future: _lineItemsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Center(
+                          child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 2))),
+                    );
+                  }
+
+                  final items = snapshot.data ?? [];
+
+                  if (items.isEmpty) {
+                    // No line items — just show the total
+                    return _buildTotalRow(currencyFormat);
+                  }
+
+                  return Column(
+                    children: [
+                      ...items.map((item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.label,
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                      if (item.metadata != null &&
+                                          item.metadata!['detail'] != null)
+                                        Text(
+                                          item.metadata!['detail'] as String,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[500],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  currencyFormat.format(item.amount),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                      const Divider(height: 16),
+                      _buildTotalRow(currencyFormat),
+                    ],
+                  );
+                },
+              ),
+
+              if (widget.invoice.notes != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.note_outlined,
+                          size: 16, color: Colors.amber[700]),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.invoice.notes!,
+                          style:
+                              TextStyle(fontSize: 13, color: Colors.amber[900]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 16),
               const Divider(),
               const SizedBox(height: 8),
@@ -742,6 +961,44 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
         onRefresh: widget.onRefresh,
       ),
     );
+  }
+
+  Widget _buildTotalRow(NumberFormat currencyFormat) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          'Total',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          currencyFormat.format(widget.invoice.amount),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xff215e3f),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getCategoryLabel(InvoiceCategory category) {
+    switch (category) {
+      case InvoiceCategory.dues:
+        return 'MONTHLY DUES';
+      case InvoiceCategory.water:
+        return 'WATER BILLING';
+      case InvoiceCategory.amenity:
+        return 'AMENITY';
+      case InvoiceCategory.insurance:
+        return 'FIRE INSURANCE';
+      case InvoiceCategory.other:
+        return 'OTHER';
+    }
   }
 }
 
@@ -1155,11 +1412,17 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
+  final _descriptionController = TextEditingController();
 
   InvoiceCategory _selectedCategory = InvoiceCategory.dues;
   String? _selectedUnitId;
   DateTime _dueDate = DateTime.now().add(const Duration(days: 30));
+  DateTime? _periodStart;
+  DateTime? _periodEnd;
   bool _isCreating = false;
+
+  // Line items
+  final List<_LineItemEntry> _lineItems = [];
 
   Future<List<Unit>>? _unitsFuture;
 
@@ -1182,6 +1445,11 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
   void dispose() {
     _amountController.dispose();
     _notesController.dispose();
+    _descriptionController.dispose();
+    for (final item in _lineItems) {
+      item.labelController.dispose();
+      item.amountController.dispose();
+    }
     super.dispose();
   }
 
@@ -1256,9 +1524,27 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                     border: OutlineInputBorder(),
                   ),
                   items: InvoiceCategory.values.map((category) {
+                    String label;
+                    switch (category) {
+                      case InvoiceCategory.dues:
+                        label = 'Monthly Dues';
+                        break;
+                      case InvoiceCategory.water:
+                        label = 'Water Billing';
+                        break;
+                      case InvoiceCategory.amenity:
+                        label = 'Amenity';
+                        break;
+                      case InvoiceCategory.insurance:
+                        label = 'Fire Insurance';
+                        break;
+                      case InvoiceCategory.other:
+                        label = 'Other';
+                        break;
+                    }
                     return DropdownMenuItem(
                       value: category,
-                      child: Text(category.name.toUpperCase()),
+                      child: Text(label),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -1266,6 +1552,83 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                       setState(() => _selectedCategory = value);
                     }
                   },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (Optional)',
+                    hintText: 'e.g., March 2026 Water Billing',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Period dates
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: _periodStart ??
+                                DateTime.now()
+                                    .subtract(const Duration(days: 30)),
+                            firstDate: DateTime(2020),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (date != null) setState(() => _periodStart = date);
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Period Start',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.calendar_today, size: 18),
+                          ),
+                          child: Text(
+                            _periodStart != null
+                                ? DateFormat('MMM dd, yyyy')
+                                    .format(_periodStart!)
+                                : 'Optional',
+                            style: TextStyle(
+                              color: _periodStart != null ? null : Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: _periodEnd ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (date != null) setState(() => _periodEnd = date);
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Period End',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.calendar_today, size: 18),
+                          ),
+                          child: Text(
+                            _periodEnd != null
+                                ? DateFormat('MMM dd, yyyy').format(_periodEnd!)
+                                : 'Optional',
+                            style: TextStyle(
+                              color: _periodEnd != null ? null : Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -1310,6 +1673,77 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                // Line items section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Line Items',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _addLineItem,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add Item'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_lineItems.isNotEmpty) ...[
+                  for (var i = 0; i < _lineItems.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: TextFormField(
+                              controller: _lineItems[i].labelController,
+                              decoration: InputDecoration(
+                                hintText: 'Item label',
+                                border: const OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: TextFormField(
+                              controller: _lineItems[i].amountController,
+                              decoration: const InputDecoration(
+                                hintText: '0.00',
+                                prefixText: '₱ ',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            onPressed: () => _removeLineItem(i),
+                            icon: const Icon(Icons.close, size: 18),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            color: Colors.red[400],
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                ],
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _notesController,
                   decoration: const InputDecoration(
@@ -1354,7 +1788,22 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
         category: _selectedCategory,
         amount: amount,
         dueDate: _dueDate,
+        description: _descriptionController.text.isNotEmpty
+            ? _descriptionController.text.trim()
+            : null,
+        periodStart: _periodStart,
+        periodEnd: _periodEnd,
         metadata: metadata.isNotEmpty ? metadata : null,
+        lineItems: _lineItems.isNotEmpty
+            ? _lineItems
+                .where((item) => item.labelController.text.isNotEmpty)
+                .map((item) => {
+                      'label': item.labelController.text.trim(),
+                      'amount':
+                          double.tryParse(item.amountController.text) ?? 0,
+                    })
+                .toList()
+            : null,
       );
 
       if (mounted) {
@@ -1372,47 +1821,31 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
       }
     }
   }
+
+  void _addLineItem() {
+    setState(() {
+      _lineItems.add(_LineItemEntry(
+        labelController: TextEditingController(),
+        amountController: TextEditingController(),
+      ));
+    });
+  }
+
+  void _removeLineItem(int index) {
+    setState(() {
+      _lineItems[index].labelController.dispose();
+      _lineItems[index].amountController.dispose();
+      _lineItems.removeAt(index);
+    });
+  }
 }
 
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
+class _LineItemEntry {
+  final TextEditingController labelController;
+  final TextEditingController amountController;
 
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
+  _LineItemEntry({
+    required this.labelController,
+    required this.amountController,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: valueColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

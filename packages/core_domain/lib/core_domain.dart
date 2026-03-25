@@ -11,6 +11,7 @@ export 'src/models/ticket.dart';
 export 'src/models/amenity.dart';
 export 'src/models/amenity_booking.dart';
 export 'src/models/invoice.dart';
+export 'src/models/invoice_line_item.dart';
 export 'src/models/payment.dart';
 export 'src/models/pool_access.dart';
 export 'src/models/household_member.dart';

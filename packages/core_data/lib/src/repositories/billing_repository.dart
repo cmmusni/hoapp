@@ -20,7 +20,7 @@ class BillingRepository {
         .maybeSingle();
 
     if (householdResponse == null) return [];
-    
+
     final unitId = householdResponse['unit_id'] as String;
 
     // Get invoices for that unit
@@ -31,9 +31,7 @@ class BillingRepository {
         .eq('unit_id', unitId)
         .order('due_date', ascending: false);
 
-    return (response as List)
-        .map((item) => Invoice.fromJson(item))
-        .toList();
+    return (response as List).map((item) => Invoice.fromJson(item)).toList();
   }
 
   /// Get invoices for a unit (residents see their unit's invoices)
@@ -44,10 +42,8 @@ class BillingRepository {
     int? limit,
     int? offset,
   }) async {
-    var query = _client
-        .from('invoices')
-        .select()
-        .eq('community_id', communityId);
+    var query =
+        _client.from('invoices').select().eq('community_id', communityId);
 
     // Add search filter if provided (search by category)
     if (searchQuery != null && searchQuery.isNotEmpty) {
@@ -65,9 +61,7 @@ class BillingRepository {
 
     final response = await finalQuery;
 
-    return (response as List)
-        .map((item) => Invoice.fromJson(item))
-        .toList();
+    return (response as List).map((item) => Invoice.fromJson(item)).toList();
   }
 
   /// Get total count of invoices for pagination
@@ -75,10 +69,8 @@ class BillingRepository {
     String communityId, {
     String? searchQuery,
   }) async {
-    var query = _client
-        .from('invoices')
-        .select('id')
-        .eq('community_id', communityId);
+    var query =
+        _client.from('invoices').select('id').eq('community_id', communityId);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       query = query.ilike('category', '%$searchQuery%');
@@ -90,14 +82,24 @@ class BillingRepository {
 
   /// Get single invoice
   Future<Invoice?> getInvoice(String id) async {
-    final response = await _client
-        .from('invoices')
-        .select()
-        .eq('id', id)
-        .maybeSingle();
+    final response =
+        await _client.from('invoices').select().eq('id', id).maybeSingle();
 
     if (response == null) return null;
     return Invoice.fromJson(response);
+  }
+
+  /// Get line items for an invoice
+  Future<List<InvoiceLineItem>> getLineItems(String invoiceId) async {
+    final response = await _client
+        .from('invoice_line_items')
+        .select()
+        .eq('invoice_id', invoiceId)
+        .order('sort_order', ascending: true);
+
+    return (response as List)
+        .map((item) => InvoiceLineItem.fromJson(item))
+        .toList();
   }
 
   /// Create invoice (staff only)
@@ -108,21 +110,53 @@ class BillingRepository {
     required double amount,
     required DateTime dueDate,
     String? sourceId,
+    String? description,
+    DateTime? periodStart,
+    DateTime? periodEnd,
     Map<String, dynamic>? metadata,
+    List<Map<String, dynamic>>? lineItems,
   }) async {
-    final response = await _client.from('invoices').insert({
-      'community_id': communityId,
-      'unit_id': unitId,
-      'category': category.name,
-      'amount': amount,
-      'currency': 'PHP',
-      'due_date': dueDate.toIso8601String(),
-      'status': 'unpaid',
-      if (sourceId != null) 'source_id': sourceId,
-      if (metadata != null) 'metadata': metadata,
-    }).select().single();
+    final response = await _client
+        .from('invoices')
+        .insert({
+          'community_id': communityId,
+          'unit_id': unitId,
+          'category': category.name,
+          'amount': amount,
+          'currency': 'PHP',
+          'due_date': dueDate.toIso8601String(),
+          'status': 'unpaid',
+          if (sourceId != null) 'source_id': sourceId,
+          if (description != null) 'description': description,
+          if (periodStart != null)
+            'period_start': periodStart.toIso8601String().split('T').first,
+          if (periodEnd != null)
+            'period_end': periodEnd.toIso8601String().split('T').first,
+          if (metadata != null) 'metadata': metadata,
+        })
+        .select()
+        .single();
 
-    return response['id'] as String;
+    final invoiceId = response['id'] as String;
+
+    // Insert line items if provided
+    if (lineItems != null && lineItems.isNotEmpty) {
+      final items = lineItems
+          .asMap()
+          .entries
+          .map((e) => {
+                'invoice_id': invoiceId,
+                'label': e.value['label'],
+                'amount': e.value['amount'],
+                'sort_order': e.key,
+                if (e.value['metadata'] != null)
+                  'metadata': e.value['metadata'],
+              })
+          .toList();
+      await _client.from('invoice_line_items').insert(items);
+    }
+
+    return invoiceId;
   }
 
   /// Update invoice status (staff only)
@@ -142,9 +176,7 @@ class BillingRepository {
         .eq('invoice_id', invoiceId)
         .order('posted_at', ascending: false);
 
-    return (response as List)
-        .map((item) => Payment.fromJson(item))
-        .toList();
+    return (response as List).map((item) => Payment.fromJson(item)).toList();
   }
 
   /// Get all payments for a community
@@ -155,14 +187,13 @@ class BillingRepository {
     int? limit,
     int? offset,
   }) async {
-    var query = _client
-        .from('payments')
-        .select()
-        .eq('community_id', communityId);
+    var query =
+        _client.from('payments').select().eq('community_id', communityId);
 
     // Add search filter if provided (search by method or status)
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      query = query.or('method.ilike.%$searchQuery%,status.ilike.%$searchQuery%');
+      query =
+          query.or('method.ilike.%$searchQuery%,status.ilike.%$searchQuery%');
     }
 
     // Build the final query with ordering and pagination
@@ -176,9 +207,7 @@ class BillingRepository {
 
     final response = await finalQuery;
 
-    return (response as List)
-        .map((item) => Payment.fromJson(item))
-        .toList();
+    return (response as List).map((item) => Payment.fromJson(item)).toList();
   }
 
   /// Get total count of payments for pagination
@@ -186,13 +215,12 @@ class BillingRepository {
     String communityId, {
     String? searchQuery,
   }) async {
-    var query = _client
-        .from('payments')
-        .select('id')
-        .eq('community_id', communityId);
+    var query =
+        _client.from('payments').select('id').eq('community_id', communityId);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      query = query.or('method.ilike.%$searchQuery%,status.ilike.%$searchQuery%');
+      query =
+          query.or('method.ilike.%$searchQuery%,status.ilike.%$searchQuery%');
     }
 
     final response = await query;
@@ -209,16 +237,20 @@ class BillingRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not authenticated');
 
-    final response = await _client.from('payments').insert({
-      'community_id': communityId,
-      'invoice_id': invoiceId,
-      'user_id': userId,
-      'method': 'gcash_manual',
-      'amount': amount,
-      'currency': 'PHP',
-      'status': 'submitted',
-      'proof_url': proofUrl,
-    }).select().single();
+    final response = await _client
+        .from('payments')
+        .insert({
+          'community_id': communityId,
+          'invoice_id': invoiceId,
+          'user_id': userId,
+          'method': 'gcash_manual',
+          'amount': amount,
+          'currency': 'PHP',
+          'status': 'submitted',
+          'proof_url': proofUrl,
+        })
+        .select()
+        .single();
 
     return response['id'] as String;
   }

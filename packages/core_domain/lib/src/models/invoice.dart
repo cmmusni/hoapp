@@ -5,8 +5,12 @@ part 'invoice.g.dart';
 enum InvoiceCategory {
   @JsonValue('dues')
   dues,
+  @JsonValue('water')
+  water,
   @JsonValue('amenity')
   amenity,
+  @JsonValue('insurance')
+  insurance,
   @JsonValue('other')
   other,
 }
@@ -25,27 +29,35 @@ enum InvoiceStatus {
 @JsonSerializable()
 class Invoice {
   final String id;
-  
+
   @JsonKey(name: 'community_id')
   final String communityId;
-  
+
   @JsonKey(name: 'unit_id')
   final String unitId;
-  
+
   final InvoiceCategory category;
-  
+
   @JsonKey(name: 'source_id')
   final String? sourceId;
-  
+
   final String currency;
   final double amount;
-  
+
   @JsonKey(name: 'due_date')
   final DateTime dueDate;
-  
+
   final InvoiceStatus status;
   final Map<String, dynamic>? metadata;
-  
+
+  final String? description;
+
+  @JsonKey(name: 'period_start')
+  final DateTime? periodStart;
+
+  @JsonKey(name: 'period_end')
+  final DateTime? periodEnd;
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
@@ -60,6 +72,9 @@ class Invoice {
     required this.dueDate,
     required this.status,
     this.metadata,
+    this.description,
+    this.periodStart,
+    this.periodEnd,
     required this.createdAt,
   });
 
@@ -70,10 +85,10 @@ class Invoice {
 
   bool get isOverdue =>
       status == InvoiceStatus.unpaid && DateTime.now().isAfter(dueDate);
-  
+
   // Additional getters for UI compatibility
-  DateTime? get paidAt => metadata?['paid_at'] != null 
-      ? DateTime.tryParse(metadata!['paid_at'] as String) 
+  DateTime? get paidAt => metadata?['paid_at'] != null
+      ? DateTime.tryParse(metadata!['paid_at'] as String)
       : null;
   String get type => category.name;
   String? get unitNumber => metadata?['unit_number'] as String?;
