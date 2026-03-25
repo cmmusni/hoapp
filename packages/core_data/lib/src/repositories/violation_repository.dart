@@ -5,6 +5,17 @@ import '../supabase_client.dart';
 class ViolationRepository {
   final SupabaseClient _client = SupabaseClientManager.instance;
 
+  static String _statusToDb(ViolationStatus status) {
+    switch (status) {
+      case ViolationStatus.newStatus:
+        return 'new';
+      case ViolationStatus.underReview:
+        return 'under_review';
+      case ViolationStatus.resolved:
+        return 'resolved';
+    }
+  }
+
   /// Get all violations for a community (residents see public view without reporter)
   /// Supports search and pagination
   Future<List<Violation>> getViolations(
@@ -13,10 +24,8 @@ class ViolationRepository {
     int? limit,
     int? offset,
   }) async {
-    var query = _client
-        .from('violations')
-        .select()
-        .eq('community_id', communityId);
+    var query =
+        _client.from('violations').select().eq('community_id', communityId);
 
     // Add search filter if provided
     if (searchQuery != null && searchQuery.isNotEmpty) {
@@ -34,9 +43,7 @@ class ViolationRepository {
 
     final response = await finalQuery;
 
-    return (response as List)
-        .map((item) => Violation.fromJson(item))
-        .toList();
+    return (response as List).map((item) => Violation.fromJson(item)).toList();
   }
 
   /// Get total count of violations for pagination
@@ -44,10 +51,8 @@ class ViolationRepository {
     String communityId, {
     String? searchQuery,
   }) async {
-    var query = _client
-        .from('violations')
-        .select('id')
-        .eq('community_id', communityId);
+    var query =
+        _client.from('violations').select('id').eq('community_id', communityId);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       query = query.or('title.ilike.%$searchQuery%,body.ilike.%$searchQuery%');
@@ -59,11 +64,8 @@ class ViolationRepository {
 
   /// Get single violation (staff can see reporter_user_id)
   Future<Violation?> getViolation(String id) async {
-    final response = await _client
-        .from('violations')
-        .select()
-        .eq('id', id)
-        .maybeSingle();
+    final response =
+        await _client.from('violations').select().eq('id', id).maybeSingle();
 
     if (response == null) return null;
     return Violation.fromJson(response);
@@ -79,14 +81,18 @@ class ViolationRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not authenticated');
 
-    final response = await _client.from('violations').insert({
-      'community_id': communityId,
-      'title': title,
-      'body': body,
-      'reporter_user_id': userId,
-      'attachments': attachmentUrls ?? [],
-      'status': 'new',
-    }).select().single();
+    final response = await _client
+        .from('violations')
+        .insert({
+          'community_id': communityId,
+          'title': title,
+          'body': body,
+          'reporter_user_id': userId,
+          'attachments': attachmentUrls ?? [],
+          'status': 'new',
+        })
+        .select()
+        .single();
 
     return response['id'] as String;
   }
@@ -98,9 +104,9 @@ class ViolationRepository {
     String? staffNotes,
   }) async {
     final updates = <String, dynamic>{};
-    
+
     if (status != null) {
-      updates['status'] = status.name == 'newStatus' ? 'new' : status.name;
+      updates['status'] = _statusToDb(status);
     }
     if (staffNotes != null) {
       updates['staff_notes'] = staffNotes;
@@ -121,8 +127,8 @@ class ViolationRepository {
     String communityId,
     ViolationStatus status,
   ) async {
-    final statusStr = status.name == 'newStatus' ? 'new' : status.name;
-    
+    final statusStr = _statusToDb(status);
+
     final response = await _client
         .from('violations')
         .select()
@@ -130,8 +136,6 @@ class ViolationRepository {
         .eq('status', statusStr)
         .order('created_at', ascending: false);
 
-    return (response as List)
-        .map((item) => Violation.fromJson(item))
-        .toList();
+    return (response as List).map((item) => Violation.fromJson(item)).toList();
   }
 }

@@ -12,10 +12,8 @@ class AnnouncementRepository {
     int? limit,
     int? offset,
   }) async {
-    var query = _client
-        .from('announcements')
-        .select()
-        .eq('community_id', communityId);
+    var query =
+        _client.from('announcements').select().eq('community_id', communityId);
 
     // Apply search filter
     if (searchQuery != null && searchQuery.isNotEmpty) {
@@ -63,18 +61,24 @@ class AnnouncementRepository {
     required String body,
     bool pinned = false,
     DateTime? publishAt,
+    String? imageUrl,
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not authenticated');
 
-    await _client.from('announcements').insert({
+    final data = <String, dynamic>{
       'community_id': communityId,
       'title': title,
       'body': body,
       'pinned': pinned,
       'publish_at': (publishAt ?? DateTime.now().toUtc()).toIso8601String(),
       'created_by': userId,
-    });
+    };
+    if (imageUrl != null) {
+      data['image_url'] = imageUrl;
+    }
+
+    await _client.from('announcements').insert(data);
   }
 
   Future<void> updateAnnouncement(

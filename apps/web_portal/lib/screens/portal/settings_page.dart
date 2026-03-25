@@ -121,6 +121,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 const SizedBox(height: 24),
 
+                // Unit Types
+                if (isAdmin) ...[
+                  _UnitTypesSection(
+                    communityId: community.id,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
                 // Account settings
                 Text(
                   'Account',
@@ -595,6 +603,349 @@ class _BrandingDialogState extends State<_BrandingDialog> {
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+// ============ UNIT TYPES SECTION ============
+
+class _UnitTypesSection extends StatefulWidget {
+  final String communityId;
+
+  const _UnitTypesSection({required this.communityId});
+
+  @override
+  State<_UnitTypesSection> createState() => _UnitTypesSectionState();
+}
+
+class _UnitTypesSectionState extends State<_UnitTypesSection> {
+  Future<List<UnitType>>? _unitTypesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _load() {
+    final repo = context.read<HouseholdRepository>();
+    setState(() {
+      _unitTypesFuture = repo.getUnitTypes(widget.communityId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Unit Types',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => _showAddDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Define unit types that can be assigned when creating units (e.g. Studio, 1BR, 2BR).',
+          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        FutureBuilder<List<UnitType>>(
+          future: _unitTypesFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            }
+
+            final types = snapshot.data ?? [];
+
+            if (types.isEmpty) {
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.category_outlined,
+                            size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 12),
+                        const Text('No unit types defined yet'),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add types like "Studio", "1BR", "2BR", "Penthouse"',
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return Card(
+              child: Column(
+                children: [
+                  for (int i = 0; i < types.length; i++) ...[
+                    ListTile(
+                      leading: const Icon(Icons.category_outlined),
+                      title: Text(types[i].name),
+                      subtitle: types[i].description != null
+                          ? Text(types[i].description!)
+                          : null,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            onPressed: () => _showEditDialog(context, types[i]),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline,
+                                size: 20, color: Colors.red),
+                            onPressed: () => _confirmDelete(context, types[i]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (i < types.length - 1) const Divider(height: 1),
+                  ],
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  void _showAddDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _UnitTypeDialog(
+        communityId: widget.communityId,
+        onSaved: _load,
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, UnitType unitType) {
+    showDialog(
+      context: context,
+      builder: (context) => _UnitTypeDialog(
+        communityId: widget.communityId,
+        unitType: unitType,
+        onSaved: _load,
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, UnitType unitType) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline, color: Colors.red, size: 24),
+            const SizedBox(width: 12),
+            const Text('Delete Unit Type',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(false),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+        content: Text(
+            'Delete "${unitType.name}"? Units using this type will keep their current value.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repo = context.read<HouseholdRepository>();
+      await repo.deleteUnitType(unitType.id);
+      _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unit type deleted')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+}
+
+class _UnitTypeDialog extends StatefulWidget {
+  final String communityId;
+  final UnitType? unitType;
+  final VoidCallback onSaved;
+
+  const _UnitTypeDialog({
+    required this.communityId,
+    this.unitType,
+    required this.onSaved,
+  });
+
+  @override
+  State<_UnitTypeDialog> createState() => _UnitTypeDialogState();
+}
+
+class _UnitTypeDialogState extends State<_UnitTypeDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _descController;
+  bool _isSaving = false;
+
+  bool get _isEditing => widget.unitType != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.unitType?.name ?? '');
+    _descController =
+        TextEditingController(text: widget.unitType?.description ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Icon(
+            _isEditing ? Icons.edit_outlined : Icons.add_circle_outline,
+            color: const Color(0xFF2E7D32),
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            _isEditing ? 'Edit Unit Type' : 'Add Unit Type',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                hintText: 'e.g., Studio, 1BR, 2BR',
+                border: OutlineInputBorder(),
+              ),
+              validator: (v) => (v?.trim().isEmpty ?? true) ? 'Required' : null,
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _descController,
+              decoration: const InputDecoration(
+                labelText: 'Description (Optional)',
+                hintText: 'e.g., One bedroom unit with balcony',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        HOAppButton(
+          label: _isSaving ? 'Saving...' : (_isEditing ? 'Update' : 'Add'),
+          onPressed: _isSaving ? null : _handleSave,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final repo = context.read<HouseholdRepository>();
+      final name = _nameController.text.trim();
+      final desc = _descController.text.trim().isNotEmpty
+          ? _descController.text.trim()
+          : null;
+
+      if (_isEditing) {
+        await repo.updateUnitType(
+          id: widget.unitType!.id,
+          name: name,
+          description: desc,
+        );
+      } else {
+        await repo.createUnitType(
+          communityId: widget.communityId,
+          name: name,
+          description: desc,
+        );
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Unit type ${_isEditing ? 'updated' : 'added'}')),
+        );
+        widget.onSaved();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
       }
     }
   }

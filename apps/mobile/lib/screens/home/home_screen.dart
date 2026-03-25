@@ -98,12 +98,16 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
 
   Future<void> _loadAnnouncements() async {
     final appState = context.read<AppState>();
-    if (appState.activeCommunityId == null) return;
+    if (appState.activeCommunityId == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
 
     try {
       final repo = context.read<AnnouncementRepository>();
-      final announcements = await repo.getAnnouncements(appState.activeCommunityId!);
-      
+      final announcements =
+          await repo.getAnnouncements(appState.activeCommunityId!);
+
       if (mounted) {
         setState(() {
           _announcements = announcements;
@@ -114,7 +118,8 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load announcements: ${e.toString()}')),
+          SnackBar(
+              content: Text('Failed to load announcements: ${e.toString()}')),
         );
       }
     }
@@ -132,7 +137,7 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
           setState(() {
             _announcements.insert(0, newAnnouncement);
           });
-          
+
           // Show a subtle notification
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -174,12 +179,10 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
           final announcement = _announcements[index];
           return _AnnouncementCard(
             announcement: announcement,
-                onTap: () => _showAnnouncementDetails(announcement),
-              );
-            },
-          ),
-        );
-      },
+            onTap: () => _showAnnouncementDetails(announcement),
+          );
+        },
+      ),
     );
   }
 
@@ -206,9 +209,10 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
                 controller: scrollController,
                 padding: const EdgeInsets.all(24),
                 children: [
-                  if (announcement.isPinned)
+                  if (announcement.pinned)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.orange,
                         borderRadius: BorderRadius.circular(4),
@@ -239,7 +243,8 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _formatDate(announcement.publishAt ?? announcement.createdAt),
+                    _formatDate(
+                        announcement.publishAt ?? announcement.createdAt),
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 24),
@@ -265,7 +270,7 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
     if (diff.inHours < 1) return '${diff.inMinutes}m ago';
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
-    
+
     return '${localDate.month}/${localDate.day}/${localDate.year}';
   }
 }
@@ -291,7 +296,7 @@ class _AnnouncementCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (announcement.isPinned)
+              if (announcement.pinned)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Icon(
@@ -337,7 +342,7 @@ class _AnnouncementCard extends StatelessWidget {
     if (diff.inHours < 1) return '${diff.inMinutes}m ago';
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
-    
+
     return '${localDate.month}/${localDate.day}/${localDate.year}';
   }
 }
@@ -403,7 +408,8 @@ class _ViolationsTabState extends State<_ViolationsTab> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.check_circle_outline, size: 64, color: Color.fromRGBO(39, 99, 67, 1)),
+                  const Icon(Icons.check_circle_outline,
+                      size: 64, color: Color.fromRGBO(39, 99, 67, 1)),
                   const SizedBox(height: 16),
                   const Text('No active violations'),
                   const SizedBox(height: 24),
@@ -443,9 +449,11 @@ class _ViolationsTabState extends State<_ViolationsTab> {
                     trailing: Chip(
                       label: Text(
                         _getStatusLabel(violation.status),
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.bold),
                       ),
-                      backgroundColor: _getStatusColor(violation.status).withOpacity(0.2),
+                      backgroundColor:
+                          _getStatusColor(violation.status).withOpacity(0.2),
                     ),
                   ),
                 );
@@ -465,7 +473,8 @@ class _ViolationsTabState extends State<_ViolationsTab> {
   void _showReportDialog() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => _ReportViolationScreen(onReported: _loadViolations),
+        builder: (context) =>
+            _ReportViolationScreen(onReported: _loadViolations),
         fullscreenDialog: true,
       ),
     );
@@ -711,7 +720,8 @@ class _TicketsTabState extends State<_TicketsTab> {
                   ElevatedButton.icon(
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Create ticket feature coming soon')),
+                        const SnackBar(
+                            content: Text('Create ticket feature coming soon')),
                       );
                     },
                     icon: const Icon(Icons.add),
@@ -735,7 +745,8 @@ class _TicketsTabState extends State<_TicketsTab> {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => TicketChatScreen(ticket: ticket),
+                          builder: (context) =>
+                              TicketChatScreen(ticket: ticket),
                         ),
                       );
                     },
@@ -747,7 +758,7 @@ class _TicketsTabState extends State<_TicketsTab> {
                         size: 20,
                       ),
                     ),
-                    title: Text(ticket.subject),
+                    title: Text('${ticket.type.name.toUpperCase()} Ticket'),
                     subtitle: Text(
                       _formatDate(ticket.createdAt),
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
@@ -755,9 +766,11 @@ class _TicketsTabState extends State<_TicketsTab> {
                     trailing: Chip(
                       label: Text(
                         _getStatusLabel(ticket.status),
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.bold),
                       ),
-                      backgroundColor: _getStatusColor(ticket.status).withOpacity(0.2),
+                      backgroundColor:
+                          _getStatusColor(ticket.status).withOpacity(0.2),
                     ),
                   ),
                 );
@@ -904,7 +917,8 @@ class _AmenitiesTabState extends State<_AmenitiesTab> {
                       ? ElevatedButton(
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Booking feature coming soon')),
+                              const SnackBar(
+                                  content: Text('Booking feature coming soon')),
                             );
                           },
                           child: const Text('Book'),

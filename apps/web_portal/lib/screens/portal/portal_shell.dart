@@ -19,6 +19,8 @@ class PortalShell extends StatefulWidget {
 }
 
 class _PortalShellState extends State<PortalShell> {
+  bool _isCommunityLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -30,19 +32,20 @@ class _PortalShellState extends State<PortalShell> {
       final communityRepo = context.read<CommunityRepository>();
       final authRepo = context.read<AuthRepository>();
       final appState = context.read<AppState>();
-      
-      final community = await communityRepo.getCommunityBySlug(widget.communitySlug);
-      
+
+      final community =
+          await communityRepo.getCommunityBySlug(widget.communitySlug);
+
       if (community != null) {
         appState.setActiveCommunity(community.id, community.slug);
         appState.setActiveCommunityData(community);
-        
+
         print('DEBUG: Community loaded: ${community.name} (${community.id})');
-        
+
         // Load user roles
         final user = authRepo.currentUser;
         print('DEBUG: Current user: ${user?.id}');
-        
+
         if (user != null) {
           final userId = user.id;
           if (userId != null && userId.isNotEmpty) {
@@ -50,7 +53,8 @@ class _PortalShellState extends State<PortalShell> {
               final roles = await communityRepo.getUserRoles(userId);
               print('DEBUG: User roles loaded: ${roles.length} roles');
               for (var role in roles) {
-                print('DEBUG: Role - ID: ${role.id}, Community: ${role.communityId}, Role: ${role.role}');
+                print(
+                    'DEBUG: Role - ID: ${role.id}, Community: ${role.communityId}, Role: ${role.role}');
               }
               appState.setUserRoles(roles);
               print('DEBUG: Roles set in AppState');
@@ -68,6 +72,10 @@ class _PortalShellState extends State<PortalShell> {
       }
     } catch (e) {
       print('Error loading community: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isCommunityLoaded = true);
+      }
     }
   }
 
@@ -78,11 +86,12 @@ class _PortalShellState extends State<PortalShell> {
     final user = authRepo.currentUser;
     final isStaff = appState.isStaff;
     final isAdmin = appState.isAdmin;
-    
+
     // Get the current route to determine page title
-    final currentPath = GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+    final currentPath =
+        GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
     String pageTitle = appState.activeCommunity?.name ?? widget.communitySlug;
-    
+
     if (currentPath.contains('/announcements')) {
       pageTitle = 'Announcements';
     } else if (currentPath.contains('/violations')) {
@@ -158,12 +167,19 @@ class _PortalShellState extends State<PortalShell> {
                       children: [
                         if (appState.activeRole != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(0.3),
                                 width: 1,
                               ),
                             ),
@@ -190,31 +206,41 @@ class _PortalShellState extends State<PortalShell> {
                 ),
               ),
             const Divider(height: 1),
-            _buildMenuItem(context, 'Announcements', Icons.announcement, '/${widget.communitySlug}/announcements'),
-            _buildMenuItem(context, 'Violations', Icons.report, '/${widget.communitySlug}/violations'),
-            _buildMenuItem(context, 'Tickets', Icons.support, '/${widget.communitySlug}/tickets'),
-            _buildMenuItem(context, 'Amenities', Icons.pool, '/${widget.communitySlug}/amenities'),
-            _buildMenuItem(context, 'Billing & Payments', Icons.payment, '/${widget.communitySlug}/billing'),
-            _buildMenuItem(context, 'Pool Access', Icons.accessibility, '/${widget.communitySlug}/pool-access'),
-            
+            _buildMenuItem(context, 'Announcements', Icons.announcement,
+                '/${widget.communitySlug}/announcements'),
+            _buildMenuItem(context, 'Violations', Icons.report,
+                '/${widget.communitySlug}/violations'),
+            _buildMenuItem(context, 'Tickets', Icons.support,
+                '/${widget.communitySlug}/tickets'),
+            _buildMenuItem(context, 'Amenities', Icons.pool,
+                '/${widget.communitySlug}/amenities'),
+            _buildMenuItem(context, 'Billing & Payments', Icons.payment,
+                '/${widget.communitySlug}/billing'),
+            _buildMenuItem(context, 'Pool Access', Icons.accessibility,
+                '/${widget.communitySlug}/pool-access'),
             if (isStaff) ...[
               const Divider(),
-              _buildMenuItem(context, 'Households', Icons.family_restroom, '/${widget.communitySlug}/households'),
-              _buildMenuItem(context, 'Manage Users', Icons.people, '/${widget.communitySlug}/manage-users'),
+              _buildMenuItem(context, 'Households', Icons.family_restroom,
+                  '/${widget.communitySlug}/households'),
+              _buildMenuItem(context, 'Manage Users', Icons.people,
+                  '/${widget.communitySlug}/manage-users'),
             ],
-            
             if (isAdmin) ...[
               const Divider(),
-              _buildMenuItem(context, 'Settings', Icons.settings, '/${widget.communitySlug}/settings'),
+              _buildMenuItem(context, 'Settings', Icons.settings,
+                  '/${widget.communitySlug}/settings'),
             ],
           ],
         ),
       ),
-      body: widget.child,
+      body: _isCommunityLoaded
+          ? widget.child
+          : const Center(child: CircularProgressIndicator()),
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, String title, IconData icon, String route) {
+  Widget _buildMenuItem(
+      BuildContext context, String title, IconData icon, String route) {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),

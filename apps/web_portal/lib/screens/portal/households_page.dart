@@ -435,8 +435,9 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text('Delete Unit'),
               onTap: () {
+                final parentContext = this.context;
                 Navigator.of(context).pop();
-                _deleteUnit(context);
+                _deleteUnit(parentContext);
               },
             ),
           ],
@@ -996,13 +997,32 @@ class _CreateUnitDialog extends StatefulWidget {
 class _CreateUnitDialogState extends State<_CreateUnitDialog> {
   final _formKey = GlobalKey<FormState>();
   final _unitNoController = TextEditingController();
-  final _unitTypeController = TextEditingController();
+  final _customTypeController = TextEditingController();
   bool _isCreating = false;
+  List<UnitType> _unitTypes = [];
+  String? _selectedUnitType;
+  static const _otherValue = '__other__';
+  bool get _isOtherSelected => _selectedUnitType == _otherValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnitTypes();
+  }
+
+  Future<void> _loadUnitTypes() async {
+    final appState = context.read<AppState>();
+    final repo = context.read<HouseholdRepository>();
+    if (appState.activeCommunityId != null) {
+      final types = await repo.getUnitTypes(appState.activeCommunityId!);
+      if (mounted) setState(() => _unitTypes = types);
+    }
+  }
 
   @override
   void dispose() {
     _unitNoController.dispose();
-    _unitTypeController.dispose();
+    _customTypeController.dispose();
     super.dispose();
   }
 
@@ -1054,14 +1074,50 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
               autovalidateMode: AutovalidateMode.onUserInteraction,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _unitTypeController,
+            DropdownButtonFormField<String>(
+              value: _selectedUnitType,
               decoration: const InputDecoration(
                 labelText: 'Unit Type (Optional)',
-                hintText: 'e.g., 2BR, Studio',
                 border: OutlineInputBorder(),
               ),
+              items: [
+                const DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('None', style: TextStyle(color: Colors.grey)),
+                ),
+                ..._unitTypes.map((t) => DropdownMenuItem(
+                      value: t.name,
+                      child: Text(t.name),
+                    )),
+                const DropdownMenuItem<String>(
+                  value: '__other__',
+                  child: Text('Other...',
+                      style: TextStyle(fontStyle: FontStyle.italic)),
+                ),
+              ],
+              onChanged: (value) => setState(() {
+                _selectedUnitType = value;
+                if (value != _otherValue) _customTypeController.clear();
+              }),
             ),
+            if (_isOtherSelected) ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _customTypeController,
+                decoration: const InputDecoration(
+                  labelText: 'Custom Unit Type',
+                  hintText: 'e.g., Penthouse, Loft',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+                validator: (value) {
+                  if (_isOtherSelected && (value?.trim().isEmpty ?? true)) {
+                    return 'Please enter a unit type';
+                  }
+                  return null;
+                },
+              ),
+            ],
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -1102,13 +1158,24 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
     try {
       final appState = context.read<AppState>();
       final repo = context.read<HouseholdRepository>();
+      final communityId = appState.activeCommunityId!;
+
+      String? unitType = _selectedUnitType;
+
+      // If "Other" was selected, create the new unit type first
+      if (_isOtherSelected) {
+        final customName = _customTypeController.text.trim();
+        await repo.createUnitType(
+          communityId: communityId,
+          name: customName,
+        );
+        unitType = customName;
+      }
 
       await repo.createUnit(
-        communityId: appState.activeCommunityId!,
+        communityId: communityId,
         unitNo: _unitNoController.text,
-        unitType: _unitTypeController.text.isNotEmpty
-            ? _unitTypeController.text
-            : null,
+        unitType: unitType,
       );
 
       if (mounted) {

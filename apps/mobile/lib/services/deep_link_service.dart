@@ -10,7 +10,7 @@ class DeepLinkService {
 
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
-  
+
   // Callback to handle the invite token
   void Function(String token)? onInviteReceived;
 
@@ -18,7 +18,7 @@ class DeepLinkService {
   Future<void> initialize() async {
     // Handle initial link when app is cold-started
     try {
-      final initialUri = await _appLinks.getInitialAppLink();
+      final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
         _handleDeepLink(initialUri);
       }
@@ -37,11 +37,12 @@ class DeepLinkService {
   /// Parse and handle deep link
   void _handleDeepLink(Uri uri) {
     debugPrint('Deep link received: $uri');
-    
+
     // Format: hoapp://invite?token=abc123
     // or hoapp://login?invite=abc123
     if (uri.host == 'invite' || uri.path == '/invite') {
-      final token = uri.queryParameters['token'] ?? uri.queryParameters['invite'];
+      final token =
+          uri.queryParameters['token'] ?? uri.queryParameters['invite'];
       if (token != null && token.isNotEmpty) {
         onInviteReceived?.call(token);
       }

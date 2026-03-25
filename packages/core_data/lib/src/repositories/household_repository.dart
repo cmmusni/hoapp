@@ -168,4 +168,55 @@ class HouseholdRepository {
   Future<void> deleteUnit(String id) async {
     await _client.from('units').delete().eq('id', id);
   }
+
+  // ============ UNIT TYPES ============
+
+  /// Get all unit types for a community
+  Future<List<UnitType>> getUnitTypes(String communityId) async {
+    final response = await _client
+        .from('unit_types')
+        .select()
+        .eq('community_id', communityId)
+        .order('name');
+
+    return (response as List).map((item) => UnitType.fromJson(item)).toList();
+  }
+
+  /// Create a unit type
+  Future<String> createUnitType({
+    required String communityId,
+    required String name,
+    String? description,
+  }) async {
+    final response = await _client
+        .from('unit_types')
+        .insert({
+          'community_id': communityId,
+          'name': name,
+          if (description != null) 'description': description,
+        })
+        .select()
+        .single();
+
+    return response['id'] as String;
+  }
+
+  /// Update a unit type
+  Future<void> updateUnitType({
+    required String id,
+    String? name,
+    String? description,
+  }) async {
+    final updates = <String, dynamic>{};
+    if (name != null) updates['name'] = name;
+    if (description != null) updates['description'] = description;
+    if (updates.isEmpty) return;
+
+    await _client.from('unit_types').update(updates).eq('id', id);
+  }
+
+  /// Delete a unit type
+  Future<void> deleteUnitType(String id) async {
+    await _client.from('unit_types').delete().eq('id', id);
+  }
 }

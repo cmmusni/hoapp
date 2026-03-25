@@ -97,6 +97,10 @@ class _HOAppMobileState extends State<HOAppMobile> {
           return MaterialPageRoute(
             builder: (context) => const HomeScreen(),
           );
+        } else if (settings.name == '/splash') {
+          return MaterialPageRoute(
+            builder: (context) => const SplashScreen(),
+          );
         }
         return null;
       },

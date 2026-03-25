@@ -274,7 +274,7 @@ class _PoolAccessRegistrationFormState
   final _emergencyNameController = TextEditingController();
   final _emergencyPhoneController = TextEditingController();
 
-  OccupantType _occupantType = OccupantType.owner;
+  OccupantType _occupantType = OccupantType.resident;
   DateTime? _birthdate;
   String? _idDocUrl;
   bool _acknowledgeRules = false;
@@ -546,10 +546,9 @@ class _PoolAccessRegistrationFormState
             ),
             const SizedBox(height: 8),
             ImageUploadWidget(
-              maxImages: 1,
-              bucketName: 'pool-access-docs',
-              onImagesChanged: (urls) {
-                setState(() => _idDocUrl = urls.isNotEmpty ? urls.first : null);
+              bucket: 'pool-access-docs',
+              onUploadComplete: (url) {
+                setState(() => _idDocUrl = url.isNotEmpty ? url : null);
               },
             ),
             const SizedBox(height: 24),

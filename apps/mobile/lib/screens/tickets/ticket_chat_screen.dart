@@ -125,7 +125,7 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.ticket.subject),
+            Text(widget.ticket.type.name.toUpperCase()),
             Text(
               _getStatusLabel(widget.ticket.status),
               style: const TextStyle(fontSize: 12),
@@ -310,10 +310,6 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
     switch (status) {
       case TicketStatus.open:
         return 'Open';
-      case TicketStatus.inProgress:
-        return 'In Progress';
-      case TicketStatus.resolved:
-        return 'Resolved';
       case TicketStatus.closed:
         return 'Closed';
     }
@@ -323,10 +319,6 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
     switch (status) {
       case TicketStatus.open:
         return Icons.help_outline;
-      case TicketStatus.inProgress:
-        return Icons.pending;
-      case TicketStatus.resolved:
-        return Icons.check_circle;
       case TicketStatus.closed:
         return Icons.cancel;
     }
@@ -336,10 +328,6 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
     switch (status) {
       case TicketStatus.open:
         return Colors.orange;
-      case TicketStatus.inProgress:
-        return Colors.blue;
-      case TicketStatus.resolved:
-        return Color.fromRGBO(39, 99, 67, 1);
       case TicketStatus.closed:
         return Colors.grey;
     }

@@ -80,10 +80,8 @@ class _BillingScreenState extends State<BillingScreen> {
 
           // Calculate summary
           final totalDue = invoices
-              .where((i) =>
-                  i.status == InvoiceStatus.unpaid ||
-                  i.status == InvoiceStatus.partiallyPaid)
-              .fold(0.0, (sum, i) => sum + (i.totalAmount - i.paidAmount));
+              .where((i) => i.status == InvoiceStatus.unpaid)
+              .fold(0.0, (sum, i) => sum + i.amount);
 
           return Column(
             children: [
@@ -144,7 +142,6 @@ class _BillingScreenState extends State<BillingScreen> {
   }
 
   Widget _buildInvoiceCard(Invoice invoice) {
-    final balance = invoice.totalAmount - invoice.paidAmount;
     final isPaid = invoice.status == InvoiceStatus.paid;
 
     return Card(
@@ -161,7 +158,7 @@ class _BillingScreenState extends State<BillingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    invoice.invoiceNumber,
+                    invoice.category.name.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -200,12 +197,12 @@ class _BillingScreenState extends State<BillingScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        isPaid ? 'Paid' : 'Balance',
+                        isPaid ? 'Paid' : 'Amount',
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '₱${isPaid ? invoice.totalAmount.toStringAsFixed(2) : balance.toStringAsFixed(2)}',
+                        '₱${invoice.amount.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -218,7 +215,7 @@ class _BillingScreenState extends State<BillingScreen> {
                   ),
                 ],
               ),
-              if (!isPaid && balance > 0) ...[
+              if (!isPaid) ...[
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -259,7 +256,7 @@ class _BillingScreenState extends State<BillingScreen> {
                 ),
               ),
               Text(
-                invoice.invoiceNumber,
+                invoice.category.name.toUpperCase(),
                 style:
                     const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
@@ -269,15 +266,9 @@ class _BillingScreenState extends State<BillingScreen> {
                 style: TextStyle(color: Colors.grey[600]),
               ),
               const SizedBox(height: 24),
-              _buildInfoRow(
-                  'Total Amount', '₱${invoice.totalAmount.toStringAsFixed(2)}'),
+              _buildInfoRow('Amount', '₱${invoice.amount.toStringAsFixed(2)}'),
               const SizedBox(height: 8),
-              _buildInfoRow(
-                  'Paid Amount', '₱${invoice.paidAmount.toStringAsFixed(2)}'),
-              const Divider(height: 32),
-              _buildInfoRow('Balance',
-                  '₱${(invoice.totalAmount - invoice.paidAmount).toStringAsFixed(2)}',
-                  isBold: true),
+              _buildInfoRow('Status', _getStatusLabel(invoice.status)),
             ],
           ),
         ),
@@ -325,35 +316,27 @@ class _BillingScreenState extends State<BillingScreen> {
 
   String _getStatusLabel(InvoiceStatus status) {
     switch (status) {
-      case InvoiceStatus.draft:
-        return 'DRAFT';
       case InvoiceStatus.unpaid:
         return 'UNPAID';
-      case InvoiceStatus.partiallyPaid:
-        return 'PARTIAL';
       case InvoiceStatus.paid:
         return 'PAID';
-      case InvoiceStatus.overdue:
-        return 'OVERDUE';
-      case InvoiceStatus.cancelled:
-        return 'CANCELLED';
+      case InvoiceStatus.void_:
+        return 'VOID';
+      case InvoiceStatus.refunded:
+        return 'REFUNDED';
     }
   }
 
   Color _getStatusColor(InvoiceStatus status) {
     switch (status) {
-      case InvoiceStatus.draft:
-        return Colors.grey;
       case InvoiceStatus.unpaid:
         return Colors.orange;
-      case InvoiceStatus.partiallyPaid:
-        return Colors.blue;
       case InvoiceStatus.paid:
         return Color.fromRGBO(39, 99, 67, 1);
-      case InvoiceStatus.overdue:
-        return Colors.red;
-      case InvoiceStatus.cancelled:
+      case InvoiceStatus.void_:
         return Colors.grey;
+      case InvoiceStatus.refunded:
+        return Colors.blue;
     }
   }
 }
@@ -382,10 +365,8 @@ class _PaymentProofUploadDialogState extends State<PaymentProofUploadDialog> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill with remaining amount
-    _amountController.text =
-        (widget.invoice.totalAmount - widget.invoice.paidAmount)
-            .toStringAsFixed(2);
+    // Pre-fill with invoice amount
+    _amountController.text = widget.invoice.amount.toStringAsFixed(2);
   }
 
   @override
@@ -464,41 +445,15 @@ class _PaymentProofUploadDialogState extends State<PaymentProofUploadDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Invoice: ${widget.invoice.invoiceNumber}',
+                      'Invoice: ${widget.invoice.category.name.toUpperCase()}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total Amount:'),
-                        Text(
-                            '₱${widget.invoice.totalAmount.toStringAsFixed(2)}'),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Paid:'),
-                        Text(
-                            '₱${widget.invoice.paidAmount.toStringAsFixed(2)}'),
-                      ],
-                    ),
-                    const Divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Remaining:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          '₱${(widget.invoice.totalAmount - widget.invoice.paidAmount).toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
+                        const Text('Amount:'),
+                        Text('₱${widget.invoice.amount.toStringAsFixed(2)}'),
                       ],
                     ),
                   ],
@@ -550,10 +505,9 @@ class _PaymentProofUploadDialogState extends State<PaymentProofUploadDialog> {
             ),
             const SizedBox(height: 8),
             ImageUploadWidget(
-              maxImages: 1,
-              bucketName: 'payment-proofs',
-              onImagesChanged: (urls) {
-                setState(() => _proofUrl = urls.isNotEmpty ? urls.first : null);
+              bucket: 'payment-proofs',
+              onUploadComplete: (url) {
+                setState(() => _proofUrl = url.isNotEmpty ? url : null);
               },
             ),
           ],

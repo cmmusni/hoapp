@@ -5,20 +5,23 @@ part 'announcement.g.dart';
 @JsonSerializable()
 class Announcement {
   final String id;
-  
+
   @JsonKey(name: 'community_id')
   final String communityId;
-  
+
   final String title;
   final String body;
   final bool pinned;
-  
+
   @JsonKey(name: 'publish_at')
   final DateTime publishAt;
-  
+
   @JsonKey(name: 'created_by')
   final String createdBy;
-  
+
+  @JsonKey(name: 'image_url')
+  final String? imageUrl;
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
@@ -30,6 +33,7 @@ class Announcement {
     required this.pinned,
     required this.publishAt,
     required this.createdBy,
+    this.imageUrl,
     required this.createdAt,
   });
 

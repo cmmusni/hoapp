@@ -2,7 +2,7 @@ library core_data;
 
 // Re-export Supabase auth types needed by consumers
 export 'package:supabase_flutter/supabase_flutter.dart'
-    show AuthState, AuthChangeEvent;
+    show AuthState, AuthChangeEvent, RealtimeChannel;
 
 // Core infrastructure
 export 'src/supabase_client.dart';

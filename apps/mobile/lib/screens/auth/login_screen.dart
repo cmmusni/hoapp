@@ -21,6 +21,51 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  String _friendlyLoginError(Object error) {
+    final raw = error.toString().toLowerCase();
+
+    if (raw.contains('invalid login credentials')) {
+      return 'Incorrect email or password. Please try again.';
+    }
+
+    if (raw.contains('email not confirmed') ||
+        raw.contains('email not verified') ||
+        raw.contains('not confirmed')) {
+      return 'Please verify your email first. Check your inbox for the confirmation link.';
+    }
+
+    if (raw.contains('too many requests') || raw.contains('rate limit')) {
+      return 'Too many attempts. Please wait a moment before trying again.';
+    }
+
+    if (raw.contains('unauthorized') ||
+        raw.contains('invalid jwt') ||
+        raw.contains('missing authorization header')) {
+      return 'Your session could not be verified. Please try logging in again.';
+    }
+
+    if (raw.contains('network') ||
+        raw.contains('socketexception') ||
+        raw.contains('failed host lookup') ||
+        raw.contains('connection')) {
+      return 'Unable to connect right now. Please check your internet and try again.';
+    }
+
+    return 'Login failed. Please try again.';
+  }
+
+  String _friendlyPostLoginError(Object error) {
+    final raw = error.toString().toLowerCase();
+
+    if (raw.contains('unauthorized') ||
+        raw.contains('invalid jwt') ||
+        raw.contains('missing authorization header')) {
+      return 'You are signed in, but we could not finish invitation setup. Please try again later.';
+    }
+
+    return 'You are signed in, but some setup steps did not complete. You can continue and try again later.';
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -30,15 +75,31 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return;
 
     setState(() => _isLoading = true);
 
     try {
       final authRepo = context.read<AuthRepository>();
-      await authRepo.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      try {
+        await authRepo.signIn(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      } catch (e) {
+        if (mounted) {
+          final message = _friendlyLoginError(e);
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
 
       // Handle invite acceptance if token provided
       if (widget.inviteToken != null && mounted) {
@@ -51,15 +112,20 @@ class _LoginScreenState extends State<LoginScreen> {
               const SnackBar(
                 content: Text('Invite accepted successfully!'),
                 backgroundColor: Color.fromRGBO(39, 99, 67, 1),
+                behavior: SnackBarBehavior.floating,
               ),
             );
           }
         } catch (e) {
           if (mounted) {
+            final message = _friendlyPostLoginError(e);
+            ScaffoldMessenger.of(context).clearSnackBars();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Invite acceptance failed: ${e.toString()}'),
+                content: Text(message),
                 backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 5),
               ),
             );
           }
@@ -67,12 +133,18 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        Navigator.of(context).pushReplacementNamed('/splash');
       }
     } catch (e) {
+      debugPrint('Unexpected login flow error: $e');
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${e.toString()}')),
+          const SnackBar(
+            content: Text('Something went wrong. Please try again.'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          ),
         );
       }
     } finally {
@@ -99,43 +171,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     'assets/images/hoapp-logo.png',
                     height: 120,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   Text(
-                    'HOApp',
-                    style: Theme.of(context).textTheme.headlineLarge,
+                    'Login',
+                    style: Theme.of(context).textTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'HOA & Condo Management',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  if (widget.inviteToken != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade300),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.mail_outline, color: Colors.blue.shade700),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'You have an invitation! Log in to accept it.',
-                              style: TextStyle(
-                                color: Colors.blue.shade900,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: _emailController,
@@ -165,11 +206,40 @@ class _LoginScreenState extends State<LoginScreen> {
                       }
                       return null;
                     },
+                    onFieldSubmitted: (_) => _handleLogin(),
                   ),
-                  const SizedBox(height: 30),
+                  if (widget.inviteToken != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.mail,
+                              color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'You\'ve been invited! Sign in to accept.',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
                   HOAppButton(
                     label: 'Login',
-                    onPressed: _handleLogin,
+                    onPressed: _isLoading ? null : _handleLogin,
                     isLoading: _isLoading,
                   ),
                 ],

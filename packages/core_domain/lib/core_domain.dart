@@ -4,6 +4,7 @@ export 'src/models/community.dart';
 export 'src/models/user_profile.dart';
 export 'src/models/user_role.dart';
 export 'src/models/unit.dart';
+export 'src/models/unit_type.dart';
 export 'src/models/announcement.dart';
 export 'src/models/violation.dart';
 export 'src/models/ticket.dart';

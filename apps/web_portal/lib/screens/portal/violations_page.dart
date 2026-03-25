@@ -48,15 +48,17 @@ class _ViolationsPageState extends State<ViolationsPage> {
         children: [
           // Filter bar
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             color: Theme.of(context).colorScheme.surfaceVariant,
-            child: Row(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   'Filter:',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-                const SizedBox(width: 16),
                 _FilterChip(
                   label: 'All',
                   selected: _filterStatus == null,
@@ -65,7 +67,6 @@ class _ViolationsPageState extends State<ViolationsPage> {
                     _loadViolations();
                   },
                 ),
-                const SizedBox(width: 12),
                 _FilterChip(
                   label: 'New',
                   selected: _filterStatus == ViolationStatus.newStatus,
@@ -74,7 +75,6 @@ class _ViolationsPageState extends State<ViolationsPage> {
                     _loadViolations();
                   },
                 ),
-                const SizedBox(width: 12),
                 _FilterChip(
                   label: 'Under Review',
                   selected: _filterStatus == ViolationStatus.underReview,
@@ -83,7 +83,6 @@ class _ViolationsPageState extends State<ViolationsPage> {
                     _loadViolations();
                   },
                 ),
-                const SizedBox(width: 12),
                 _FilterChip(
                   label: 'Resolved',
                   selected: _filterStatus == ViolationStatus.resolved,
@@ -244,21 +243,24 @@ class _ViolationCard extends StatelessWidget {
                     separatorBuilder: (context, _) => const SizedBox(width: 8),
                     itemBuilder: (context, index) {
                       final imageUrl = imageUrls[index];
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          imageUrl,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stack) {
-                            return Container(
-                              width: 100,
-                              height: 100,
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image),
-                            );
-                          },
+                      return GestureDetector(
+                        onTap: () => _showZoomableImage(context, imageUrl),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            imageUrl,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stack) {
+                              return Container(
+                                width: 100,
+                                height: 100,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.broken_image),
+                              );
+                            },
+                          ),
                         ),
                       );
                     },
@@ -274,11 +276,6 @@ class _ViolationCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                if (violation.reporterUserId != null)
-                  Text(
-                    'Reporter: ${violation.reporterUserId}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
                 const Spacer(),
                 if (violation.status != ViolationStatus.resolved)
                   PopupMenuButton<ViolationStatus>(
@@ -308,6 +305,38 @@ class _ViolationCard extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}/${date.year}';
+  }
+
+  void _showZoomableImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 5.0,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stack) => const Center(
+                  child:
+                      Icon(Icons.broken_image, size: 64, color: Colors.white70),
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              style: IconButton.styleFrom(backgroundColor: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _updateStatus(

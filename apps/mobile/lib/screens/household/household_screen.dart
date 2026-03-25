@@ -12,7 +12,7 @@ class HouseholdScreen extends StatefulWidget {
 
 class _HouseholdScreenState extends State<HouseholdScreen> {
   Future<List<HouseholdMember>>? _membersFuture;
-  Household? _household;
+  Unit? _unit;
 
   @override
   void initState() {
@@ -29,16 +29,20 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     final repo = context.read<HouseholdRepository>();
 
     try {
-      // Get user's household
-      final households = await repo.getHouseholds(appState.activeCommunityId!);
-      final myHousehold = households
-          .where((h) => h.members?.any((m) => m.userId == userId) ?? false)
-          .firstOrNull;
+      // Get user's unit via household membership
+      final myMemberships =
+          await repo.getMyHouseholds(appState.activeCommunityId!);
 
-      if (myHousehold != null && mounted) {
+      if (myMemberships.isNotEmpty && mounted) {
+        final unitId = myMemberships.first.unitId;
         setState(() {
-          _household = myHousehold;
-          _membersFuture = repo.getHouseholdMembers(myHousehold.id);
+          _unit = Unit(
+            id: unitId,
+            communityId: appState.activeCommunityId!,
+            unitNo: unitId,
+            createdAt: DateTime.now(),
+          );
+          _membersFuture = repo.getHouseholdMembers(unitId);
         });
       }
     } catch (e) {
@@ -56,7 +60,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
       appBar: AppBar(
         title: const Text('My Household'),
       ),
-      body: _household == null
+      body: _unit == null
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -91,7 +95,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _household!.unitNumber,
+                        _unit!.unitNo,
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -99,9 +103,9 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      if (_household!.address != null)
+                      if (_unit!.unitType != null)
                         Text(
-                          _household!.address!,
+                          _unit!.unitType!,
                           style: const TextStyle(
                             fontSize: 16,
                             color: Colors.white70,
@@ -146,13 +150,15 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                             child: ListTile(
                               leading: CircleAvatar(
                                 child: Text(
-                                  member.name.substring(0, 1).toUpperCase(),
+                                  member.displayName
+                                      .substring(0, 1)
+                                      .toUpperCase(),
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold),
                                 ),
                               ),
                               title: Text(
-                                member.name,
+                                member.displayName,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold),
                               ),
@@ -160,18 +166,10 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
-                                  Text(_getRoleLabel(member.role)),
-                                  if (member.email != null)
+                                  Text(_getRoleLabel(member.memberRole)),
+                                  if (member.relationship != null)
                                     Text(
-                                      member.email!,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  if (member.phone != null)
-                                    Text(
-                                      member.phone!,
+                                      member.relationship!,
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey[600],
@@ -181,11 +179,12 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                               ),
                               trailing: Chip(
                                 label: Text(
-                                  _getRoleLabel(member.role),
+                                  _getRoleLabel(member.memberRole),
                                   style: const TextStyle(fontSize: 11),
                                 ),
                                 backgroundColor:
-                                    _getRoleColor(member.role).withOpacity(0.2),
+                                    _getRoleColor(member.memberRole)
+                                        .withOpacity(0.2),
                               ),
                             ),
                           );
@@ -201,27 +200,31 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
 
   String _getRoleLabel(HouseholdRole role) {
     switch (role) {
-      case HouseholdRole.owner:
-        return 'Owner';
+      case HouseholdRole.primary:
+        return 'Primary';
+      case HouseholdRole.member:
+        return 'Member';
+      case HouseholdRole.child:
+        return 'Child';
       case HouseholdRole.tenant:
         return 'Tenant';
-      case HouseholdRole.occupant:
-        return 'Occupant';
-      case HouseholdRole.dependent:
-        return 'Dependent';
+      case HouseholdRole.other:
+        return 'Other';
     }
   }
 
   Color _getRoleColor(HouseholdRole role) {
     switch (role) {
-      case HouseholdRole.owner:
+      case HouseholdRole.primary:
         return Colors.purple;
-      case HouseholdRole.tenant:
+      case HouseholdRole.member:
         return Colors.blue;
-      case HouseholdRole.occupant:
-        return Color.fromRGBO(39, 99, 67, 1);
-      case HouseholdRole.dependent:
+      case HouseholdRole.child:
         return Colors.orange;
+      case HouseholdRole.tenant:
+        return Color.fromRGBO(39, 99, 67, 1);
+      case HouseholdRole.other:
+        return Colors.grey;
     }
   }
 }
