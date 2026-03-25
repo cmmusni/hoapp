@@ -27,6 +27,10 @@ GoRouter createRouter({String? lastCommunitySlug}) {
         path: '/auth-callback',
         builder: (context, state) => const AuthCallbackPage(),
       ),
+      GoRoute(
+        path: '/auth/callback',
+        builder: (context, state) => const AuthCallbackPage(),
+      ),
       // Marketing & SaaS routes
       GoRoute(
         path: '/',
