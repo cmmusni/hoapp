@@ -6,7 +6,7 @@ class AppTheme {
     Color? primaryColor,
     Color? surfaceColor,
   }) {
-    final primary = primaryColor ?? const Color(0xFF2E7D32);
+    final primary = primaryColor ?? const Color(0xff215e3f);
     final surface = surfaceColor ?? const Color(0xFFECEFF1);
 
     final colorScheme = ColorScheme.fromSeed(

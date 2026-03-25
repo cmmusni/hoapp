@@ -8,6 +8,7 @@ import 'screens/create_community_page.dart';
 import 'screens/auth_callback_page.dart';
 import 'screens/portal/portal_shell.dart';
 import 'screens/portal/announcements_page.dart';
+import 'app.dart';
 import 'screens/portal/violations_page.dart';
 import 'screens/portal/tickets_page.dart';
 import 'screens/portal/amenities_page.dart';
@@ -17,7 +18,7 @@ import 'screens/portal/households_page.dart';
 import 'screens/portal/manage_users_page.dart';
 import 'screens/portal/settings_page.dart';
 
-GoRouter createRouter() {
+GoRouter createRouter({String? lastCommunitySlug}) {
   return GoRouter(
     initialLocation: '/',
     routes: [
@@ -40,12 +41,17 @@ GoRouter createRouter() {
           return const LandingPage();
         },
         redirect: (context, state) {
-          // If user lands on / with an active session (e.g. after email
-          // verification where SDK already exchanged the code), route
-          // them through auth-callback to accept invites & navigate.
-          final session = Supabase.instance.client.auth.currentSession;
-          if (session != null) {
+          final code = state.uri.queryParameters['code'];
+          if (code != null && code.isNotEmpty) {
             return '/auth-callback';
+          }
+          // If user has an active session, restore them to their
+          // last community instead of showing the landing page.
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null &&
+              lastCommunitySlug != null &&
+              lastCommunitySlug.isNotEmpty) {
+            return '/$lastCommunitySlug/announcements';
           }
           return null;
         },
@@ -80,6 +86,12 @@ GoRouter createRouter() {
       GoRoute(
         path: '/create-community',
         builder: (context, state) => const CreateCommunityPage(),
+      ),
+
+      // Demo scaffolding route (UI showcase with mock data)
+      GoRoute(
+        path: '/demo',
+        builder: (context, state) => const DemoShell(),
       ),
 
       // Community portal routes

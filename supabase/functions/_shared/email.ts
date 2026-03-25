@@ -91,7 +91,7 @@ export function generateInviteEmailHTML(params: {
   <title>Invitation to ${communityName}</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+  <div style="background: linear-gradient(135deg, #215E3F 0%, #1B5E20 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
     <h1 style="margin: 0; font-size: 28px;">🏠 HOApp Invitation</h1>
   </div>
   
@@ -103,7 +103,7 @@ export function generateInviteEmailHTML(params: {
       as <strong>${roleLabel}</strong>.
     </p>
     
-    <div style="background: #f1f8e9; border-left: 4px solid #2E7D32; padding: 15px; margin: 25px 0;">
+    <div style="background: #f1f8e9; border-left: 4px solid #215E3F; padding: 15px; margin: 25px 0;">
       <p style="margin: 0; font-size: 14px; color: #4a5568;">
         <strong>Community:</strong> ${communityName}<br>
         <strong>Role:</strong> ${roleLabel}<br>
@@ -117,14 +117,14 @@ export function generateInviteEmailHTML(params: {
     
     <div style="text-align: center; margin: 30px 0;">
       <a href="${inviteLink}" 
-         style="display: inline-block; background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+         style="display: inline-block; background: linear-gradient(135deg, #215E3F 0%, #1B5E20 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
         Accept Invitation
       </a>
     </div>
     
     <p style="font-size: 14px; color: #718096;">
       Or copy and paste this link into your browser:<br>
-      <a href="${inviteLink}" style="color: #2E7D32; word-break: break-all;">${inviteLink}</a>
+      <a href="${inviteLink}" style="color: #215E3F; word-break: break-all;">${inviteLink}</a>
     </p>
     
     <hr style="border: none; border-top: 1px solid #e1e8ed; margin: 30px 0;">

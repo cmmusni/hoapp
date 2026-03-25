@@ -30,7 +30,7 @@ class Community {
   String? get logoUrl => settings?['logo_url'] as String?;
 
   String get primaryColor =>
-      settings?['brand']?['primary'] as String? ?? '#2E7D32';
+      settings?['brand']?['primary'] as String? ?? '#215E3F';
 
   String get surfaceColor =>
       settings?['brand']?['surface'] as String? ?? '#ECEFF1';

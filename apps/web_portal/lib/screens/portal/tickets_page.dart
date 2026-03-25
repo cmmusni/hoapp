@@ -55,7 +55,20 @@ class _TicketsPageState extends State<TicketsPage> {
               const VerticalDivider(width: 1),
               Expanded(
                 child: _selectedTicket != null
-                    ? _TicketDetail(ticket: _selectedTicket!)
+                    ? _TicketDetail(
+                        ticket: _selectedTicket!,
+                        onStatusChanged: () {
+                          final appState = context.read<AppState>();
+                          final repo = context.read<TicketRepository>();
+                          setState(() {
+                            _selectedTicket = null;
+                            if (appState.activeCommunityId != null) {
+                              _ticketsFuture =
+                                  repo.getTickets(appState.activeCommunityId!);
+                            }
+                          });
+                        },
+                      )
                     : const Center(
                         child: Text('Select a ticket to view conversation'),
                       ),
@@ -69,6 +82,16 @@ class _TicketsPageState extends State<TicketsPage> {
           return _TicketDetail(
             ticket: _selectedTicket!,
             onBack: () => setState(() => _selectedTicket = null),
+            onStatusChanged: () {
+              final appState = context.read<AppState>();
+              final repo = context.read<TicketRepository>();
+              setState(() {
+                _selectedTicket = null;
+                if (appState.activeCommunityId != null) {
+                  _ticketsFuture = repo.getTickets(appState.activeCommunityId!);
+                }
+              });
+            },
           );
         }
 
@@ -230,8 +253,13 @@ class _StatusBadge extends StatelessWidget {
 class _TicketDetail extends StatefulWidget {
   final Ticket ticket;
   final VoidCallback? onBack;
+  final VoidCallback? onStatusChanged;
 
-  const _TicketDetail({required this.ticket, this.onBack});
+  const _TicketDetail({
+    required this.ticket,
+    this.onBack,
+    this.onStatusChanged,
+  });
 
   @override
   State<_TicketDetail> createState() => _TicketDetailState();
@@ -272,6 +300,8 @@ class _TicketDetailState extends State<_TicketDetail> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = context.read<AuthRepository>().currentUser?.id ?? '';
+    final appState = context.watch<AppState>();
+    final isStaff = appState.isStaff;
 
     return Scaffold(
       appBar: AppBar(
@@ -282,24 +312,42 @@ class _TicketDetailState extends State<_TicketDetail> {
               )
             : null,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              'Ticket #${widget.ticket.id.substring(0, 8)}',
+              'TKT-${widget.ticket.id.hashCode.abs() % 10000}',
               style: const TextStyle(fontSize: 16),
             ),
             Text(
-              widget.ticket.type.name,
+              widget.ticket.type.name.toUpperCase(),
               style: const TextStyle(fontSize: 12),
             ),
           ],
         ),
         actions: [
           if (widget.ticket.status == TicketStatus.open)
-            TextButton.icon(
-              onPressed: () => _closeTicket(context),
-              icon: const Icon(Icons.check_circle),
-              label: const Text('Close'),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: OutlinedButton.icon(
+                onPressed: () => _closeTicket(context),
+                icon: const Icon(Icons.check_circle, size: 18),
+                label: const Text('Close Ticket'),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+                  side: const BorderSide(color: Color(0xFF2E5C3F)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
+            ),
+          if (isStaff)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: IconButton(
+                onPressed: () => _deleteTicket(context),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                tooltip: 'Delete Ticket',
+              ),
             ),
         ],
       ),
@@ -464,13 +512,63 @@ class _TicketDetailState extends State<_TicketDetail> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ticket closed')),
         );
-        // Reload ticket list would happen here
+        widget.onStatusChanged?.call();
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
+      }
+    }
+  }
+
+  Future<void> _deleteTicket(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+            SizedBox(width: 12),
+            Text('Delete Ticket',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+          ],
+        ),
+        content: const Text(
+            'Are you sure you want to delete this ticket? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final repo = context.read<TicketRepository>();
+        await repo.deleteTicket(widget.ticket.id);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ticket deleted')),
+          );
+          widget.onStatusChanged?.call();
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
       }
     }
   }
@@ -496,7 +594,7 @@ class _CreateTicketDialogState extends State<_CreateTicketDialog> {
       title: Row(
         children: [
           const Icon(Icons.confirmation_number_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Create New Ticket',
               style: TextStyle(fontWeight: FontWeight.w600)),

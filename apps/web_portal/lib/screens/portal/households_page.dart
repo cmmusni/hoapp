@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:data_table_2/data_table_2.dart';
 
 class HouseholdsPage extends StatefulWidget {
   const HouseholdsPage({super.key});
@@ -93,7 +94,7 @@ class _HouseholdsPageState extends State<HouseholdsPage> {
 
 // ============ UNIT LIST ============
 
-class _UnitList extends StatelessWidget {
+class _UnitList extends StatefulWidget {
   final Future<List<Unit>>? unitsFuture;
   final Unit? selectedUnit;
   final Function(Unit) onUnitSelected;
@@ -107,29 +108,111 @@ class _UnitList extends StatelessWidget {
   });
 
   @override
+  State<_UnitList> createState() => _UnitListState();
+}
+
+class _UnitListState extends State<_UnitList> {
+  String _searchQuery = '';
+  int _sortColumnIndex = 0;
+  bool _sortAscending = true;
+
+  List<Unit> _filterAndSort(List<Unit> units) {
+    var filtered = units;
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filtered = units.where((u) {
+        return u.unitNo.toLowerCase().contains(q) ||
+            (u.unitType?.toLowerCase().contains(q) ?? false);
+      }).toList();
+    }
+    filtered = List.of(filtered);
+    switch (_sortColumnIndex) {
+      case 0:
+        filtered.sort((a, b) => _sortAscending
+            ? a.unitNo.compareTo(b.unitNo)
+            : b.unitNo.compareTo(a.unitNo));
+      case 1:
+        filtered.sort((a, b) => _sortAscending
+            ? (a.unitType ?? '').compareTo(b.unitType ?? '')
+            : (b.unitType ?? '').compareTo(a.unitType ?? ''));
+    }
+    return filtered;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isStaff = appState.isStaff;
+    final theme = Theme.of(context);
 
     return FutureBuilder<List<Unit>>(
-      future: unitsFuture,
+      future: widget.unitsFuture,
       builder: (context, snapshot) {
         final units = snapshot.data ?? [];
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Units'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: onRefresh,
-                tooltip: 'Refresh',
+          body: Column(
+            children: [
+              // Search toolbar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search units…',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 10),
+                          isDense: true,
+                        ),
+                        onChanged: (v) => setState(() => _searchQuery = v),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: widget.onRefresh,
+                      tooltip: 'Refresh',
+                    ),
+                  ],
+                ),
+              ),
+              // Unit count badge
+              if (units.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_filterAndSort(units).length} units',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 8),
+              // DataTable2 or loading/error/empty states
+              Expanded(
+                child: _buildBody(context, snapshot, units, isStaff, theme),
               ),
             ],
-          ),
-          body: RefreshIndicator(
-            onRefresh: () async => onRefresh(),
-            child: _buildBody(context, snapshot, units, isStaff),
           ),
           floatingActionButton: isStaff
               ? FloatingActionButton.extended(
@@ -148,6 +231,7 @@ class _UnitList extends StatelessWidget {
     AsyncSnapshot<List<Unit>> snapshot,
     List<Unit> units,
     bool isStaff,
+    ThemeData theme,
   ) {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
@@ -162,10 +246,7 @@ class _UnitList extends StatelessWidget {
             const SizedBox(height: 16),
             Text('Error: ${snapshot.error}'),
             const SizedBox(height: 16),
-            HOAppButton(
-              label: 'Retry',
-              onPressed: onRefresh,
-            ),
+            HOAppButton(label: 'Retry', onPressed: widget.onRefresh),
           ],
         ),
       );
@@ -178,43 +259,94 @@ class _UnitList extends StatelessWidget {
           children: [
             Icon(Icons.home_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            const Text(
-              'No units yet',
-              style: TextStyle(fontSize: 18),
-            ),
+            const Text('No units yet', style: TextStyle(fontSize: 18)),
             if (isStaff) ...[
               const SizedBox(height: 8),
-              Text(
-                'Create the first unit to get started',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 16),
-              HOAppButton(
-                label: 'Refresh',
-                onPressed: onRefresh,
-              ),
+              Text('Create the first unit to get started',
+                  style: TextStyle(color: Colors.grey[600])),
             ],
           ],
         ),
       );
     }
 
-    return ListView.builder(
-      itemCount: units.length,
-      itemBuilder: (context, index) {
-        final unit = units[index];
-        final isSelected = selectedUnit?.id == unit.id;
+    final filtered = _filterAndSort(units);
 
-        return ListTile(
+    if (filtered.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+            const SizedBox(height: 12),
+            Text('No units matching "$_searchQuery"',
+                style: TextStyle(color: Colors.grey[600])),
+          ],
+        ),
+      );
+    }
+
+    return DataTable2(
+      columnSpacing: 12,
+      horizontalMargin: 16,
+      minWidth: 300,
+      sortColumnIndex: _sortColumnIndex,
+      sortAscending: _sortAscending,
+      headingRowColor: WidgetStateProperty.all(
+        theme.colorScheme.surfaceContainerHighest,
+      ),
+      columns: [
+        DataColumn2(
+          label:
+              const Text('Unit', style: TextStyle(fontWeight: FontWeight.w600)),
+          size: ColumnSize.S,
+          onSort: (col, asc) => setState(() {
+            _sortColumnIndex = col;
+            _sortAscending = asc;
+          }),
+        ),
+        DataColumn2(
+          label:
+              const Text('Type', style: TextStyle(fontWeight: FontWeight.w600)),
+          size: ColumnSize.L,
+          onSort: (col, asc) => setState(() {
+            _sortColumnIndex = col;
+            _sortAscending = asc;
+          }),
+        ),
+      ],
+      rows: filtered.map((unit) {
+        final isSelected = widget.selectedUnit?.id == unit.id;
+        return DataRow2(
           selected: isSelected,
-          selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.1),
-          leading: const Icon(Icons.home),
-          title: Text('Unit ${unit.unitNumber}'),
-          subtitle: unit.unitType != null ? Text(unit.unitType!) : null,
-          trailing: isSelected ? const Icon(Icons.chevron_right) : null,
-          onTap: () => onUnitSelected(unit),
+          color: isSelected
+              ? WidgetStateProperty.all(
+                  theme.colorScheme.primary.withOpacity(0.08))
+              : null,
+          onTap: () => widget.onUnitSelected(unit),
+          cells: [
+            DataCell(
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.home, size: 18, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(unit.unitNo,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+            DataCell(
+              Text(
+                unit.unitType ?? '—',
+                style: TextStyle(
+                  color: unit.unitType != null ? null : Colors.grey[400],
+                ),
+              ),
+            ),
+          ],
         );
-      },
+      }).toList(),
     );
   }
 
@@ -222,7 +354,7 @@ class _UnitList extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => _CreateUnitDialog(
-        onCreate: onRefresh,
+        onCreate: widget.onRefresh,
         existingUnits: existingUnits,
       ),
     );
@@ -415,7 +547,7 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
         title: Row(
           children: [
             const Icon(Icons.settings_outlined,
-                color: Color(0xFF2E7D32), size: 24),
+                color: Color(0xff215e3f), size: 24),
             const SizedBox(width: 12),
             const Text('Unit Options',
                 style: TextStyle(fontWeight: FontWeight.w600)),
@@ -871,7 +1003,7 @@ class _InviteMemberDialogState extends State<_InviteMemberDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.mail_outlined, color: Color(0xFF2E7D32), size: 24),
+          const Icon(Icons.mail_outlined, color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Invite to Sign Up',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1039,7 +1171,7 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
       title: Row(
         children: [
           const Icon(Icons.add_home_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Create Unit',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1331,7 +1463,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
       title: Row(
         children: [
           const Icon(Icons.person_add_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Add Household Member',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1599,7 +1731,7 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.edit_outlined, color: Color(0xFF2E7D32), size: 24),
+          const Icon(Icons.edit_outlined, color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Edit Member Role',
               style: TextStyle(fontWeight: FontWeight.w600)),

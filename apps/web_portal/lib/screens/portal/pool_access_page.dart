@@ -839,7 +839,7 @@ class _RegistrationDetailsStaffDialog extends StatelessWidget {
       title: Row(
         children: [
           const Icon(Icons.assignment_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Registration Details',
               style: TextStyle(fontWeight: FontWeight.w600)),

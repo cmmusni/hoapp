@@ -106,7 +106,7 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
     }
 
     if (mounted) {
-      context.go('/create-community');
+      context.go('/');
     }
   }
 

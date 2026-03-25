@@ -47,51 +47,57 @@ class _ViolationsPageState extends State<ViolationsPage> {
       body: Column(
         children: [
           // Filter bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Theme.of(context).colorScheme.surfaceVariant,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  'Filter:',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                _FilterChip(
-                  label: 'All',
-                  selected: _filterStatus == null,
-                  onSelected: () {
-                    setState(() => _filterStatus = null);
-                    _loadViolations();
-                  },
-                ),
-                _FilterChip(
-                  label: 'New',
-                  selected: _filterStatus == ViolationStatus.newStatus,
-                  onSelected: () {
-                    setState(() => _filterStatus = ViolationStatus.newStatus);
-                    _loadViolations();
-                  },
-                ),
-                _FilterChip(
-                  label: 'Under Review',
-                  selected: _filterStatus == ViolationStatus.underReview,
-                  onSelected: () {
-                    setState(() => _filterStatus = ViolationStatus.underReview);
-                    _loadViolations();
-                  },
-                ),
-                _FilterChip(
-                  label: 'Resolved',
-                  selected: _filterStatus == ViolationStatus.resolved,
-                  onSelected: () {
-                    setState(() => _filterStatus = ViolationStatus.resolved);
-                    _loadViolations();
-                  },
-                ),
-              ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _FilterChip(
+                    label: 'All',
+                    icon: Icons.list,
+                    selected: _filterStatus == null,
+                    onSelected: () {
+                      setState(() => _filterStatus = null);
+                      _loadViolations();
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'New',
+                    icon: Icons.fiber_new,
+                    selectedColor: Colors.orange,
+                    selected: _filterStatus == ViolationStatus.newStatus,
+                    onSelected: () {
+                      setState(() => _filterStatus = ViolationStatus.newStatus);
+                      _loadViolations();
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Under Review',
+                    icon: Icons.hourglass_top,
+                    selectedColor: Colors.blue,
+                    selected: _filterStatus == ViolationStatus.underReview,
+                    onSelected: () {
+                      setState(
+                          () => _filterStatus = ViolationStatus.underReview);
+                      _loadViolations();
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Resolved',
+                    icon: Icons.check_circle_outline,
+                    selectedColor: const Color.fromRGBO(39, 99, 67, 1),
+                    selected: _filterStatus == ViolationStatus.resolved,
+                    onSelected: () {
+                      setState(() => _filterStatus = ViolationStatus.resolved);
+                      _loadViolations();
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -162,21 +168,58 @@ class _ViolationsPageState extends State<ViolationsPage> {
 
 class _FilterChip extends StatelessWidget {
   final String label;
+  final IconData? icon;
   final bool selected;
+  final Color? selectedColor;
   final VoidCallback onSelected;
 
   const _FilterChip({
     required this.label,
+    this.icon,
     required this.selected,
+    this.selectedColor,
     required this.onSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onSelected(),
+    final color = selectedColor ?? Theme.of(context).colorScheme.primary;
+
+    return Material(
+      color: selected ? color.withOpacity(0.12) : Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onSelected,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? color : Colors.grey.shade300,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon,
+                    size: 16, color: selected ? color : Colors.grey.shade600),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? color : Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -276,6 +319,13 @@ class _ViolationCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
+                ActionChip(
+                  avatar: const Icon(Icons.delete_outline,
+                      size: 16, color: Colors.red),
+                  label:
+                      const Text('Delete', style: TextStyle(color: Colors.red)),
+                  onPressed: () => _confirmDelete(context),
+                ),
                 const Spacer(),
                 if (violation.status != ViolationStatus.resolved)
                   PopupMenuButton<ViolationStatus>(
@@ -354,6 +404,50 @@ class _ViolationCard extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Violation'),
+        content: Text(
+            'Are you sure you want to delete "${violation.title}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _deleteViolation(context);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteViolation(BuildContext context) async {
+    try {
+      final repo = context.read<ViolationRepository>();
+      await repo.deleteViolation(violation.id);
+      onUpdated();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Violation deleted')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting violation: $e')),
         );
       }
     }

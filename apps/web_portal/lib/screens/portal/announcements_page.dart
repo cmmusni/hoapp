@@ -121,53 +121,56 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
           return RefreshIndicator(
             onRefresh: () async => _loadAnnouncements(),
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              children: [
-                if (pinned.isNotEmpty) ...[
-                  for (final a in pinned)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _AnnouncementCard(
-                        announcement: a,
-                        isStaff: isStaff,
-                        onUpdated: _loadAnnouncements,
-                      ),
-                    ),
-                  if (regular.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, bottom: 16),
-                      child: Row(
-                        children: [
-                          Expanded(child: Divider(color: Colors.grey[300])),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final crossAxisCount = width > 1200
+                    ? 3
+                    : width > 800
+                        ? 2
+                        : 1;
+
+                return SingleChildScrollView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (pinned.isNotEmpty) ...[
+                        _buildGrid(pinned, crossAxisCount, isStaff),
+                        if (regular.isNotEmpty) ...[
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text(
-                              'Recent',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey[500],
-                                letterSpacing: 0.5,
-                              ),
+                            padding: const EdgeInsets.only(top: 4, bottom: 16),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                    child: Divider(color: Colors.grey[300])),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  child: Text(
+                                    'Recent',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[500],
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                    child: Divider(color: Colors.grey[300])),
+                              ],
                             ),
                           ),
-                          Expanded(child: Divider(color: Colors.grey[300])),
                         ],
-                      ),
-                    ),
-                  ],
-                ],
-                for (final a in regular)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _AnnouncementCard(
-                      announcement: a,
-                      isStaff: isStaff,
-                      onUpdated: _loadAnnouncements,
-                    ),
+                      ],
+                      if (regular.isNotEmpty)
+                        _buildGrid(regular, crossAxisCount, isStaff),
+                    ],
                   ),
-              ],
+                );
+              },
             ),
           );
         },
@@ -180,6 +183,55 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
             )
           : null,
     );
+  }
+
+  Widget _buildGrid(
+      List<Announcement> items, int crossAxisCount, bool isStaff) {
+    if (crossAxisCount == 1) {
+      return Column(
+        children: [
+          for (final a in items)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _AnnouncementCard(
+                announcement: a,
+                isStaff: isStaff,
+                onUpdated: _loadAnnouncements,
+              ),
+            ),
+        ],
+      );
+    }
+
+    final rows = <Widget>[];
+    for (var i = 0; i < items.length; i += crossAxisCount) {
+      final rowItems = items.skip(i).take(crossAxisCount).toList();
+      rows.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var j = 0; j < crossAxisCount; j++) ...[
+                  if (j > 0) const SizedBox(width: 16),
+                  Expanded(
+                    child: j < rowItems.length
+                        ? _AnnouncementCard(
+                            announcement: rowItems[j],
+                            isStaff: isStaff,
+                            onUpdated: _loadAnnouncements,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return Column(children: rows);
   }
 
   void _showCreateDialog(BuildContext context) {
@@ -302,6 +354,16 @@ class _AnnouncementCard extends StatelessWidget {
                             padding: EdgeInsets.zero,
                             splashRadius: 18,
                             itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit_outlined, size: 18),
+                                    SizedBox(width: 10),
+                                    Text('Edit'),
+                                  ],
+                                ),
+                              ),
                               PopupMenuItem(
                                 value: 'toggle_pin',
                                 child: Row(
@@ -441,6 +503,16 @@ class _AnnouncementCard extends StatelessWidget {
     final repo = context.read<AnnouncementRepository>();
 
     switch (value) {
+      case 'edit':
+        showDialog(
+          context: context,
+          builder: (context) => _EditAnnouncementDialog(
+            announcement: announcement,
+            onUpdated: onUpdated,
+          ),
+        );
+        break;
+
       case 'toggle_pin':
         try {
           await repo.updateAnnouncement(
@@ -584,7 +656,7 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
       title: Row(
         children: [
           const Icon(Icons.campaign_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Create Announcement',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -722,6 +794,208 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
           const SnackBar(content: Text('Announcement created')),
         );
         widget.onCreated();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _EditAnnouncementDialog extends StatefulWidget {
+  final Announcement announcement;
+  final VoidCallback onUpdated;
+
+  const _EditAnnouncementDialog({
+    required this.announcement,
+    required this.onUpdated,
+  });
+
+  @override
+  State<_EditAnnouncementDialog> createState() =>
+      _EditAnnouncementDialogState();
+}
+
+class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleController;
+  late final TextEditingController _bodyController;
+  late bool _pinned;
+  bool _isLoading = false;
+  String? _uploadedImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.announcement.title);
+    _bodyController = TextEditingController(text: widget.announcement.body);
+    _pinned = widget.announcement.pinned;
+    _uploadedImageUrl = widget.announcement.imageUrl;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          const Icon(Icons.edit_outlined, color: Color(0xff215e3f), size: 24),
+          const SizedBox(width: 12),
+          const Text('Edit Announcement',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 500,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'Enter announcement title',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a title';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _bodyController,
+                decoration: const InputDecoration(
+                  labelText: 'Message',
+                  hintText: 'Enter announcement details',
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 5,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a message';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                value: _pinned,
+                onChanged: (value) => setState(() => _pinned = value ?? false),
+                title: const Text('Pin to top'),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 8),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Image (optional)',
+                    style: TextStyle(fontSize: 13, color: Colors.grey)),
+              ),
+              const SizedBox(height: 8),
+              if (_uploadedImageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Stack(
+                    children: [
+                      Image.network(
+                        _uploadedImageUrl!,
+                        height: 140,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: IconButton(
+                          onPressed: () =>
+                              setState(() => _uploadedImageUrl = null),
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          style: IconButton.styleFrom(
+                              backgroundColor: Colors.black54),
+                          iconSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                ImageUploadWidget(
+                  bucket: 'announcement-images',
+                  folder: context.read<AppState>().activeCommunityId,
+                  onUploadComplete: (url) {
+                    if (url.isNotEmpty) {
+                      setState(() => _uploadedImageUrl = url);
+                    }
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: 'Save',
+          onPressed: _handleSave,
+          isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repo = context.read<AnnouncementRepository>();
+
+      await repo.updateAnnouncement(
+        widget.announcement.id,
+        {
+          'title': _titleController.text.trim(),
+          'body': _bodyController.text.trim(),
+          'pinned': _pinned,
+          'image_url': _uploadedImageUrl,
+        },
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Announcement updated')),
+        );
+        widget.onUpdated();
       }
     } catch (e) {
       if (mounted) {

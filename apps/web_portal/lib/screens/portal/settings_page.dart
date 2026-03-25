@@ -110,7 +110,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   primaryColor: _parseBrandingValue<String>(
                     community.settings,
                     'primaryColor',
-                    '#2E7D32',
+                    '#215E3F',
                   ),
                   logoUrl: _parseBrandingValue<String>(
                     community.settings,
@@ -458,7 +458,7 @@ class _BrandingDialogState extends State<_BrandingDialog> {
     super.initState();
     final settings = widget.community.settings ?? {};
     _primaryColorController = TextEditingController(
-      text: settings['primaryColor'] ?? '#2E7D32',
+      text: settings['primaryColor'] ?? '#215E3F',
     );
     _logoUrlController = TextEditingController(
       text: settings['logoUrl'] ?? '',
@@ -479,7 +479,7 @@ class _BrandingDialogState extends State<_BrandingDialog> {
       title: Row(
         children: [
           const Icon(Icons.palette_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Edit Branding',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -504,8 +504,8 @@ class _BrandingDialogState extends State<_BrandingDialog> {
                 decoration: const InputDecoration(
                   labelText: 'Primary Color',
                   border: OutlineInputBorder(),
-                  hintText: '#2E7D32',
-                  helperText: 'Hex color code (e.g., #2E7D32)',
+                  hintText: '#215E3F',
+                  helperText: 'Hex color code (e.g., #215E3F)',
                 ),
                 validator: (value) {
                   if (value?.isEmpty ?? true) return 'Required';
@@ -852,7 +852,7 @@ class _UnitTypeDialogState extends State<_UnitTypeDialog> {
         children: [
           Icon(
             _isEditing ? Icons.edit_outlined : Icons.add_circle_outline,
-            color: const Color(0xFF2E7D32),
+            color: const Color(0xff215e3f),
             size: 24,
           ),
           const SizedBox(width: 12),

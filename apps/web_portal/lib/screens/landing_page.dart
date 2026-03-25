@@ -61,7 +61,6 @@ class LandingPage extends StatelessWidget {
                               fontSize: 32,
                               fontWeight: FontWeight.w500,
                               color: Color(0xFF1F2937),
-                              backgroundColor: Color.fromRGBO(236, 239, 241, 1),
                             ),
                             children: [
                               TextSpan(
@@ -133,7 +132,6 @@ class LandingPage extends StatelessWidget {
                             fontSize: 20,
                             color: Color(0xFF1F2937),
                             fontWeight: FontWeight.w500,
-                            backgroundColor: Color.fromRGBO(236, 239, 241, 1),
                           ),
                         ),
                         const SizedBox(height: 24),

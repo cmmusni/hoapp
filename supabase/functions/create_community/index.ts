@@ -129,7 +129,7 @@ async function createCommunityWithUser(req: Request, user: any, supabaseAdmin: a
       slug,
       settings: {
         brand: {
-          primary: '#2E7D32',
+          primary: '#215E3F',
           surface: '#ECEFF1'
         }
       }

@@ -293,7 +293,8 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete User'),
+            child: const Text('Delete User',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -565,7 +566,7 @@ class _InviteUserDialogState extends State<_InviteUserDialog> {
       title: Row(
         children: [
           const Icon(Icons.person_add_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Invite User',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -801,7 +802,7 @@ class _EditRoleDialogState extends State<_EditRoleDialog> {
       title: Row(
         children: [
           const Icon(Icons.manage_accounts_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Edit User Role',
               style: TextStyle(fontWeight: FontWeight.w600)),

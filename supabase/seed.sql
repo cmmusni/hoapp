@@ -14,7 +14,7 @@ INSERT INTO communities (id, name, slug, address, settings) VALUES
     '123 Main Street, Metro Manila, Philippines',
     '{
       "brand": {
-        "primary": "#2E7D32",
+        "primary": "#215E3F",
         "surface": "#ECEFF1"
       },
       "logo_url": null

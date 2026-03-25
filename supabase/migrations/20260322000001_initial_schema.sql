@@ -13,7 +13,7 @@ CREATE TABLE communities (
   address TEXT,
   settings JSONB DEFAULT '{
     "brand": {
-      "primary": "#2E7D32",
+      "primary": "#215E3F",
       "surface": "#ECEFF1"
     }
   }'::jsonb,

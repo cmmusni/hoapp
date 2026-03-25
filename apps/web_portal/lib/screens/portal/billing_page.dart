@@ -4,6 +4,7 @@ import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class BillingPage extends StatefulWidget {
   const BillingPage({super.key});
@@ -15,6 +16,7 @@ class BillingPage extends StatefulWidget {
 class _BillingPageState extends State<BillingPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _showChart = true;
 
   @override
   void initState() {
@@ -38,6 +40,11 @@ class _BillingPageState extends State<BillingPage>
     return Scaffold(
       body: Column(
         children: [
+          // Billing trend chart (collapsible)
+          _BillingTrendChart(
+            visible: _showChart,
+            onToggle: () => setState(() => _showChart = !_showChart),
+          ),
           if (isStaff)
             TabBar(
               controller: _tabController,
@@ -75,6 +82,273 @@ class _BillingPageState extends State<BillingPage>
       builder: (context) => const _CreateInvoiceDialog(),
     );
   }
+}
+
+// ============ BILLING TREND CHART ============
+
+class _BillingTrendChart extends StatefulWidget {
+  final bool visible;
+  final VoidCallback onToggle;
+
+  const _BillingTrendChart({required this.visible, required this.onToggle});
+
+  @override
+  State<_BillingTrendChart> createState() => _BillingTrendChartState();
+}
+
+class _BillingTrendChartState extends State<_BillingTrendChart> {
+  List<_MonthlyData>? _monthlyData;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChartData();
+  }
+
+  Future<void> _loadChartData() async {
+    final appState = context.read<AppState>();
+    final repo = context.read<BillingRepository>();
+    final communityId = appState.activeCommunityId;
+    if (communityId == null) return;
+
+    try {
+      final invoices = await repo.getInvoices(communityId);
+      // Aggregate by month (last 6 months)
+      final now = DateTime.now();
+      final months = <_MonthlyData>[];
+      for (int i = 5; i >= 0; i--) {
+        final month = DateTime(now.year, now.month - i, 1);
+        final monthEnd = DateTime(month.year, month.month + 1, 0);
+        final label = DateFormat('MMM').format(month);
+        double charged = 0;
+        double paid = 0;
+        for (final inv in invoices) {
+          if (inv.dueDate.isAfter(month.subtract(const Duration(days: 1))) &&
+              inv.dueDate.isBefore(monthEnd.add(const Duration(days: 1)))) {
+            charged += inv.amount;
+            if (inv.status == InvoiceStatus.paid) {
+              paid += inv.amount;
+            }
+          }
+        }
+        months.add(_MonthlyData(label, charged, paid));
+      }
+      if (mounted)
+        setState(() {
+          _monthlyData = months;
+          _loading = false;
+        });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: widget.onToggle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Icon(Icons.trending_up,
+                    size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Billing Trend',
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+                const Spacer(),
+                Icon(
+                  widget.visible ? Icons.expand_less : Icons.expand_more,
+                  color: Colors.grey,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (widget.visible)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            child: _loading
+                ? const SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : (_monthlyData == null ||
+                        _monthlyData!.every((m) => m.charged == 0))
+                    ? Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text('No billing data to display',
+                            style: TextStyle(color: Colors.grey[500])),
+                      )
+                    : SizedBox(
+                        height: 220,
+                        child: _buildChart(theme),
+                      ),
+          ),
+        const Divider(height: 1),
+      ],
+    );
+  }
+
+  Widget _buildChart(ThemeData theme) {
+    final data = _monthlyData!;
+    final maxY = data.fold<double>(
+        0,
+        (prev, m) =>
+            m.charged > prev ? m.charged : (m.paid > prev ? m.paid : prev));
+    final ceilY = maxY == 0 ? 5000.0 : (maxY * 1.3);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 24, 8),
+      child: Column(
+        children: [
+          // Legend
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _legendDot(theme.colorScheme.primary, 'Charged'),
+              const SizedBox(width: 16),
+              _legendDot(theme.colorScheme.tertiary, 'Paid'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: ceilY / 4,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 55,
+                      interval: ceilY / 4,
+                      getTitlesWidget: (value, meta) => Text(
+                        '₱${NumberFormat.compact().format(value)}',
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      getTitlesWidget: (value, meta) {
+                        final idx = value.toInt();
+                        if (idx < 0 || idx >= data.length)
+                          return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(data[idx].month,
+                              style: theme.textTheme.labelSmall),
+                        );
+                      },
+                    ),
+                  ),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(show: false),
+                minY: 0,
+                maxY: ceilY,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: List.generate(data.length,
+                        (i) => FlSpot(i.toDouble(), data[i].charged)),
+                    isCurved: true,
+                    color: theme.colorScheme.primary,
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                        radius: 3,
+                        color: theme.colorScheme.primary,
+                        strokeColor: Colors.white,
+                        strokeWidth: 1.5,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: theme.colorScheme.primary.withOpacity(0.08),
+                    ),
+                  ),
+                  LineChartBarData(
+                    spots: List.generate(
+                        data.length, (i) => FlSpot(i.toDouble(), data[i].paid)),
+                    isCurved: true,
+                    color: theme.colorScheme.tertiary,
+                    barWidth: 3,
+                    dashArray: [6, 4],
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                        radius: 3,
+                        color: theme.colorScheme.tertiary,
+                        strokeColor: Colors.white,
+                        strokeWidth: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (spots) => spots.map((s) {
+                      final isCharged = s.barIndex == 0;
+                      return LineTooltipItem(
+                        '${isCharged ? "Charged" : "Paid"}: ₱${NumberFormat('#,##0').format(s.y)}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendDot(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+}
+
+class _MonthlyData {
+  final String month;
+  final double charged;
+  final double paid;
+  _MonthlyData(this.month, this.charged, this.paid);
 }
 
 class _InvoiceListView extends StatefulWidget {
@@ -342,7 +616,7 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
       title: Row(
         children: [
           const Icon(Icons.receipt_long_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Invoice Details',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -747,7 +1021,7 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
       title: Row(
         children: [
           const Icon(Icons.payment_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Submit Payment',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -918,7 +1192,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
       title: Row(
         children: [
           const Icon(Icons.receipt_outlined,
-              color: Color(0xFF2E7D32), size: 24),
+              color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
           const Text('Create Invoice',
               style: TextStyle(fontWeight: FontWeight.w600)),

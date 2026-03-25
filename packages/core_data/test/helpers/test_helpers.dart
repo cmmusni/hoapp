@@ -16,7 +16,7 @@ Community createMockCommunity({
     slug: slug ?? 'test-community',
     address: '123 Test Street',
     settings: {
-      'primaryColor': '#2E7D32',
+      'primaryColor': '#215E3F',
       'logoUrl': 'https://example.com/logo.png',
     },
     createdAt: DateTime.now(),
