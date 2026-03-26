@@ -583,13 +583,16 @@ class _PortalShellState extends State<PortalShell> {
                         Icons.report_outlined, '/violations', currentPath),
                     _buildSidebarItem(context, 'Tickets',
                         Icons.support_outlined, '/tickets', currentPath),
-                    if (!isGuard && !isMaintenance && isPro && hasUnit) ...[
+                    if (!isGuard &&
+                        !isMaintenance &&
+                        (hasUnit || isStaff) &&
+                        isPro) ...[
                       _buildSidebarItem(context, 'Amenities',
                           Icons.pool_outlined, '/amenities', currentPath),
                       _buildSidebarItem(context, 'Billing & Payments',
                           Icons.payment_outlined, '/billing', currentPath),
                     ],
-                    if (isPro && hasUnit) ...[
+                    if (isPro && (hasUnit || isStaff)) ...[
                       ...(!isGuard && !isMaintenance
                           ? [
                               _buildSidebarItem(
@@ -611,7 +614,7 @@ class _PortalShellState extends State<PortalShell> {
                             ]
                           : []),
                     ],
-                    if (isPro && hasUnit)
+                    if (isPro && (hasUnit || isStaff))
                       _buildSidebarItem(context, 'Security Pass',
                           Icons.badge_outlined, '/security-pass', currentPath),
                     if ((isGuard || isMaintenance) && isPro)
