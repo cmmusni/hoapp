@@ -1558,7 +1558,7 @@ class _RegistrationCardState extends State<_RegistrationCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      reg.fullName,
+                      reg.unitNo != null ? 'Unit ${reg.unitNo}' : reg.fullName,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -1566,7 +1566,7 @@ class _RegistrationCardState extends State<_RegistrationCard> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${reg.occupantType.name[0].toUpperCase()}${reg.occupantType.name.substring(1)} · ${reg.phone}',
+                      '${reg.occupantType.name[0].toUpperCase()}${reg.occupantType.name.substring(1)} · ${reg.fullName} · ${reg.phone}',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
@@ -1651,6 +1651,7 @@ class _RegistrationDetailDialogState extends State<_RegistrationDetailDialog> {
   List<PoolSwimmer>? _swimmers;
   bool _loadingSwimmers = true;
   bool _isApproving = false;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -1809,18 +1810,47 @@ class _RegistrationDetailDialogState extends State<_RegistrationDetailDialog> {
               ),
             ),
             // Actions
-            if (!reg.approved)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: HOAppButton(
-                    label: 'Approve Registration',
-                    isLoading: _isApproving,
-                    onPressed: _isApproving ? null : _approveRegistration,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Row(
+                children: [
+                  // Delete button
+                  OutlinedButton.icon(
+                    onPressed: _isDeleting ? null : _confirmDelete,
+                    icon: _isDeleting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.red),
+                          )
+                        : const Icon(Icons.delete_outline,
+                            size: 18, color: Colors.red),
+                    label: Text(
+                      _isDeleting ? 'Deleting...' : 'Delete',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  // Approve button
+                  if (!reg.approved)
+                    Expanded(
+                      child: HOAppButton(
+                        label: 'Approve Registration',
+                        isLoading: _isApproving,
+                        onPressed: _isApproving ? null : _approveRegistration,
+                      ),
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),
@@ -1947,6 +1977,58 @@ class _RegistrationDetailDialogState extends State<_RegistrationDetailDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => _isApproving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Registration'),
+        content: Text(
+          'Are you sure you want to delete the pool access registration for ${widget.registration.fullName}? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deleteRegistration();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteRegistration() async {
+    setState(() => _isDeleting = true);
+    try {
+      final repo = context.read<PoolAccessRepository>();
+      await repo.deleteRegistration(widget.registration.id);
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration deleted')),
+        );
+        widget.onRefresh();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );

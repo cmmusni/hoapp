@@ -74,111 +74,148 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: FutureBuilder<List<Amenity>>(
-        future: _amenitiesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LoadingIndicator(message: 'Loading amenities...');
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                  const SizedBox(height: 16),
-                  Text('Error: ${snapshot.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadAmenities,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final amenities = snapshot.data ?? [];
-
-          if (amenities.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.pool_outlined, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text('No amenities yet',
-                      style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  const Text('Amenities allow residents to book common areas'),
-                  if (isStaff) ...[
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () => _showCreateAmenityDialog(),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Amenity'),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.construction_rounded,
+                    size: 20, color: Colors.amber.shade800),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'This feature is still under development. You may book the amenities from the admin office.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.amber.shade900,
+                      height: 1.4,
                     ),
-                  ],
-                ],
-              ),
-            );
-          }
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<Amenity>>(
+              future: _amenitiesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const LoadingIndicator(
+                      message: 'Loading amenities...');
+                }
 
-          return RefreshIndicator(
-            onRefresh: () async => _loadAmenities(),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 800;
-
-                if (isWide) {
-                  // Side-by-side: calendar left, list right
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: _buildCalendar(theme),
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline,
+                            size: 48, color: Colors.red[300]),
+                        const SizedBox(height: 16),
+                        Text('Error: ${snapshot.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadAmenities,
+                          child: const Text('Retry'),
                         ),
-                      ),
-                      const VerticalDivider(width: 1),
-                      Expanded(
-                        flex: 2,
-                        child: _buildAmenityList(amenities),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 }
 
-                // Stacked: calendar on top, list below
-                return ListView(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: _buildCalendar(theme),
+                final amenities = snapshot.data ?? [];
+
+                if (amenities.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.pool_outlined,
+                            size: 64, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text('No amenities yet',
+                            style: Theme.of(context).textTheme.titleLarge),
+                        const SizedBox(height: 8),
+                        const Text(
+                            'Amenities allow residents to book common areas'),
+                        if (isStaff) ...[
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => _showCreateAmenityDialog(),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Amenity'),
+                          ),
+                        ],
+                      ],
                     ),
-                    const Divider(height: 1),
-                    // Selected day bookings
-                    if (_selectedDay != null) ...[
-                      _buildSelectedDayBookings(theme),
-                      const Divider(height: 1),
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      child: Text('Available Amenities',
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w600)),
-                    ),
-                    ...amenities.map((a) => _buildAmenityTile(a)),
-                    const SizedBox(height: 80), // FAB clearance
-                  ],
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async => _loadAmenities(),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 800;
+
+                      if (isWide) {
+                        // Side-by-side: calendar left, list right
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(16),
+                                child: _buildCalendar(theme),
+                              ),
+                            ),
+                            const VerticalDivider(width: 1),
+                            Expanded(
+                              flex: 2,
+                              child: _buildAmenityList(amenities),
+                            ),
+                          ],
+                        );
+                      }
+
+                      // Stacked: calendar on top, list below
+                      return ListView(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: _buildCalendar(theme),
+                          ),
+                          const Divider(height: 1),
+                          // Selected day bookings
+                          if (_selectedDay != null) ...[
+                            _buildSelectedDayBookings(theme),
+                            const Divider(height: 1),
+                          ],
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Text('Available Amenities',
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600)),
+                          ),
+                          ...amenities.map((a) => _buildAmenityTile(a)),
+                          const SizedBox(height: 80), // FAB clearance
+                        ],
+                      );
+                    },
+                  ),
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
       floatingActionButton: isStaff
           ? FloatingActionButton(

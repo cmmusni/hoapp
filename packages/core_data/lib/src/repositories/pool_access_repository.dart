@@ -27,13 +27,18 @@ class PoolAccessRepository {
   ) async {
     final response = await _client
         .from('pool_access_registrations')
-        .select()
+        .select('*, units(unit_no)')
         .eq('community_id', communityId)
         .order('created_at', ascending: false);
 
-    return (response as List)
-        .map((item) => PoolAccessRegistration.fromJson(item))
-        .toList();
+    return (response as List).map((item) {
+      final map = Map<String, dynamic>.from(item);
+      final unitData = map.remove('units') as Map<String, dynamic>?;
+      if (unitData != null) {
+        map['unit_no'] = unitData['unit_no'];
+      }
+      return PoolAccessRegistration.fromJson(map);
+    }).toList();
   }
 
   /// Create or update registration

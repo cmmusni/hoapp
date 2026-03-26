@@ -38,6 +38,9 @@ class PoolAccessRegistration {
   @JsonKey(name: 'emergency_contact_phone')
   final String emergencyContactPhone;
 
+  @JsonKey(name: 'unit_no')
+  final String? unitNo;
+
   @JsonKey(name: 'id_doc_url')
   final String? idDocUrl;
 
@@ -71,6 +74,7 @@ class PoolAccessRegistration {
     required this.communityId,
     required this.userId,
     this.unitId,
+    this.unitNo,
     required this.occupantType,
     required this.fullName,
     required this.phone,
