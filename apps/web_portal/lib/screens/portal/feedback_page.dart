@@ -36,8 +36,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error loading feedback: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error loading feedback: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -142,13 +142,21 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         child: DropdownButton<String>(
                           value: _filterCategory,
                           isDense: true,
-                          style: const TextStyle(fontSize: 13, color: Colors.black87),
+                          style: const TextStyle(
+                              fontSize: 13, color: Colors.black87),
                           items: const [
-                            DropdownMenuItem(value: 'all', child: Text('All Categories')),
-                            DropdownMenuItem(value: 'bug', child: Text('Bug Report')),
-                            DropdownMenuItem(value: 'feature_request', child: Text('Feature Request')),
-                            DropdownMenuItem(value: 'improvement', child: Text('Improvement')),
-                            DropdownMenuItem(value: 'general', child: Text('General')),
+                            DropdownMenuItem(
+                                value: 'all', child: Text('All Categories')),
+                            DropdownMenuItem(
+                                value: 'bug', child: Text('Bug Report')),
+                            DropdownMenuItem(
+                                value: 'feature_request',
+                                child: Text('Feature Request')),
+                            DropdownMenuItem(
+                                value: 'improvement',
+                                child: Text('Improvement')),
+                            DropdownMenuItem(
+                                value: 'general', child: Text('General')),
                           ],
                           onChanged: (v) {
                             if (v != null) setState(() => _filterCategory = v);
@@ -295,8 +303,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     createdAt != null
                         ? DateFormat('MMM d, yyyy').format(createdAt.toLocal())
                         : '',
-                    style:
-                        TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   ),
                 ],
               ),
@@ -339,8 +346,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(label,
-          style:
-              TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          style: TextStyle(
+              color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     );
   }
 
@@ -360,8 +367,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(label,
-          style:
-              TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          style: TextStyle(
+              color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     );
   }
 
@@ -455,21 +462,36 @@ class _FeedbackPageState extends State<FeedbackPage> {
                           spacing: 8,
                           children: [
                             _dialogCategoryChip(
-                                ctx, 'Bug Report', 'bug', Icons.bug_report,
-                                Colors.red, category,
-                                (v) => setDialogState(() => category = v)),
-                            _dialogCategoryChip(
-                                ctx, 'Feature', 'feature_request',
-                                Icons.lightbulb_outline, Colors.amber.shade800,
+                                ctx,
+                                'Bug Report',
+                                'bug',
+                                Icons.bug_report,
+                                Colors.red,
                                 category,
                                 (v) => setDialogState(() => category = v)),
                             _dialogCategoryChip(
-                                ctx, 'Improvement', 'improvement',
-                                Icons.trending_up, Colors.blue, category,
+                                ctx,
+                                'Feature',
+                                'feature_request',
+                                Icons.lightbulb_outline,
+                                Colors.amber.shade800,
+                                category,
                                 (v) => setDialogState(() => category = v)),
                             _dialogCategoryChip(
-                                ctx, 'General', 'general',
-                                Icons.chat_bubble_outline, Colors.grey, category,
+                                ctx,
+                                'Improvement',
+                                'improvement',
+                                Icons.trending_up,
+                                Colors.blue,
+                                category,
+                                (v) => setDialogState(() => category = v)),
+                            _dialogCategoryChip(
+                                ctx,
+                                'General',
+                                'general',
+                                Icons.chat_bubble_outline,
+                                Colors.grey,
+                                category,
                                 (v) => setDialogState(() => category = v)),
                           ],
                         ),
@@ -506,7 +528,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                             onPressed: submitting
                                 ? null
                                 : () async {
-                                    if (!formKey.currentState!.validate()) return;
+                                    if (!formKey.currentState!.validate())
+                                      return;
                                     setDialogState(() => submitting = true);
                                     try {
                                       final appState = context.read<AppState>();
@@ -533,9 +556,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                       setDialogState(() => submitting = false);
                                       if (ctx.mounted) {
                                         ScaffoldMessenger.of(ctx).showSnackBar(
-                                          SnackBar(
-                                              content:
-                                                  Text('Error: $e')),
+                                          SnackBar(content: Text('Error: $e')),
                                         );
                                       }
                                     }
@@ -548,8 +569,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                         strokeWidth: 2, color: Colors.white),
                                   )
                                 : const Icon(Icons.send, color: Colors.white),
-                            label: Text(
-                                submitting ? 'Submitting...' : 'Submit'),
+                            label:
+                                Text(submitting ? 'Submitting...' : 'Submit'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _brand,
                               foregroundColor: Colors.white,
@@ -729,8 +750,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 12),
                               decoration: BoxDecoration(
-                                border:
-                                    Border.all(color: Colors.grey.shade300),
+                                border: Border.all(color: Colors.grey.shade300),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: DropdownButtonHideUnderline(
@@ -750,8 +770,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                         value: 'resolved',
                                         child: Text('Resolved')),
                                     DropdownMenuItem(
-                                        value: 'closed',
-                                        child: Text('Closed')),
+                                        value: 'closed', child: Text('Closed')),
                                   ],
                                   onChanged: (v) {
                                     if (v != null) {
@@ -769,8 +788,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                           decoration: const InputDecoration(
                             labelText: 'Admin Notes',
                             border: OutlineInputBorder(),
-                            hintText:
-                                'Add notes or a response for the user...',
+                            hintText: 'Add notes or a response for the user...',
                           ),
                           maxLines: 3,
                         ),
@@ -796,8 +814,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(const SnackBar(
-                                          content:
-                                              Text('Feedback updated'),
+                                          content: Text('Feedback updated'),
                                           backgroundColor: _brand,
                                         ));
                                       }
@@ -806,8 +823,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                       if (ctx.mounted) {
                                         ScaffoldMessenger.of(ctx).showSnackBar(
                                             SnackBar(
-                                                content:
-                                                    Text('Error: $e')));
+                                                content: Text('Error: $e')));
                                       }
                                     }
                                   },
@@ -856,8 +872,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                             ),
                             child: SelectableText(
                               adminNotes,
-                              style:
-                                  const TextStyle(fontSize: 14, height: 1.5),
+                              style: const TextStyle(fontSize: 14, height: 1.5),
                             ),
                           ),
                         ],
