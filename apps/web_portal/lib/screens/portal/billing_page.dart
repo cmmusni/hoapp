@@ -670,108 +670,113 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
     final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final dateFormat = DateFormat('MMM dd, yyyy');
 
-    return AlertDialog(
+    return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      titlePadding: EdgeInsets.zero,
-      title: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xff215e3f),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Text(
-                  _getCategoryLabel(widget.invoice.category),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
+            // Green header
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Color(0xff215e3f),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        _getCategoryLabel(widget.invoice.category),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          widget.invoice.status == InvoiceStatus.paid
+                              ? 'PAID'
+                              : widget.invoice.isOverdue
+                                  ? 'OVERDUE'
+                                  : 'UNPAID',
+                          style: TextStyle(
+                            color: widget.invoice.status == InvoiceStatus.paid
+                                ? Colors.white
+                                : widget.invoice.isOverdue
+                                    ? Colors.red[200]
+                                    : Colors.amber[200],
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ),
-                ),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    widget.invoice.status == InvoiceStatus.paid
-                        ? 'PAID'
-                        : widget.invoice.isOverdue
-                            ? 'OVERDUE'
-                            : 'UNPAID',
-                    style: TextStyle(
-                      color: widget.invoice.status == InvoiceStatus.paid
-                          ? Colors.white
-                          : widget.invoice.isOverdue
-                              ? Colors.red[200]
-                              : Colors.amber[200],
-                      fontSize: 11,
+                  const SizedBox(height: 8),
+                  Text(
+                    currencyFormat.format(widget.invoice.amount),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white70),
-                  onPressed: () => Navigator.of(context).pop(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              currencyFormat.format(widget.invoice.amount),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Due ${dateFormat.format(widget.invoice.dueDate)}',
-              style: TextStyle(
-                color:
-                    widget.invoice.isOverdue ? Colors.red[200] : Colors.white60,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-      ),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.55,
-        ),
-        child: SizedBox(
-          width: 500,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Period info
-                if (widget.invoice.periodStart != null ||
-                    widget.invoice.periodEnd != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Due ${dateFormat.format(widget.invoice.dueDate)}',
+                    style: TextStyle(
+                      color: widget.invoice.isOverdue
+                          ? Colors.red[200]
+                          : Colors.white60,
+                      fontSize: 13,
                     ),
-                    child: Column(
-                      children: [
+                  ),
+                ],
+              ),
+            ),
+
+            // Scrollable content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Period info
+                    if (widget.invoice.periodStart != null ||
+                        widget.invoice.periodEnd != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          children: [
                         if (widget.invoice.description != null)
                           Text(
                             widget.invoice.description!,
@@ -953,32 +958,44 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
             ),
           ),
         ),
+
+            // Actions bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                children: [
+                  if (widget.isAdmin)
+                    TextButton.icon(
+                      onPressed: _isDeleting
+                          ? null
+                          : () => _confirmDeleteInvoice(context),
+                      icon: _isDeleting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.delete_outline, size: 18),
+                      label: Text(_isDeleting ? 'Deleting...' : 'Delete'),
+                      style:
+                          TextButton.styleFrom(foregroundColor: Colors.red),
+                    ),
+                  const Spacer(),
+                  if (widget.invoice.status == InvoiceStatus.unpaid)
+                    HOAppButton(
+                      label: 'Submit Payment',
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _showPaymentSubmissionDialog(context);
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      actions: [
-        if (widget.isAdmin)
-          TextButton.icon(
-            onPressed:
-                _isDeleting ? null : () => _confirmDeleteInvoice(context),
-            icon: _isDeleting
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.delete_outline, size: 18),
-            label: Text(_isDeleting ? 'Deleting...' : 'Delete'),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-          ),
-        const Spacer(),
-        if (widget.invoice.status == InvoiceStatus.unpaid)
-          HOAppButton(
-            label: 'Submit Payment',
-            onPressed: () {
-              Navigator.of(context).pop();
-              _showPaymentSubmissionDialog(context);
-            },
-          ),
-      ],
     );
   }
 
