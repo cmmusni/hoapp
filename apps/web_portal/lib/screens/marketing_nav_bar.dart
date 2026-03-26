@@ -278,3 +278,301 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
+
+/// Shared footer for all marketing pages.
+class MarketingFooter extends StatelessWidget {
+  const MarketingFooter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 600;
+    final year = DateTime.now().year;
+
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1A2E),
+      ),
+      child: Column(
+        children: [
+          // Main footer content
+          Container(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 20 : 40,
+              vertical: isMobile ? 32 : 48,
+            ),
+            child: isMobile ? _buildMobileLayout(context) : _buildDesktopLayout(context),
+          ),
+
+          // Divider
+          Container(
+            width: double.infinity,
+            height: 1,
+            color: Colors.white.withOpacity(0.1),
+          ),
+
+          // Bottom bar
+          Container(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 20 : 40,
+              vertical: 16,
+            ),
+            child: isMobile
+                ? Column(
+                    children: [
+                      Text(
+                        '\u00a9 $year HOApp. All rights reserved.',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Developed by Clifford Mark Musni',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.4),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '\u00a9 $year HOApp. All rights reserved.',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        'Developed by Clifford Mark Musni',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.4),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Brand column
+        Expanded(
+          flex: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _brand,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.home_work_outlined, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'HOApp',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Efficient Management,\nEffortless Community.',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Quick Links
+        Expanded(
+          child: _buildLinkColumn(
+            context,
+            'Product',
+            {
+              'Features': '/features',
+              'Pricing': '/pricing',
+              'Support': '/support',
+            },
+          ),
+        ),
+
+        // Company
+        Expanded(
+          child: _buildLinkColumn(
+            context,
+            'Company',
+            {
+              'Contact': '/contact',
+              'Login': '/login',
+            },
+          ),
+        ),
+
+        // Contact info
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Get in Touch',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildContactRow(Icons.email_outlined, 'support@hoapp.net'),
+              const SizedBox(height: 10),
+              _buildContactRow(Icons.language_outlined, 'hoapp.net'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
+    return Column(
+      children: [
+        // Brand
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _brand,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.home_work_outlined, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'HOApp',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Efficient Management, Effortless Community.',
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 13,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+
+        // Links row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLinkColumn(
+              context,
+              'Product',
+              {
+                'Features': '/features',
+                'Pricing': '/pricing',
+                'Support': '/support',
+              },
+            ),
+            _buildLinkColumn(
+              context,
+              'Company',
+              {
+                'Contact': '/contact',
+                'Login': '/login',
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Contact
+        _buildContactRow(Icons.email_outlined, 'support@hoapp.net'),
+        const SizedBox(height: 8),
+        _buildContactRow(Icons.language_outlined, 'hoapp.net'),
+      ],
+    );
+  }
+
+  Widget _buildLinkColumn(BuildContext context, String title, Map<String, String> links) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...links.entries.map((e) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: InkWell(
+                onTap: () => context.go(e.value),
+                child: Text(
+                  e.key,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            )),
+      ],
+    );
+  }
+
+  static Widget _buildContactRow(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: Colors.white.withOpacity(0.5)),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+}

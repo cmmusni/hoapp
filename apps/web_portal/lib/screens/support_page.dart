@@ -207,6 +207,9 @@ class SupportPage extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  // Footer
+                  const MarketingFooter(),
                 ],
               ),
             ),

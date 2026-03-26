@@ -201,6 +201,9 @@ class FeaturesPage extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  // Footer
+                  const MarketingFooter(),
                 ],
               ),
             ),

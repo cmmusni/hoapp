@@ -286,6 +286,9 @@ class PricingPage extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  // Footer
+                  const MarketingFooter(),
                 ],
               ),
             ),

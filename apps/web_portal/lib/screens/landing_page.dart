@@ -203,6 +203,9 @@ class LandingPage extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  // Footer
+                  const MarketingFooter(),
                 ],
               ),
             ),

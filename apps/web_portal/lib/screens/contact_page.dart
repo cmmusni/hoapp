@@ -160,6 +160,9 @@ class _ContactPageState extends State<ContactPage> {
                       ],
                     ),
                   ),
+
+                  // Footer
+                  const MarketingFooter(),
                 ],
               ),
             ),
