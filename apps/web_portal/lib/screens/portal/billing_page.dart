@@ -777,187 +777,193 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                         ),
                         child: Column(
                           children: [
-                        if (widget.invoice.description != null)
-                          Text(
-                            widget.invoice.description!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                            ),
-                          ),
-                        if (widget.invoice.periodStart != null &&
-                            widget.invoice.periodEnd != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            'Period: ${dateFormat.format(widget.invoice.periodStart!)} – ${dateFormat.format(widget.invoice.periodEnd!)}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Line items breakdown
-                FutureBuilder<List<InvoiceLineItem>>(
-                  future: _lineItemsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Center(
-                            child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2))),
-                      );
-                    }
-
-                    final items = snapshot.data ?? [];
-
-                    if (items.isEmpty) {
-                      // No line items — just show the total
-                      return _buildTotalRow(currencyFormat);
-                    }
-
-                    return Column(
-                      children: [
-                        ...items.map((item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.label,
-                                          style: const TextStyle(fontSize: 14),
-                                        ),
-                                        if (item.metadata != null &&
-                                            item.metadata!['detail'] != null)
-                                          Text(
-                                            item.metadata!['detail'] as String,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey[500],
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  Text(
-                                    currencyFormat.format(item.amount),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                            if (widget.invoice.description != null)
+                              Text(
+                                widget.invoice.description!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
                               ),
-                            )),
-                        const Divider(height: 16),
-                        _buildTotalRow(currencyFormat),
-                      ],
-                    );
-                  },
-                ),
+                            if (widget.invoice.periodStart != null &&
+                                widget.invoice.periodEnd != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Period: ${dateFormat.format(widget.invoice.periodStart!)} – ${dateFormat.format(widget.invoice.periodEnd!)}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
-                if (widget.invoice.notes != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade50,
-                      borderRadius: BorderRadius.circular(8),
+                    // Line items breakdown
+                    FutureBuilder<List<InvoiceLineItem>>(
+                      future: _lineItemsFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Center(
+                                child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))),
+                          );
+                        }
+
+                        final items = snapshot.data ?? [];
+
+                        if (items.isEmpty) {
+                          // No line items — just show the total
+                          return _buildTotalRow(currencyFormat);
+                        }
+
+                        return Column(
+                          children: [
+                            ...items.map((item) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.label,
+                                              style:
+                                                  const TextStyle(fontSize: 14),
+                                            ),
+                                            if (item.metadata != null &&
+                                                item.metadata!['detail'] !=
+                                                    null)
+                                              Text(
+                                                item.metadata!['detail']
+                                                    as String,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[500],
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      Text(
+                                        currencyFormat.format(item.amount),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )),
+                            const Divider(height: 16),
+                            _buildTotalRow(currencyFormat),
+                          ],
+                        );
+                      },
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                    if (widget.invoice.notes != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.note_outlined,
+                                size: 16, color: Colors.amber[700]),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.invoice.notes!,
+                                style: TextStyle(
+                                    fontSize: 13, color: Colors.amber[900]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 20),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    Row(
                       children: [
-                        Icon(Icons.note_outlined,
-                            size: 16, color: Colors.amber[700]),
+                        Icon(Icons.payments_outlined,
+                            size: 18, color: Colors.grey[600]),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.invoice.notes!,
-                            style: TextStyle(
-                                fontSize: 13, color: Colors.amber[900]),
+                        Text(
+                          'Payment History',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[800],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    FutureBuilder<List<Payment>>(
+                      future: _paymentsFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
 
-                const SizedBox(height: 20),
-                const Divider(),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.payments_outlined,
-                        size: 18, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Payment History',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
-                      ),
+                        final payments = snapshot.data ?? [];
+
+                        if (payments.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              'No payments submitted yet',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          );
+                        }
+
+                        return Column(
+                          children: payments.map((payment) {
+                            return _PaymentCard(
+                              payment: payment,
+                              isStaff: widget.isStaff,
+                              onRefresh: () {
+                                _loadPayments();
+                                widget.onRefresh();
+                              },
+                            );
+                          }).toList(),
+                        );
+                      },
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                FutureBuilder<List<Payment>>(
-                  future: _paymentsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-
-                    final payments = snapshot.data ?? [];
-
-                    if (payments.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'No payments submitted yet',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      children: payments.map((payment) {
-                        return _PaymentCard(
-                          payment: payment,
-                          isStaff: widget.isStaff,
-                          onRefresh: () {
-                            _loadPayments();
-                            widget.onRefresh();
-                          },
-                        );
-                      }).toList(),
-                    );
-                  },
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
 
             // Actions bar
             Padding(
@@ -973,22 +979,23 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.delete_outline, size: 18),
                       label: Text(_isDeleting ? 'Deleting...' : 'Delete'),
-                      style:
-                          TextButton.styleFrom(foregroundColor: Colors.red),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
                     ),
                   const Spacer(),
                   if (widget.invoice.status == InvoiceStatus.unpaid)
-                    HOAppButton(
-                      label: 'Submit Payment',
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        _showPaymentSubmissionDialog(context);
-                      },
+                    SizedBox(
+                      width: 180,
+                      child: HOAppButton(
+                        label: 'Submit Payment',
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _showPaymentSubmissionDialog(context);
+                        },
+                      ),
                     ),
                 ],
               ),
@@ -1614,51 +1621,48 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
                         TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
               ),
               const SizedBox(height: 8),
-              MouseRegion(
-                child: _proofUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Stack(
-                          children: [
-                            Image.network(
-                              _proofUrl!,
+              _proofUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Stack(
+                        children: [
+                          Image.network(
+                            _proofUrl!,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
                               height: 180,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                height: 180,
-                                color: Colors.grey[200],
-                                child: const Center(
-                                    child: Icon(Icons.broken_image,
-                                        color: Colors.grey)),
-                              ),
+                              color: Colors.grey[200],
+                              child: const Center(
+                                  child: Icon(Icons.broken_image,
+                                      color: Colors.grey)),
                             ),
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: IconButton(
-                                onPressed: () =>
-                                    setState(() => _proofUrl = null),
-                                icon: const Icon(Icons.close,
-                                    color: Colors.white),
-                                style: IconButton.styleFrom(
-                                    backgroundColor: Colors.black54),
-                                iconSize: 18,
-                              ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: IconButton(
+                              onPressed: () => setState(() => _proofUrl = null),
+                              icon:
+                                  const Icon(Icons.close, color: Colors.white),
+                              style: IconButton.styleFrom(
+                                  backgroundColor: Colors.black54),
+                              iconSize: 18,
                             ),
-                          ],
-                        ),
-                      )
-                    : ImageUploadWidget(
-                        bucket: 'payment-proofs',
-                        folder: Supabase.instance.client.auth.currentUser?.id,
-                        onUploadComplete: (url) {
-                          if (url.isNotEmpty) {
-                            setState(() => _proofUrl = url);
-                          }
-                        },
+                          ),
+                        ],
                       ),
-              ),
+                    )
+                  : ImageUploadWidget(
+                      bucket: 'payment-proofs',
+                      folder: Supabase.instance.client.auth.currentUser?.id,
+                      onUploadComplete: (url) {
+                        if (url.isNotEmpty) {
+                          setState(() => _proofUrl = url);
+                        }
+                      },
+                    ),
             ],
           ),
         ),
