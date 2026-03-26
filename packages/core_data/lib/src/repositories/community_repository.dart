@@ -385,4 +385,51 @@ class CommunityRepository {
       'processed_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', requestId);
   }
+
+  // ============ FEEDBACK ============
+
+  /// Submit feedback from any user
+  Future<void> submitFeedback({
+    required String communityId,
+    required String category,
+    required String subject,
+    required String description,
+  }) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('Not authenticated');
+
+    await _client.from('feedback').insert({
+      'community_id': communityId,
+      'user_id': user.id,
+      'user_email': user.email ?? '',
+      'category': category,
+      'subject': subject,
+      'description': description,
+    });
+  }
+
+  /// Get feedback for a community (staff sees all, residents see own)
+  Future<List<Map<String, dynamic>>> getFeedback(String communityId) async {
+    final data = await _client
+        .from('feedback')
+        .select()
+        .eq('community_id', communityId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  /// Update feedback status and/or admin notes (staff only)
+  Future<void> updateFeedback({
+    required String feedbackId,
+    String? status,
+    String? adminNotes,
+  }) async {
+    final updates = <String, dynamic>{
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+    if (status != null) updates['status'] = status;
+    if (adminNotes != null) updates['admin_notes'] = adminNotes;
+
+    await _client.from('feedback').update(updates).eq('id', feedbackId);
+  }
 }

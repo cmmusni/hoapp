@@ -156,6 +156,8 @@ class _PortalShellState extends State<PortalShell> {
       pageTitle = 'Security Pass';
     } else if (currentPath.contains('/qr-scanner')) {
       pageTitle = 'QR Pass Scanner';
+    } else if (currentPath.contains('/feedback')) {
+      pageTitle = 'Feedback';
     } else {
       communityName = null; // Don't show community name twice on home
     }
@@ -620,6 +622,8 @@ class _PortalShellState extends State<PortalShell> {
                     if ((isGuard || isMaintenance) && isPro)
                       _buildSidebarItem(context, 'QR Pass Scanner',
                           Icons.qr_code_scanner, '/qr-scanner', currentPath),
+                    _buildSidebarItem(context, 'Feedback',
+                        Icons.feedback_outlined, '/feedback', currentPath),
                     if (isStaff) ...[
                       const Padding(
                         padding:
@@ -812,6 +816,8 @@ class _PortalShellState extends State<PortalShell> {
             if ((isGuard || isMaintenance) && isPro)
               _buildMenuItem(context, 'QR Pass Scanner', Icons.qr_code_scanner,
                   '/${widget.communitySlug}/qr-scanner', currentPath),
+            _buildMenuItem(context, 'Feedback', Icons.feedback,
+                '/${widget.communitySlug}/feedback', currentPath),
             if (isStaff) ...[
               const Divider(),
               _buildMenuItem(context, 'Households', Icons.family_restroom,
