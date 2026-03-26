@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
@@ -38,10 +39,6 @@ class _SettingsPageState extends State<SettingsPage> {
     final isAdmin = appState.isAdmin;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        elevation: 0,
-      ),
       body: FutureBuilder<Community?>(
         future: _communityFuture,
         builder: (context, snapshot) {
@@ -88,36 +85,36 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 const SizedBox(height: 24),
 
-                // Branding
-                Row(
-                  children: [
-                    Text(
-                      'Branding',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const Spacer(),
-                    if (isAdmin)
-                      TextButton.icon(
-                        onPressed: () =>
-                            _showBrandingDialog(context, community),
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Edit'),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _BrandingPreview(
-                  primaryColor: _parseBrandingValue<String>(
-                    community.settings,
-                    'primaryColor',
-                    '#215E3F',
-                  ),
-                  logoUrl: _parseBrandingValue<String>(
-                    community.settings,
-                    'logoUrl',
-                    '', // Empty string instead of null
-                  ),
-                ),
+                // // Branding
+                // Row(
+                //   children: [
+                //     Text(
+                //       'Branding',
+                //       style: Theme.of(context).textTheme.titleLarge,
+                //     ),
+                //     const Spacer(),
+                //     if (isAdmin)
+                //       TextButton.icon(
+                //         onPressed: () =>
+                //             _showBrandingDialog(context, community),
+                //         icon: const Icon(Icons.edit),
+                //         label: const Text('Edit'),
+                //       ),
+                //   ],
+                // ),
+                // const SizedBox(height: 16),
+                // _BrandingPreview(
+                //   primaryColor: _parseBrandingValue<String>(
+                //     community.settings,
+                //     'primaryColor',
+                //     '#215E3F',
+                //   ),
+                //   logoUrl: _parseBrandingValue<String>(
+                //     community.settings,
+                //     'logoUrl',
+                //     '', // Empty string instead of null
+                //   ),
+                // ),
 
                 const SizedBox(height: 24),
 
@@ -129,54 +126,25 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 24),
                 ],
 
-                // Account settings
-                Text(
-                  'Account',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                HOAppCard(
-                  onTap: () {
-                    // TODO: Navigate to change password
-                  },
-                  child: const ListTile(
-                    leading: Icon(Icons.lock),
-                    title: Text('Change Password'),
-                    trailing: Icon(Icons.chevron_right),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                HOAppCard(
-                  onTap: () {
-                    // TODO: Navigate to edit profile
-                  },
-                  child: const ListTile(
-                    leading: Icon(Icons.person),
-                    title: Text('Edit Profile'),
-                    trailing: Icon(Icons.chevron_right),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                HOAppCard(
-                  onTap: () {
-                    // TODO: Show notifications settings
-                  },
-                  child: const ListTile(
-                    leading: Icon(Icons.notifications),
-                    title: Text('Notifications'),
-                    trailing: Icon(Icons.chevron_right),
-                  ),
-                ),
-
                 const SizedBox(height: 24),
 
                 // Sign out
                 SizedBox(
                   width: double.infinity, // Full width
-                  child: HOAppButton(
-                    label: 'Sign Out',
+                  child: ElevatedButton.icon(
                     onPressed: () => _handleSignOut(context),
-                    isOutlined: true, // Use isOutlined instead of variant
+                    icon: const Icon(Icons.logout, size: 16, color: Colors.red),
+                    label: const Text('Sign Out'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      textStyle: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
                   ),
                 ),
 
@@ -194,7 +162,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Made with Flutter & Supabase',
+                        'Made by Clifford Musni',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.grey,
                             ),
@@ -235,7 +203,7 @@ class _SettingsPageState extends State<SettingsPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.logout, color: Colors.orange, size: 24),
+            const Icon(Icons.logout, color: Colors.red, size: 24),
             const SizedBox(width: 12),
             const Text('Sign Out?',
                 style: TextStyle(fontWeight: FontWeight.w600)),
@@ -252,7 +220,11 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sign Out'),
+            style: TextButton.styleFrom(backgroundColor: Colors.red[400]),
+            child: const Text(
+              'Yes',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -265,10 +237,7 @@ class _SettingsPageState extends State<SettingsPage> {
       await authRepo.signOut();
 
       if (context.mounted) {
-        // TODO: Navigate to login screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Signed out')),
-        );
+        context.go('/login');
       }
     } catch (e) {
       if (context.mounted) {
@@ -647,10 +616,14 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const Spacer(),
-            TextButton.icon(
+            ElevatedButton.icon(
               onPressed: () => _showAddDialog(context),
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add, size: 16, color: Colors.white),
               label: const Text('Add'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color.fromRGBO(39, 99, 67, 1),
+                foregroundColor: Colors.white,
+              ),
             ),
           ],
         ),

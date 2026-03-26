@@ -202,29 +202,77 @@ serve(async (req) => {
       }
     }
 
-    // If household invite, add to household_members
+    // If household invite, link user to household_members
     if (invite.invite_kind === 'household' && invite.unit_id) {
-      const { error: memberError } = await supabaseAdmin
+      console.log('=== HOUSEHOLD LINKING ===')
+      console.log('household_member_id:', invite.household_member_id)
+      console.log('unit_id:', invite.unit_id)
+      console.log('user.id:', user.id)
+
+      // Check if user is already a household member for this unit
+      const { data: existingMember } = await supabaseAdmin
         .from('household_members')
-        .insert({
-          community_id: invite.community_id,
-          unit_id: invite.unit_id,
-          user_id: user.id,
-          member_role: 'member'
-        })
+        .select('id')
+        .eq('unit_id', invite.unit_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-      if (memberError) {
-        // Check if already a member
-        const { data: existingMember } = await supabaseAdmin
-          .from('household_members')
-          .select('id')
-          .eq('unit_id', invite.unit_id)
-          .eq('user_id', user.id)
-          .single()
+      console.log('existingMember:', existingMember)
 
-        if (!existingMember) {
-          console.error('Household member insert error:', memberError)
-          // Non-fatal for now
+      if (!existingMember) {
+        if (invite.household_member_id) {
+          // Verify the target row exists first
+          const { data: targetRow, error: lookupError } = await supabaseAdmin
+            .from('household_members')
+            .select('id, user_id, member_name, member_role')
+            .eq('id', invite.household_member_id)
+            .maybeSingle()
+
+          console.log('Target row lookup:', targetRow, 'error:', lookupError)
+
+          if (targetRow) {
+            // Update the exact row: set user_id, clear member_name
+            const { data: updated, error: updateError } = await supabaseAdmin
+              .from('household_members')
+              .update({ user_id: user.id, member_name: null })
+              .eq('id', invite.household_member_id)
+              .select()
+
+            console.log('Update result:', updated, 'error:', updateError)
+
+            if (updateError) {
+              console.error('Household member update FAILED:', updateError)
+            }
+          } else {
+            // Target row not found — insert a new one
+            console.log('Target household member not found, inserting new row')
+            const { error: memberError } = await supabaseAdmin
+              .from('household_members')
+              .insert({
+                community_id: invite.community_id,
+                unit_id: invite.unit_id,
+                user_id: user.id,
+                member_role: 'member'
+              })
+
+            if (memberError) {
+              console.error('Household member insert error:', memberError)
+            }
+          }
+        } else {
+          // No specific member referenced — insert a new row
+          const { error: memberError } = await supabaseAdmin
+            .from('household_members')
+            .insert({
+              community_id: invite.community_id,
+              unit_id: invite.unit_id,
+              user_id: user.id,
+              member_role: 'member'
+            })
+
+          if (memberError) {
+            console.error('Household member insert error:', memberError)
+          }
         }
       }
     }

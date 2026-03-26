@@ -38,6 +38,7 @@ class PoolAccessRepository {
 
   /// Create or update registration
   Future<String> upsertRegistration({
+    String? id,
     required String communityId,
     String? unitId,
     required OccupantType occupantType,
@@ -48,12 +49,14 @@ class PoolAccessRepository {
     required String emergencyContactName,
     required String emergencyContactPhone,
     String? idDocUrl,
+    int maxPax = 5,
     Map<String, dynamic>? acknowledgements,
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not authenticated');
 
     final data = {
+      if (id != null) 'id': id,
       'community_id': communityId,
       'user_id': userId,
       if (unitId != null) 'unit_id': unitId,
@@ -65,6 +68,7 @@ class PoolAccessRepository {
       'emergency_contact_name': emergencyContactName,
       'emergency_contact_phone': emergencyContactPhone,
       if (idDocUrl != null) 'id_doc_url': idDocUrl,
+      'max_pax': maxPax,
       'acknowledgements': acknowledgements ?? {},
       'rules_version': 'v1',
       'approved': false,
@@ -108,5 +112,61 @@ class PoolAccessRepository {
     final registration = await getMyRegistration(communityId);
     if (registration == null) return true; // Can create new
     return registration.canEdit;
+  }
+
+  // ============ SWIMMERS ============
+
+  /// Get all registered swimmers for a community (with registrant info)
+  Future<List<Map<String, dynamic>>> getAllSwimmers(String communityId) async {
+    final response = await _client
+        .from('pool_registered_swimmers')
+        .select(
+            'id, full_name, birthdate, created_at, registration_id, pool_access_registrations!inner(id, community_id, full_name, unit_id, approved)')
+        .eq('pool_access_registrations.community_id', communityId)
+        .order('full_name');
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Get swimmers for a registration
+  Future<List<PoolSwimmer>> getSwimmers(String registrationId) async {
+    final response = await _client
+        .from('pool_registered_swimmers')
+        .select()
+        .eq('registration_id', registrationId)
+        .order('sort_order');
+
+    return (response as List)
+        .map((item) => PoolSwimmer.fromJson(item))
+        .toList();
+  }
+
+  /// Save swimmers for a registration (delete existing + insert new batch)
+  Future<void> saveSwimmers({
+    required String registrationId,
+    required List<Map<String, dynamic>> swimmers,
+  }) async {
+    // Delete existing swimmers
+    await _client
+        .from('pool_registered_swimmers')
+        .delete()
+        .eq('registration_id', registrationId);
+
+    // Insert new swimmers
+    if (swimmers.isNotEmpty) {
+      final rows = swimmers
+          .asMap()
+          .entries
+          .map((entry) => {
+                'registration_id': registrationId,
+                'full_name': entry.value['full_name'],
+                if (entry.value['birthdate'] != null)
+                  'birthdate': entry.value['birthdate'],
+                'sort_order': entry.key,
+              })
+          .toList();
+
+      await _client.from('pool_registered_swimmers').insert(rows);
+    }
   }
 }

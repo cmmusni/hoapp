@@ -71,8 +71,34 @@ serve(async (req) => {
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(target_user_id)
 
     if (deleteError) {
-      console.error('Delete user error:', deleteError)
-      return jsonResponse({ ok: false, error: 'Failed to delete user' }, 500)
+      // If user not found in auth, clean up leftover DB records instead of failing
+      const isNotFound =
+        deleteError.status === 404 ||
+        deleteError.message?.includes('not found') ||
+        deleteError.message?.includes('User not found')
+
+      if (isNotFound) {
+        console.log('Auth user not found, cleaning up DB records for:', target_user_id)
+        await supabaseAdmin
+          .from('user_roles')
+          .delete()
+          .eq('user_id', target_user_id)
+          .eq('community_id', community_id)
+
+        await supabaseAdmin
+          .from('profiles')
+          .delete()
+          .eq('user_id', target_user_id)
+          .eq('community_id', community_id)
+
+        await supabaseAdmin
+          .from('household_members')
+          .delete()
+          .eq('user_id', target_user_id)
+      } else {
+        console.error('Delete user error:', deleteError)
+        return jsonResponse({ ok: false, error: deleteError.message || 'Failed to delete user' }, 500)
+      }
     }
 
     // Audit log

@@ -27,4 +27,5 @@ const _$RoleEnumMap = {
   Role.hoaOfficer: 'hoa_officer',
   Role.guard: 'guard',
   Role.resident: 'resident',
+  Role.maintenance: 'maintenance',
 };

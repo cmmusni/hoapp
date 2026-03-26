@@ -5,6 +5,7 @@ import 'package:core_domain/core_domain.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BillingPage extends StatefulWidget {
   const BillingPage({super.key});
@@ -113,11 +114,13 @@ class _BillingTrendChartState extends State<_BillingTrendChart> {
     if (communityId == null) return;
 
     try {
-      final invoices = await repo.getInvoices(communityId);
-      // Aggregate by month (last 6 months)
+      final invoices = appState.isStaff
+          ? await repo.getInvoices(communityId)
+          : await repo.getMyInvoices(communityId);
+      // Aggregate by month (last 5 months + current + next)
       final now = DateTime.now();
       final months = <_MonthlyData>[];
-      for (int i = 5; i >= 0; i--) {
+      for (int i = 5; i >= -1; i--) {
         final month = DateTime(now.year, now.month - i, 1);
         final monthEnd = DateTime(month.year, month.month + 1, 0);
         final label = DateFormat('MMM').format(month);
@@ -212,7 +215,7 @@ class _BillingTrendChartState extends State<_BillingTrendChart> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _legendDot(theme.colorScheme.primary, 'Charged'),
+              _legendDot(Colors.orangeAccent, 'Charged'),
               const SizedBox(width: 16),
               _legendDot(theme.colorScheme.tertiary, 'Paid'),
             ],
@@ -449,6 +452,7 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
               return _InvoiceCard(
                 invoice: invoice,
                 isStaff: isStaff,
+                isAdmin: appState.isAdmin,
                 onRefresh: _loadInvoices,
               );
             },
@@ -462,11 +466,13 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
 class _InvoiceCard extends StatelessWidget {
   final Invoice invoice;
   final bool isStaff;
+  final bool isAdmin;
   final VoidCallback onRefresh;
 
   const _InvoiceCard({
     required this.invoice,
     required this.isStaff,
+    required this.isAdmin,
     required this.onRefresh,
   });
 
@@ -609,6 +615,7 @@ class _InvoiceCard extends StatelessWidget {
       builder: (context) => _InvoiceDetailsDialog(
         invoice: invoice,
         isStaff: isStaff,
+        isAdmin: isAdmin,
         onRefresh: onRefresh,
       ),
     );
@@ -618,11 +625,13 @@ class _InvoiceCard extends StatelessWidget {
 class _InvoiceDetailsDialog extends StatefulWidget {
   final Invoice invoice;
   final bool isStaff;
+  final bool isAdmin;
   final VoidCallback onRefresh;
 
   const _InvoiceDetailsDialog({
     required this.invoice,
     required this.isStaff,
+    required this.isAdmin,
     required this.onRefresh,
   });
 
@@ -633,6 +642,7 @@ class _InvoiceDetailsDialog extends StatefulWidget {
 class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
   Future<List<Payment>>? _paymentsFuture;
   Future<List<InvoiceLineItem>>? _lineItemsFuture;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -662,21 +672,81 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.receipt_long_outlined,
-              color: Color(0xff215e3f), size: 24),
-          const SizedBox(width: 12),
-          const Text('Invoice Details',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
+      titlePadding: EdgeInsets.zero,
+      title: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xff215e3f),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  _getCategoryLabel(widget.invoice.category),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    widget.invoice.status == InvoiceStatus.paid
+                        ? 'PAID'
+                        : widget.invoice.isOverdue
+                            ? 'OVERDUE'
+                            : 'UNPAID',
+                    style: TextStyle(
+                      color: widget.invoice.status == InvoiceStatus.paid
+                          ? Colors.white
+                          : widget.invoice.isOverdue
+                              ? Colors.red[200]
+                              : Colors.amber[200],
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70),
+                  onPressed: () => Navigator.of(context).pop(),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              currencyFormat.format(widget.invoice.amount),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Due ${dateFormat.format(widget.invoice.dueDate)}',
+              style: TextStyle(
+                color:
+                    widget.invoice.isOverdue ? Colors.red[200] : Colors.white60,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
       ),
       content: SizedBox(
         width: 500,
@@ -722,71 +792,6 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                 ),
                 const SizedBox(height: 16),
               ],
-
-              // Summary row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getCategoryLabel(widget.invoice.category),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Due: ${dateFormat.format(widget.invoice.dueDate)}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: widget.invoice.isOverdue
-                              ? Colors.red
-                              : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (widget.invoice.status == InvoiceStatus.paid
-                              ? const Color(0xff215e3f)
-                              : widget.invoice.isOverdue
-                                  ? Colors.red
-                                  : Colors.orange)
-                          .withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      widget.invoice.status == InvoiceStatus.paid
-                          ? 'PAID'
-                          : widget.invoice.isOverdue
-                              ? 'OVERDUE'
-                              : 'UNPAID',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: widget.invoice.status == InvoiceStatus.paid
-                            ? const Color(0xff215e3f)
-                            : widget.invoice.isOverdue
-                                ? Colors.red
-                                : Colors.orange,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-              const Divider(height: 1),
-              const SizedBox(height: 16),
 
               // Line items breakdown
               FutureBuilder<List<InvoiceLineItem>>(
@@ -883,17 +888,25 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                 ),
               ],
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               const Divider(),
-              const SizedBox(height: 8),
-              const Text(
-                'Payments',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.payments_outlined,
+                      size: 18, color: Colors.grey[600]),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Payment History',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               FutureBuilder<List<Payment>>(
                 future: _paymentsFuture,
                 builder: (context, snapshot) {
@@ -937,10 +950,21 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Close'),
-        ),
+        if (widget.isAdmin)
+          TextButton.icon(
+            onPressed:
+                _isDeleting ? null : () => _confirmDeleteInvoice(context),
+            icon: _isDeleting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.delete_outline, size: 18),
+            label: Text(_isDeleting ? 'Deleting...' : 'Delete'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        const Spacer(),
         if (widget.invoice.status == InvoiceStatus.unpaid)
           HOAppButton(
             label: 'Submit Payment',
@@ -951,6 +975,60 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
           ),
       ],
     );
+  }
+
+  Future<void> _confirmDeleteInvoice(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Invoice'),
+        content: const Text(
+          'Are you sure you want to delete this invoice? This will also delete all associated payments and line items. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isDeleting = true);
+    try {
+      final repo = context.read<BillingRepository>();
+      await repo.deleteInvoice(widget.invoice.id);
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onRefresh();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invoice deleted successfully'),
+            backgroundColor: Color(0xff215e3f),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete invoice: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showPaymentSubmissionDialog(BuildContext context) {
@@ -1002,7 +1080,7 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
   }
 }
 
-class _PaymentCard extends StatelessWidget {
+class _PaymentCard extends StatefulWidget {
   final Payment payment;
   final bool isStaff;
   final VoidCallback onRefresh;
@@ -1012,6 +1090,16 @@ class _PaymentCard extends StatelessWidget {
     required this.isStaff,
     required this.onRefresh,
   });
+
+  @override
+  State<_PaymentCard> createState() => _PaymentCardState();
+}
+
+class _PaymentCardState extends State<_PaymentCard> {
+  bool _isProcessing = false;
+
+  Payment get payment => widget.payment;
+  bool get isStaff => widget.isStaff;
 
   Color _getPaymentStatusColor() {
     switch (payment.status) {
@@ -1072,17 +1160,58 @@ class _PaymentCard extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
             if (payment.proofUrl != null) ...[
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: () {
-                  // Open proof URL in new tab or dialog
-                },
-                icon: const Icon(Icons.receipt, size: 16),
-                label: const Text('View Proof'),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              const SizedBox(height: 10),
+              InkWell(
+                onTap: () => _showProofDialog(context, payment.proofUrl!),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  height: 72,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                    color: Colors.grey.shade50,
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(7)),
+                        child: Image.network(
+                          payment.proofUrl!,
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 72,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.receipt_long,
+                                color: Colors.grey, size: 28),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Payment Proof',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w500, fontSize: 13)),
+                            const SizedBox(height: 2),
+                            Text('Tap to view full image',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey[500])),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Icon(Icons.open_in_new,
+                            size: 16, color: Colors.grey[400]),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -1111,29 +1240,51 @@ class _PaymentCard extends StatelessWidget {
             ],
             if (isStaff && payment.status == PaymentStatus.submitted) ...[
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => _rejectPayment(context),
-                    icon: const Icon(Icons.close, size: 16),
-                    label: const Text('Reject'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
+              if (_isProcessing)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 10),
+                        Text('Processing...',
+                            style: TextStyle(fontSize: 13, color: Colors.grey)),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => _verifyPayment(context),
-                    icon: const Icon(Icons.check, size: 16),
-                    label: const Text('Verify'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color.fromRGBO(39, 99, 67, 1),
-                      foregroundColor: Colors.white,
+                )
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _rejectPayment(context),
+                      icon:
+                          const Icon(Icons.close, size: 16, color: Colors.red),
+                      label: const Text('Reject'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () => _verifyPayment(context),
+                      icon: const Icon(Icons.check,
+                          size: 16, color: Colors.white),
+                      label: const Text('Verify'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color.fromRGBO(39, 99, 67, 1),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ],
         ),
@@ -1142,6 +1293,7 @@ class _PaymentCard extends StatelessWidget {
   }
 
   Future<void> _verifyPayment(BuildContext context) async {
+    setState(() => _isProcessing = true);
     try {
       final repo = context.read<BillingRepository>();
       await repo.verifyPayment(paymentId: payment.id, verified: true);
@@ -1150,15 +1302,66 @@ class _PaymentCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Payment verified successfully')),
         );
-        onRefresh();
+        widget.onRefresh();
       }
     } catch (e) {
+      if (mounted) setState(() => _isProcessing = false);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
       }
     }
+  }
+
+  void _showProofDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+              child: Row(
+                children: [
+                  const Text('Payment Proof',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+            ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 500, maxWidth: 600),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 200,
+                      color: Colors.grey[200],
+                      child: const Center(
+                          child: Icon(Icons.broken_image,
+                              size: 48, color: Colors.grey)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _rejectPayment(BuildContext context) async {
@@ -1168,47 +1371,94 @@ class _PaymentCard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.cancel_outlined, color: Colors.red, size: 24),
-            const SizedBox(width: 12),
-            const Text('Reject Payment',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(false),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Please provide a reason for rejection:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Rejection Reason',
-                border: OutlineInputBorder(),
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.warning_amber_rounded,
+                    color: Colors.red, size: 24),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Reject Payment',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        )),
+                    SizedBox(height: 2),
+                    Text('This action cannot be undone',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.red,
+                        )),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(false),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        ),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Please provide a reason for rejection:',
+                  style: TextStyle(fontSize: 14)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Enter reason...',
+                  border: const OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
-          ElevatedButton(
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Reject'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.close, size: 18, color: Colors.white),
+            label: const Text('Reject Payment'),
           ),
         ],
       ),
     );
 
     if (confirmed == true && context.mounted) {
+      setState(() => _isProcessing = true);
       try {
         final repo = context.read<BillingRepository>();
         await repo.verifyPayment(
@@ -1221,9 +1471,10 @@ class _PaymentCard extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Payment rejected')),
           );
-          onRefresh();
+          widget.onRefresh();
         }
       } catch (e) {
+        if (mounted) setState(() => _isProcessing = false);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: $e')),
@@ -1253,7 +1504,7 @@ class _PaymentSubmissionDialog extends StatefulWidget {
 class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
-  final _proofUrlController = TextEditingController();
+  String? _proofUrl;
   bool _isSubmitting = false;
 
   @override
@@ -1265,7 +1516,6 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
   @override
   void dispose() {
     _amountController.dispose();
-    _proofUrlController.dispose();
     super.dispose();
   }
 
@@ -1275,82 +1525,120 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.payment_outlined,
-              color: Color(0xff215e3f), size: 24),
-          const SizedBox(width: 12),
-          const Text('Submit Payment',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      titlePadding: EdgeInsets.zero,
+      title: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xff215e3f),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+        child: Row(
           children: [
-            Text(
-              'Invoice Amount: ${currencyFormat.format(widget.invoice.amount)}',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _amountController,
-              decoration: const InputDecoration(
-                labelText: 'Amount Paid',
-                prefixText: '₱ ',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value?.isEmpty ?? true) return 'Required';
-                final amount = double.tryParse(value!);
-                if (amount == null) return 'Invalid amount';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _proofUrlController,
-              decoration: const InputDecoration(
-                labelText: 'Proof of Payment URL',
-                hintText: 'Upload receipt to file storage and paste link',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value?.isEmpty ?? true) return 'Required';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Row(
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, size: 20, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Upload your receipt/screenshot to a file storage service and paste the public link here.',
-                      style: TextStyle(fontSize: 12, color: Colors.blue),
-                    ),
+                  const Text('Submit Payment',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      )),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Invoice: ${currencyFormat.format(widget.invoice.amount)}',
+                    style: const TextStyle(color: Colors.white60, fontSize: 13),
                   ),
                 ],
               ),
             ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
           ],
+        ),
+      ),
+      content: SizedBox(
+        width: 400,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _amountController,
+                decoration: const InputDecoration(
+                  labelText: 'Amount Paid',
+                  prefixText: '₱ ',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value?.isEmpty ?? true) return 'Required';
+                  final amount = double.tryParse(value!);
+                  if (amount == null) return 'Invalid amount';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Proof of Payment',
+                    style:
+                        TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              ),
+              const SizedBox(height: 8),
+              MouseRegion(
+                child: _proofUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Stack(
+                          children: [
+                            Image.network(
+                              _proofUrl!,
+                              height: 180,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                height: 180,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                    child: Icon(Icons.broken_image,
+                                        color: Colors.grey)),
+                              ),
+                            ),
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: IconButton(
+                                onPressed: () =>
+                                    setState(() => _proofUrl = null),
+                                icon: const Icon(Icons.close,
+                                    color: Colors.white),
+                                style: IconButton.styleFrom(
+                                    backgroundColor: Colors.black54),
+                                iconSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ImageUploadWidget(
+                        bucket: 'payment-proofs',
+                        folder: Supabase.instance.client.auth.currentUser?.id,
+                        onUploadComplete: (url) {
+                          if (url.isNotEmpty) {
+                            setState(() => _proofUrl = url);
+                          }
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -1365,6 +1653,13 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
   Future<void> _submitPayment() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_proofUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload proof of payment')),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -1377,7 +1672,7 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
         invoiceId: widget.invoice.id,
         communityId: appState.activeCommunityId!,
         amount: amount,
-        proofUrl: _proofUrlController.text,
+        proofUrl: _proofUrl!,
       );
 
       if (mounted) {
@@ -1457,21 +1752,32 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.receipt_outlined,
-              color: Color(0xff215e3f), size: 24),
-          const SizedBox(width: 12),
-          const Text('Create Invoice',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
+      titlePadding: EdgeInsets.zero,
+      title: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xff215e3f),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+        child: Row(
+          children: [
+            const Icon(Icons.receipt_outlined, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            const Text('Create Invoice',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                )),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
       ),
       content: SizedBox(
         width: 500,
@@ -1517,41 +1823,87 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                   },
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<InvoiceCategory>(
-                  value: _selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: InvoiceCategory.values.map((category) {
+                Text('Category',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                    )),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: InvoiceCategory.values.map((category) {
+                    final isSelected = _selectedCategory == category;
+                    IconData icon;
                     String label;
                     switch (category) {
                       case InvoiceCategory.dues:
+                        icon = Icons.home_outlined;
                         label = 'Monthly Dues';
                         break;
                       case InvoiceCategory.water:
-                        label = 'Water Billing';
+                        icon = Icons.water_drop_outlined;
+                        label = 'Water';
                         break;
                       case InvoiceCategory.amenity:
+                        icon = Icons.pool_outlined;
                         label = 'Amenity';
                         break;
                       case InvoiceCategory.insurance:
-                        label = 'Fire Insurance';
+                        icon = Icons.shield_outlined;
+                        label = 'Insurance';
                         break;
                       case InvoiceCategory.other:
+                        icon = Icons.more_horiz;
                         label = 'Other';
                         break;
                     }
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(label),
+                    return InkWell(
+                      onTap: () => setState(() => _selectedCategory = category),
+                      borderRadius: BorderRadius.circular(10),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xff215e3f).withOpacity(0.1)
+                              : Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xff215e3f)
+                                : Colors.grey.shade200,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(icon,
+                                size: 18,
+                                color: isSelected
+                                    ? const Color(0xff215e3f)
+                                    : Colors.grey),
+                            const SizedBox(width: 6),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? const Color(0xff215e3f)
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _selectedCategory = value);
-                    }
-                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

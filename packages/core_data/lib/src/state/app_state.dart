@@ -31,6 +31,10 @@ class AppState extends ChangeNotifier {
   bool get isStaff => activeRole?.isStaff ?? false;
   bool get isAdmin => activeRole?.isAdmin ?? false;
 
+  /// Plan-based feature access
+  bool get isProfessional => _activeCommunity?.isProfessional ?? false;
+  bool get isEnterprise => _activeCommunity?.isEnterprise ?? false;
+
   Future<void> setActiveCommunity(String communityId, String slug) async {
     _activeCommunityId = communityId;
     _activeCommunitySlug = slug;
@@ -38,7 +42,7 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyActiveCommunityId, communityId);
     await prefs.setString(_keyActiveCommunitySlug, slug);
-    
+
     notifyListeners();
   }
 
@@ -46,7 +50,7 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _activeCommunityId = prefs.getString(_keyActiveCommunityId);
     _activeCommunitySlug = prefs.getString(_keyActiveCommunitySlug);
-    
+
     notifyListeners();
   }
 
@@ -59,7 +63,7 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyActiveCommunityId);
     await prefs.remove(_keyActiveCommunitySlug);
-    
+
     notifyListeners();
   }
 

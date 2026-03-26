@@ -4,6 +4,19 @@ import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+const _brandColor = Color(0xff215e3f);
+
+/// Determine max swimmers allowed based on unit type name.
+int _maxPaxForUnitType(String? unitType) {
+  if (unitType == null) return 5;
+  final lower = unitType.toLowerCase();
+  if (lower.contains('cluster')) return 7;
+  if (lower.contains('2') || lower.contains('two')) return 5;
+  if (lower.contains('1') || lower.contains('one')) return 3;
+  return 5;
+}
 
 class PoolAccessPage extends StatefulWidget {
   const PoolAccessPage({super.key});
@@ -26,7 +39,9 @@ class _PoolAccessPageState extends State<PoolAccessPage> {
   }
 }
 
-// ============ RESIDENT VIEW ============
+// ============================================================
+// RESIDENT VIEW
+// ============================================================
 
 class _ResidentView extends StatefulWidget {
   const _ResidentView();
@@ -36,33 +51,116 @@ class _ResidentView extends StatefulWidget {
 }
 
 class _ResidentViewState extends State<_ResidentView> {
-  Future<PoolAccessRegistration?>? _registrationFuture;
+  Future<_ResidentData>? _dataFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadRegistration();
+    _loadData();
   }
 
-  void _loadRegistration() {
+  void _loadData() {
     final appState = context.read<AppState>();
     final repo = context.read<PoolAccessRepository>();
+    final communityId = appState.activeCommunityId;
+    if (communityId == null) return;
 
-    if (appState.activeCommunityId != null) {
-      setState(() {
-        _registrationFuture =
-            repo.getMyRegistration(appState.activeCommunityId!);
-      });
+    setState(() {
+      _dataFuture = _fetchResidentData(repo, communityId);
+    });
+  }
+
+  Future<_ResidentData> _fetchResidentData(
+    PoolAccessRepository repo,
+    String communityId,
+  ) async {
+    final registration = await repo.getMyRegistration(communityId);
+    List<PoolSwimmer> swimmers = [];
+    if (registration != null) {
+      swimmers = await repo.getSwimmers(registration.id);
     }
+
+    // Fetch unit info for this user
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    String? unitId;
+    String? unitNo;
+    String? unitType;
+    String? profileName;
+    String? profilePhone;
+    String? profileEmail;
+    OccupantType? profileOccupantType;
+    List<String> unitMemberNames = [];
+
+    if (userId != null) {
+      // Profile
+      final profile = await client
+          .from('profiles')
+          .select('full_name, phone, email')
+          .eq('user_id', userId)
+          .eq('community_id', communityId)
+          .maybeSingle();
+      if (profile != null) {
+        profileName = profile['full_name'] as String?;
+        profilePhone = profile['phone'] as String?;
+        profileEmail = profile['email'] as String?;
+      }
+      // Fallback to auth email
+      profileEmail ??= client.auth.currentUser?.email;
+
+      // Unit info
+      final memberRow = await client
+          .from('household_members')
+          .select('unit_id, member_role, units(unit_no, unit_type)')
+          .eq('user_id', userId)
+          .eq('community_id', communityId)
+          .maybeSingle();
+
+      if (memberRow != null) {
+        unitId = memberRow['unit_id'] as String?;
+        final role = memberRow['member_role'] as String?;
+        if (role == 'tenant') {
+          profileOccupantType = OccupantType.tenant;
+        } else if (role != null) {
+          profileOccupantType = OccupantType.resident;
+        }
+        final unitData = memberRow['units'] as Map<String, dynamic>?;
+        unitNo = unitData?['unit_no'] as String?;
+        unitType = unitData?['unit_type'] as String?;
+
+        // Fetch unit members for swimmer autocomplete
+        if (unitId != null) {
+          final householdRepo = context.read<HouseholdRepository>();
+          final members = await householdRepo.getHouseholdMembers(unitId);
+          unitMemberNames = members
+              .map((m) => m.displayName)
+              .where((n) => n != 'Unknown')
+              .toList();
+        }
+      }
+    }
+
+    return _ResidentData(
+      registration: registration,
+      swimmers: swimmers,
+      unitId: unitId,
+      unitNo: unitNo,
+      unitType: unitType,
+      profileName: profileName,
+      profilePhone: profilePhone,
+      profileEmail: profileEmail,
+      profileOccupantType: profileOccupantType,
+      unitMemberNames: unitMemberNames,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: () async => _loadRegistration(),
-        child: FutureBuilder<PoolAccessRegistration?>(
-          future: _registrationFuture,
+        onRefresh: () async => _loadData(),
+        child: FutureBuilder<_ResidentData>(
+          future: _dataFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -80,22 +178,36 @@ class _ResidentViewState extends State<_ResidentView> {
                     const SizedBox(height: 16),
                     HOAppButton(
                       label: 'Retry',
-                      onPressed: _loadRegistration,
+                      onPressed: _loadData,
                     ),
                   ],
                 ),
               );
             }
 
-            final registration = snapshot.data;
+            final data = snapshot.data!;
 
-            if (registration == null) {
-              return _RegistrationForm(onSubmitted: _loadRegistration);
+            if (data.registration == null) {
+              return _RegistrationForm(
+                unitId: data.unitId,
+                unitNo: data.unitNo,
+                unitType: data.unitType,
+                profileName: data.profileName,
+                profilePhone: data.profilePhone,
+                profileEmail: data.profileEmail,
+                profileOccupantType: data.profileOccupantType,
+                unitMemberNames: data.unitMemberNames,
+                onSubmitted: _loadData,
+              );
             }
 
             return _RegistrationDetails(
-              registration: registration,
-              onEdit: _loadRegistration,
+              registration: data.registration!,
+              swimmers: data.swimmers,
+              unitNo: data.unitNo,
+              unitType: data.unitType,
+              unitMemberNames: data.unitMemberNames,
+              onRefresh: _loadData,
             );
           },
         ),
@@ -104,10 +216,92 @@ class _ResidentViewState extends State<_ResidentView> {
   }
 }
 
+class _ResidentData {
+  final PoolAccessRegistration? registration;
+  final List<PoolSwimmer> swimmers;
+  final String? unitId;
+  final String? unitNo;
+  final String? unitType;
+  final String? profileName;
+  final String? profilePhone;
+  final String? profileEmail;
+  final OccupantType? profileOccupantType;
+  final List<String> unitMemberNames;
+
+  _ResidentData({
+    this.registration,
+    this.swimmers = const [],
+    this.unitId,
+    this.unitNo,
+    this.unitType,
+    this.profileName,
+    this.profilePhone,
+    this.profileEmail,
+    this.profileOccupantType,
+    this.unitMemberNames = const [],
+  });
+}
+
+// ============================================================
+// SWIMMER ENTRY (form helper)
+// ============================================================
+
+class _SwimmerEntry {
+  final TextEditingController nameController;
+  final FocusNode focusNode;
+  DateTime? birthdate;
+
+  _SwimmerEntry({String? name, this.birthdate})
+      : nameController = TextEditingController(text: name),
+        focusNode = FocusNode();
+
+  void dispose() {
+    nameController.dispose();
+    focusNode.dispose();
+  }
+
+  int? get age {
+    if (birthdate == null) return null;
+    final now = DateTime.now();
+    int years = now.year - birthdate!.year;
+    if (now.month < birthdate!.month ||
+        (now.month == birthdate!.month && now.day < birthdate!.day)) {
+      years--;
+    }
+    return years;
+  }
+}
+
+// ============================================================
+// REGISTRATION FORM
+// ============================================================
+
 class _RegistrationForm extends StatefulWidget {
+  final String? unitId;
+  final String? unitNo;
+  final String? unitType;
+  final String? profileName;
+  final String? profilePhone;
+  final String? profileEmail;
+  final OccupantType? profileOccupantType;
+  final List<String> unitMemberNames;
+  final PoolAccessRegistration? existingRegistration;
+  final List<PoolSwimmer>? existingSwimmers;
   final VoidCallback onSubmitted;
 
-  const _RegistrationForm({required this.onSubmitted});
+  const _RegistrationForm({
+    this.unitId,
+    this.unitNo,
+    this.unitType,
+    this.profileName,
+    this.profilePhone,
+    this.profileEmail,
+    this.profileOccupantType,
+    this.unitMemberNames = const [],
+    this.existingRegistration,
+    this.existingSwimmers,
+    required this.onSubmitted,
+  });
 
   @override
   State<_RegistrationForm> createState() => _RegistrationFormState();
@@ -120,13 +314,61 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   final _emailController = TextEditingController();
   final _emergencyNameController = TextEditingController();
   final _emergencyPhoneController = TextEditingController();
-  final _idDocUrlController = TextEditingController();
 
   OccupantType _occupantType = OccupantType.resident;
-  DateTime? _birthdate;
   bool _acknowledgeRules = false;
   bool _acknowledgeWaiver = false;
   bool _isSubmitting = false;
+
+  late int _maxPax;
+  final List<_SwimmerEntry> _swimmers = [];
+
+  bool get _isEditing => widget.existingRegistration != null;
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (_isEditing) {
+      final reg = widget.existingRegistration!;
+      _fullNameController.text = reg.fullName;
+      _phoneController.text = reg.phone;
+      _emailController.text = reg.email;
+      _emergencyNameController.text = reg.emergencyContactName;
+      _emergencyPhoneController.text = reg.emergencyContactPhone;
+      _occupantType = reg.occupantType;
+      _maxPax = reg.maxPax;
+      _acknowledgeRules = true;
+      _acknowledgeWaiver = true;
+
+      // Load existing swimmers
+      if (widget.existingSwimmers != null) {
+        for (final s in widget.existingSwimmers!) {
+          _swimmers.add(_SwimmerEntry(
+            name: s.fullName,
+            birthdate: s.birthdate,
+          ));
+        }
+      }
+    } else {
+      _maxPax = _maxPaxForUnitType(widget.unitType);
+      // Prefill from profile
+      if (widget.profileName != null) {
+        _fullNameController.text = widget.profileName!;
+      }
+      if (widget.profilePhone != null) {
+        _phoneController.text = widget.profilePhone!;
+      }
+      if (widget.profileEmail != null) {
+        _emailController.text = widget.profileEmail!;
+      }
+      if (widget.profileOccupantType != null) {
+        _occupantType = widget.profileOccupantType!;
+      }
+      // Start with one empty swimmer row
+      _swimmers.add(_SwimmerEntry());
+    }
+  }
 
   @override
   void dispose() {
@@ -135,8 +377,23 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     _emailController.dispose();
     _emergencyNameController.dispose();
     _emergencyPhoneController.dispose();
-    _idDocUrlController.dispose();
+    for (final s in _swimmers) {
+      s.dispose();
+    }
     super.dispose();
+  }
+
+  void _addSwimmer() {
+    if (_swimmers.length >= _maxPax) return;
+    setState(() => _swimmers.add(_SwimmerEntry()));
+  }
+
+  void _removeSwimmer(int index) {
+    if (_swimmers.length <= 1) return;
+    setState(() {
+      _swimmers[index].dispose();
+      _swimmers.removeAt(index);
+    });
   }
 
   @override
@@ -145,219 +402,187 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       padding: const EdgeInsets.all(16),
       child: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 640),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Pool Access Registration',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Complete this form to register for pool access',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
+                // ===== BANNER HEADER =====
+                _buildBanner(),
                 const SizedBox(height: 24),
 
-                // Personal Information
-                const Text(
-                  'Personal Information',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // ===== UNIT INFO CARD =====
+                if (widget.unitNo != null) ...[
+                  _buildUnitInfoCard(),
+                  const SizedBox(height: 24),
+                ],
 
+                // ===== PERSONAL INFORMATION =====
+                _sectionHeader('Personal Information', Icons.person),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<OccupantType>(
                   value: _occupantType,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Occupant Type',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    filled: widget.profileOccupantType != null,
+                    fillColor: Colors.grey.shade100,
                   ),
                   items: OccupantType.values.map((type) {
                     return DropdownMenuItem(
                       value: type,
-                      child: Text(type.name.toUpperCase()),
+                      child: Text(
+                          type.name[0].toUpperCase() + type.name.substring(1)),
                     );
                   }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _occupantType = value);
-                    }
-                  },
+                  onChanged: widget.profileOccupantType != null
+                      ? null
+                      : (value) {
+                          if (value != null) {
+                            setState(() => _occupantType = value);
+                          }
+                        },
                 ),
-                const SizedBox(height: 16),
-
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _fullNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person),
+                  enabled:
+                      widget.profileName == null || widget.profileName!.isEmpty,
+                  decoration: InputDecoration(
+                    labelText: 'Owner / Tenant Name',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.person),
+                    filled: widget.profileName != null &&
+                        widget.profileName!.isNotEmpty,
+                    fillColor: Colors.grey.shade100,
                   ),
-                  validator: (value) =>
-                      (value?.isEmpty ?? true) ? 'Required' : null,
+                  validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
                 ),
-                const SizedBox(height: 16),
-
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(
+                  enabled: widget.profilePhone == null ||
+                      widget.profilePhone!.isEmpty,
+                  decoration: InputDecoration(
                     labelText: 'Phone Number',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.phone),
+                    filled: widget.profilePhone != null &&
+                        widget.profilePhone!.isNotEmpty,
+                    fillColor: Colors.grey.shade100,
                   ),
                   keyboardType: TextInputType.phone,
-                  validator: (value) =>
-                      (value?.isEmpty ?? true) ? 'Required' : null,
+                  validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
                 ),
-                const SizedBox(height: 16),
-
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
+                  enabled: widget.profileEmail == null ||
+                      widget.profileEmail!.isEmpty,
+                  decoration: InputDecoration(
                     labelText: 'Email Address',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.email),
+                    filled: widget.profileEmail != null &&
+                        widget.profileEmail!.isNotEmpty,
+                    fillColor: Colors.grey.shade100,
                   ),
                   keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Required';
-                    if (!value!.contains('@')) return 'Invalid email';
+                  validator: (v) {
+                    if (v?.isEmpty ?? true) return 'Required';
+                    if (!v!.contains('@')) return 'Invalid email';
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-
-                InkWell(
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now()
-                          .subtract(const Duration(days: 365 * 18)),
-                      firstDate: DateTime(1900),
-                      lastDate: DateTime.now(),
-                    );
-                    if (date != null) {
-                      setState(() => _birthdate = date);
-                    }
-                  },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Birthdate (Optional)',
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.calendar_today),
-                    ),
-                    child: Text(
-                      _birthdate != null
-                          ? DateFormat('MMM dd, yyyy').format(_birthdate!)
-                          : 'Select date',
-                      style: TextStyle(
-                        color: _birthdate != null ? null : Colors.grey,
-                      ),
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 24),
 
-                // Emergency Contact
-                const Text(
-                  'Emergency Contact',
+                // ===== REGISTERED SWIMMERS =====
+                _sectionHeader('Registered Swimmers', Icons.pool),
+                const SizedBox(height: 4),
+                Text(
+                  '${_swimmers.length} of $_maxPax swimmers',
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    color: _swimmers.length >= _maxPax
+                        ? Colors.red
+                        : Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                ..._buildSwimmerRows(),
+                const SizedBox(height: 8),
+                if (_swimmers.length < _maxPax)
+                  OutlinedButton.icon(
+                    onPressed: _addSwimmer,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Swimmer'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _brandColor,
+                      side: const BorderSide(color: _brandColor),
+                    ),
+                  ),
+                const SizedBox(height: 24),
 
+                // ===== EMERGENCY CONTACT =====
+                _sectionHeader('Emergency Contact', Icons.emergency),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _emergencyNameController,
                   decoration: const InputDecoration(
-                    labelText: 'Emergency Contact Name',
+                    labelText: 'Contact Name',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person_outline),
                   ),
-                  validator: (value) =>
-                      (value?.isEmpty ?? true) ? 'Required' : null,
+                  validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
                 ),
-                const SizedBox(height: 16),
-
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _emergencyPhoneController,
                   decoration: const InputDecoration(
-                    labelText: 'Emergency Contact Phone',
+                    labelText: 'Contact Phone',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.phone_outlined),
                   ),
                   keyboardType: TextInputType.phone,
-                  validator: (value) =>
-                      (value?.isEmpty ?? true) ? 'Required' : null,
+                  validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
                 ),
                 const SizedBox(height: 24),
 
-                // Document Upload
-                const Text(
-                  'Document Upload',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                TextFormField(
-                  controller: _idDocUrlController,
-                  decoration: const InputDecoration(
-                    labelText: 'Valid ID URL (Optional)',
-                    hintText: 'Upload ID to file storage and paste link',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.badge),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Acknowledgements
-                const Text(
-                  'Acknowledgements',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
+                // ===== ACKNOWLEDGEMENTS =====
+                _sectionHeader('Acknowledgements', Icons.verified_user),
+                const SizedBox(height: 8),
                 CheckboxListTile(
                   value: _acknowledgeRules,
-                  onChanged: (value) =>
-                      setState(() => _acknowledgeRules = value ?? false),
+                  onChanged: (v) =>
+                      setState(() => _acknowledgeRules = v ?? false),
                   title: const Text(
-                      'I have read and agree to follow the pool rules'),
+                    'I have read and agree to follow the pool rules and regulations.',
+                  ),
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
+                  activeColor: _brandColor,
                 ),
-
                 CheckboxListTile(
                   value: _acknowledgeWaiver,
-                  onChanged: (value) =>
-                      setState(() => _acknowledgeWaiver = value ?? false),
-                  title: const Text('I acknowledge the liability waiver'),
+                  onChanged: (v) =>
+                      setState(() => _acknowledgeWaiver = v ?? false),
+                  title: const Text(
+                    'I acknowledge that use of the pool is at my own risk and liability.',
+                  ),
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
+                  activeColor: _brandColor,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
+                // 3-month info
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.2)),
                   ),
                   child: const Row(
                     children: [
@@ -365,8 +590,8 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'After approval, you can only edit this registration after 3 months.',
-                          style: TextStyle(fontSize: 12, color: Colors.blue),
+                          'Registration is valid for 3 months. After approval, edits are locked until the renewal period.',
+                          style: TextStyle(fontSize: 13, color: Colors.blue),
                         ),
                       ),
                     ],
@@ -374,11 +599,14 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                 ),
                 const SizedBox(height: 24),
 
+                // ===== SUBMIT =====
                 SizedBox(
                   width: double.infinity,
                   child: HOAppButton(
-                    label:
-                        _isSubmitting ? 'Submitting...' : 'Submit Registration',
+                    label: _isEditing
+                        ? 'Update Registration'
+                        : 'Submit Registration',
+                    isLoading: _isSubmitting,
                     onPressed: _isSubmitting ||
                             !_acknowledgeRules ||
                             !_acknowledgeWaiver
@@ -386,6 +614,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         : _submitRegistration,
                   ),
                 ),
+                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -394,8 +623,311 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     );
   }
 
+  // ---------- Banner ----------
+  Widget _buildBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [_brandColor, Color(0xff2e8b57)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.pool, color: Colors.white, size: 32),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isEditing ? 'Edit Pool Registration' : 'Pool Registration',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _isEditing
+                      ? 'Update your swimmers and information'
+                      : 'Register your household for pool access',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Unit Info Card ----------
+  Widget _buildUnitInfoCard() {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _brandColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.home, color: _brandColor, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Unit ${widget.unitNo}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (widget.unitType != null)
+                    Text(
+                      widget.unitType!,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _brandColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Max $_maxPax swimmers',
+                style: const TextStyle(
+                  color: _brandColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------- Swimmer Rows ----------
+  List<Widget> _buildSwimmerRows() {
+    final dateFormat = DateFormat('MMM dd, yyyy');
+    return List.generate(_swimmers.length, (index) {
+      final entry = _swimmers[index];
+      return Card(
+        elevation: 0,
+        margin: const EdgeInsets.only(bottom: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Number badge
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _brandColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _brandColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Name with unit member autocomplete
+              Expanded(
+                flex: 3,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return RawAutocomplete<String>(
+                      textEditingController: entry.nameController,
+                      focusNode: entry.focusNode,
+                      optionsBuilder: (textEditingValue) {
+                        final query = textEditingValue.text.toLowerCase();
+                        if (query.isEmpty) return const [];
+                        return widget.unitMemberNames.where(
+                          (name) => name.toLowerCase().contains(query),
+                        );
+                      },
+                      fieldViewBuilder:
+                          (context, controller, focusNode, onFieldSubmitted) {
+                        return TextFormField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Name',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                            errorStyle: TextStyle(height: 0.5),
+                          ),
+                          validator: (v) =>
+                              (v?.isEmpty ?? true) ? 'Required' : null,
+                          onFieldSubmitted: (_) => onFieldSubmitted(),
+                        );
+                      },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: 200,
+                                maxWidth: constraints.maxWidth,
+                              ),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, i) {
+                                  final option = options.elementAt(i);
+                                  return ListTile(
+                                    dense: true,
+                                    leading: const Icon(Icons.person_outline,
+                                        size: 18),
+                                    title: Text(option,
+                                        style: const TextStyle(fontSize: 14)),
+                                    onTap: () => onSelected(option),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Birthday
+              Expanded(
+                flex: 2,
+                child: InkWell(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: entry.birthdate ??
+                          DateTime.now()
+                              .subtract(const Duration(days: 365 * 18)),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                    );
+                    if (date != null) {
+                      setState(() => entry.birthdate = date);
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: 'Birthday',
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                      suffixIcon: const Icon(Icons.calendar_today, size: 18),
+                    ),
+                    child: Text(
+                      entry.birthdate != null
+                          ? dateFormat.format(entry.birthdate!)
+                          : '',
+                      style: TextStyle(
+                        color: entry.birthdate != null ? null : Colors.grey,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Age
+              SizedBox(
+                width: 48,
+                child: Text(
+                  entry.age != null ? 'Age ${entry.age}' : '',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              // Remove
+              if (_swimmers.length > 1)
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline,
+                      color: Colors.red, size: 22),
+                  onPressed: () => _removeSwimmer(index),
+                  tooltip: 'Remove',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  // ---------- Submit ----------
   Future<void> _submitRegistration() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Validate at least one swimmer has a name
+    final validSwimmers = _swimmers
+        .where((s) => s.nameController.text.trim().isNotEmpty)
+        .toList();
+    if (validSwimmers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one swimmer.')),
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
@@ -403,28 +935,41 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       final appState = context.read<AppState>();
       final repo = context.read<PoolAccessRepository>();
 
-      await repo.upsertRegistration(
+      final regId = await repo.upsertRegistration(
+        id: widget.existingRegistration?.id,
         communityId: appState.activeCommunityId!,
+        unitId: widget.unitId,
         occupantType: _occupantType,
-        fullName: _fullNameController.text,
-        phone: _phoneController.text,
-        email: _emailController.text,
-        birthdate: _birthdate,
-        emergencyContactName: _emergencyNameController.text,
-        emergencyContactPhone: _emergencyPhoneController.text,
-        idDocUrl: _idDocUrlController.text.isNotEmpty
-            ? _idDocUrlController.text
-            : null,
+        fullName: _fullNameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        emergencyContactName: _emergencyNameController.text.trim(),
+        emergencyContactPhone: _emergencyPhoneController.text.trim(),
+        maxPax: _maxPax,
         acknowledgements: {
           'pool_rules': _acknowledgeRules,
           'liability_waiver': _acknowledgeWaiver,
         },
       );
 
+      // Save swimmers
+      await repo.saveSwimmers(
+        registrationId: regId,
+        swimmers: validSwimmers.map((s) {
+          return {
+            'full_name': s.nameController.text.trim(),
+            if (s.birthdate != null)
+              'birthdate': s.birthdate!.toIso8601String(),
+          };
+        }).toList(),
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration submitted. Awaiting staff approval.'),
+          SnackBar(
+            content: Text(_isEditing
+                ? 'Registration updated successfully.'
+                : 'Registration submitted. Awaiting staff approval.'),
           ),
         );
         widget.onSubmitted();
@@ -438,15 +983,44 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       }
     }
   }
+
+  // ---------- Section Header ----------
+  Widget _sectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: _brandColor, size: 20),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
 }
+
+// ============================================================
+// REGISTRATION DETAILS (resident view of existing registration)
+// ============================================================
 
 class _RegistrationDetails extends StatelessWidget {
   final PoolAccessRegistration registration;
-  final VoidCallback onEdit;
+  final List<PoolSwimmer> swimmers;
+  final String? unitNo;
+  final String? unitType;
+  final List<String> unitMemberNames;
+  final VoidCallback onRefresh;
 
   const _RegistrationDetails({
     required this.registration,
-    required this.onEdit,
+    required this.swimmers,
+    this.unitNo,
+    this.unitType,
+    this.unitMemberNames = const [],
+    required this.onRefresh,
   });
 
   @override
@@ -458,119 +1032,65 @@ class _RegistrationDetails extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 640),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Pool Access Registration',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: registration.approved
-                          ? Color.fromRGBO(39, 99, 67, 1).withOpacity(0.1)
-                          : Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      registration.approved ? 'APPROVED' : 'PENDING',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: registration.approved
-                            ? Color.fromRGBO(39, 99, 67, 1)
-                            : Colors.orange,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              // ===== BANNER =====
+              _buildBanner(),
               const SizedBox(height: 24),
-              _InfoSection(
-                title: 'Personal Information',
-                children: [
-                  _InfoRow(
-                    label: 'Occupant Type',
-                    value: registration.occupantType.name.toUpperCase(),
-                  ),
-                  _InfoRow(
-                    label: 'Full Name',
-                    value: registration.fullName,
-                  ),
-                  _InfoRow(
-                    label: 'Phone',
-                    value: registration.phone,
-                  ),
-                  _InfoRow(
-                    label: 'Email',
-                    value: registration.email,
-                  ),
-                  if (registration.birthdate != null)
-                    _InfoRow(
-                      label: 'Birthdate',
-                      value: dateFormat.format(registration.birthdate!),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _InfoSection(
-                title: 'Emergency Contact',
-                children: [
-                  _InfoRow(
-                    label: 'Name',
-                    value: registration.emergencyContactName,
-                  ),
-                  _InfoRow(
-                    label: 'Phone',
-                    value: registration.emergencyContactPhone,
-                  ),
-                ],
-              ),
-              if (registration.idDocUrl != null) ...[
-                const SizedBox(height: 24),
-                _InfoSection(
-                  title: 'Documents',
-                  children: [
-                    TextButton.icon(
-                      onPressed: () {
-                        // Open ID document URL
-                      },
-                      icon: const Icon(Icons.badge),
-                      label: const Text('View Valid ID'),
-                    ),
-                  ],
-                ),
+
+              // ===== UNIT INFO =====
+              if (unitNo != null) ...[
+                _buildUnitCard(),
+                const SizedBox(height: 20),
               ],
+
+              // ===== PERSONAL INFORMATION =====
+              _buildSection('Personal Information', Icons.person, [
+                _InfoRow(
+                  label: 'Occupant Type',
+                  value: registration.occupantType.name[0].toUpperCase() +
+                      registration.occupantType.name.substring(1),
+                ),
+                _InfoRow(label: 'Name', value: registration.fullName),
+                _InfoRow(label: 'Phone', value: registration.phone),
+                _InfoRow(label: 'Email', value: registration.email),
+              ]),
+              const SizedBox(height: 20),
+
+              // ===== SWIMMERS TABLE =====
+              _buildSwimmersSection(dateFormat),
+              const SizedBox(height: 20),
+
+              // ===== EMERGENCY CONTACT =====
+              _buildSection('Emergency Contact', Icons.emergency, [
+                _InfoRow(
+                    label: 'Name', value: registration.emergencyContactName),
+                _InfoRow(
+                    label: 'Phone', value: registration.emergencyContactPhone),
+              ]),
+
+              // ===== APPROVAL =====
               if (registration.approved && registration.approvedAt != null) ...[
-                const SizedBox(height: 24),
-                _InfoSection(
-                  title: 'Approval Details',
-                  children: [
-                    _InfoRow(
-                      label: 'Approved At',
-                      value: dateFormat.format(registration.approvedAt!),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 20),
+                _buildSection('Approval', Icons.check_circle, [
+                  _InfoRow(
+                    label: 'Approved At',
+                    value: dateFormat.format(registration.approvedAt!),
+                  ),
+                ]),
               ],
+
+              // ===== EDIT LOCK =====
               if (!canEdit) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
@@ -581,26 +1101,27 @@ class _RegistrationDetails extends StatelessWidget {
                         child: Text(
                           'Editing locked until ${dateFormat.format(registration.nextEditableDate)}',
                           style: const TextStyle(
-                              fontSize: 12, color: Colors.orange),
+                              fontSize: 13, color: Colors.orange),
                         ),
                       ),
                     ],
                   ),
                 ),
               ],
-              if (canEdit && !registration.approved) ...[
+
+              // ===== EDIT BUTTON =====
+              if (canEdit) ...[
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: HOAppButton(
                     label: 'Edit Registration',
-                    onPressed: () {
-                      // Show edit form
-                      _showEditDialog(context);
-                    },
+                    icon: Icons.edit,
+                    onPressed: () => _showEditForm(context),
                   ),
                 ),
               ],
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -608,17 +1129,287 @@ class _RegistrationDetails extends StatelessWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content:
-            Text('Edit feature coming soon. Please contact staff for changes.'),
+  Widget _buildBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [_brandColor, Color(0xff2e8b57)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.pool, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Text(
+              'Pool Registration',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              registration.approved ? 'APPROVED' : 'PENDING',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnitCard() {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _brandColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.home, color: _brandColor, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Unit $unitNo',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  if (unitType != null)
+                    Text(unitType!,
+                        style:
+                            TextStyle(color: Colors.grey[600], fontSize: 14)),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _brandColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${swimmers.length} / ${registration.maxPax} swimmers',
+                style: const TextStyle(
+                  color: _brandColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwimmersSection(DateFormat dateFormat) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.pool, color: _brandColor, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Registered Swimmers',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            Text(
+              '${swimmers.length} of ${registration.maxPax}',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (swimmers.isEmpty)
+          Text('No swimmers registered.',
+              style: TextStyle(color: Colors.grey[500]))
+        else
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              children: [
+                // Header row
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(10),
+                      topRight: Radius.circular(10),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      SizedBox(
+                          width: 32,
+                          child: Text('#',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      Expanded(
+                          flex: 3,
+                          child: Text('Name',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      Expanded(
+                          flex: 2,
+                          child: Text('Birthday',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      SizedBox(
+                          width: 60,
+                          child: Text('Age',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                    ],
+                  ),
+                ),
+                // Data rows
+                ...swimmers.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final s = entry.value;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: i < swimmers.length - 1
+                          ? Border(
+                              bottom: BorderSide(color: Colors.grey.shade200))
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                            width: 32,
+                            child: Text('${i + 1}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w500))),
+                        Expanded(
+                            flex: 3,
+                            child: Text(s.fullName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w500))),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            s.birthdate != null
+                                ? dateFormat.format(s.birthdate!)
+                                : '—',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 60,
+                          child: Text(
+                            s.age != null ? '${s.age}' : '—',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSection(String title, IconData icon, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: _brandColor, size: 20),
+            const SizedBox(width: 8),
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...children,
+      ],
+    );
+  }
+
+  void _showEditForm(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Edit Registration'),
+            backgroundColor: _brandColor,
+            foregroundColor: Colors.white,
+          ),
+          body: MultiProvider(
+            providers: [
+              Provider.value(value: context.read<PoolAccessRepository>()),
+              Provider.value(value: context.read<AppState>()),
+            ],
+            child: _RegistrationForm(
+              unitId: registration.unitId,
+              unitNo: unitNo,
+              unitType: unitType,
+              unitMemberNames: unitMemberNames,
+              existingRegistration: registration,
+              existingSwimmers: swimmers,
+              onSubmitted: () {
+                Navigator.of(context).pop();
+                onRefresh();
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-// ============ STAFF VIEW ============
+// ============================================================
+// STAFF VIEW
+// ============================================================
 
 class _StaffView extends StatefulWidget {
   const _StaffView();
@@ -706,9 +1497,8 @@ class _StaffViewState extends State<_StaffView> {
               padding: const EdgeInsets.all(16),
               itemCount: registrations.length,
               itemBuilder: (context, index) {
-                final registration = registrations[index];
                 return _RegistrationCard(
-                  registration: registration,
+                  registration: registrations[index],
                   onRefresh: _loadRegistrations,
                 );
               },
@@ -720,7 +1510,11 @@ class _StaffViewState extends State<_StaffView> {
   }
 }
 
-class _RegistrationCard extends StatelessWidget {
+// ============================================================
+// REGISTRATION CARD (staff list item)
+// ============================================================
+
+class _RegistrationCard extends StatefulWidget {
   final PoolAccessRegistration registration;
   final VoidCallback onRefresh;
 
@@ -730,25 +1524,32 @@ class _RegistrationCard extends StatelessWidget {
   });
 
   @override
+  State<_RegistrationCard> createState() => _RegistrationCardState();
+}
+
+class _RegistrationCardState extends State<_RegistrationCard> {
+  bool _isApproving = false;
+
+  @override
   Widget build(BuildContext context) {
+    final reg = widget.registration;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () => _showDetails(context),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: registration.approved
-                    ? Color.fromRGBO(39, 99, 67, 1).withOpacity(0.2)
-                    : Colors.orange.withOpacity(0.2),
+                backgroundColor: reg.approved
+                    ? _brandColor.withOpacity(0.15)
+                    : Colors.orange.withOpacity(0.15),
                 child: Icon(
-                  registration.approved ? Icons.check : Icons.pending,
-                  color: registration.approved
-                      ? Color.fromRGBO(39, 99, 67, 1)
-                      : Colors.orange,
+                  reg.approved ? Icons.check : Icons.pending,
+                  color: reg.approved ? _brandColor : Colors.orange,
                 ),
               ),
               const SizedBox(width: 16),
@@ -757,7 +1558,7 @@ class _RegistrationCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      registration.fullName,
+                      reg.fullName,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -765,7 +1566,7 @@ class _RegistrationCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${registration.occupantType.name.toUpperCase()} • ${registration.phone}',
+                      '${reg.occupantType.name[0].toUpperCase()}${reg.occupantType.name.substring(1)} · ${reg.phone}',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
@@ -774,195 +1575,378 @@ class _RegistrationCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!registration.approved)
-                ElevatedButton(
-                  onPressed: () => _approveRegistration(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromRGBO(39, 99, 67, 1),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Approve'),
-                ),
+              if (!reg.approved)
+                _isApproving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : ElevatedButton(
+                        onPressed: _approve,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _brandColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Approve'),
+                      ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _approve() async {
+    setState(() => _isApproving = true);
+    try {
+      final repo = context.read<PoolAccessRepository>();
+      await repo.approveRegistration(widget.registration.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration approved')),
+        );
+        widget.onRefresh();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isApproving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 
   void _showDetails(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => _RegistrationDetailsStaffDialog(
-        registration: registration,
-        onRefresh: onRefresh,
+      builder: (_) => _RegistrationDetailDialog(
+        registration: widget.registration,
+        onRefresh: widget.onRefresh,
       ),
     );
   }
-
-  Future<void> _approveRegistration(BuildContext context) async {
-    try {
-      final repo = context.read<PoolAccessRepository>();
-      await repo.approveRegistration(registration.id);
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration approved')),
-        );
-        onRefresh();
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
-  }
 }
 
-class _RegistrationDetailsStaffDialog extends StatelessWidget {
+// ============================================================
+// REGISTRATION DETAIL DIALOG (staff)
+// ============================================================
+
+class _RegistrationDetailDialog extends StatefulWidget {
   final PoolAccessRegistration registration;
   final VoidCallback onRefresh;
 
-  const _RegistrationDetailsStaffDialog({
+  const _RegistrationDetailDialog({
     required this.registration,
     required this.onRefresh,
   });
 
   @override
+  State<_RegistrationDetailDialog> createState() =>
+      _RegistrationDetailDialogState();
+}
+
+class _RegistrationDetailDialogState extends State<_RegistrationDetailDialog> {
+  List<PoolSwimmer>? _swimmers;
+  bool _loadingSwimmers = true;
+  bool _isApproving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSwimmers();
+  }
+
+  Future<void> _loadSwimmers() async {
+    try {
+      final repo = context.read<PoolAccessRepository>();
+      final swimmers = await repo.getSwimmers(widget.registration.id);
+      if (mounted) {
+        setState(() {
+          _swimmers = swimmers;
+          _loadingSwimmers = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingSwimmers = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final reg = widget.registration;
     final dateFormat = DateFormat('MMM dd, yyyy');
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.assignment_outlined,
-              color: Color(0xff215e3f), size: 24),
-          const SizedBox(width: 12),
-          const Text('Registration Details',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
+      contentPadding: EdgeInsets.zero,
       content: SizedBox(
-        width: 500,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_brandColor, Color(0xff2e8b57)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                decoration: BoxDecoration(
-                  color: registration.approved
-                      ? Color.fromRGBO(39, 99, 67, 1).withOpacity(0.1)
-                      : Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
                 ),
-                child: Text(
-                  registration.approved ? 'APPROVED' : 'PENDING',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: registration.approved
-                        ? Color.fromRGBO(39, 99, 67, 1)
-                        : Colors.orange,
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.pool, color: Colors.white, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          reg.fullName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${reg.occupantType.name[0].toUpperCase()}${reg.occupantType.name.substring(1)} · ${reg.phone}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      reg.approved ? 'APPROVED' : 'PENDING',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            // Body
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Personal
+                    const Text('Contact',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 8),
+                    _InfoRow(label: 'Email', value: reg.email),
+                    _InfoRow(label: 'Phone', value: reg.phone),
+                    const SizedBox(height: 16),
+
+                    // Emergency
+                    const Text('Emergency Contact',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 8),
+                    _InfoRow(label: 'Name', value: reg.emergencyContactName),
+                    _InfoRow(label: 'Phone', value: reg.emergencyContactPhone),
+                    const SizedBox(height: 16),
+
+                    // Swimmers
+                    Row(
+                      children: [
+                        const Text('Registered Swimmers',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15)),
+                        const Spacer(),
+                        if (_swimmers != null)
+                          Text(
+                            '${_swimmers!.length} / ${reg.maxPax}',
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 13),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _buildSwimmersTable(dateFormat),
+
+                    // Approval info
+                    if (reg.approved && reg.approvedAt != null) ...[
+                      const SizedBox(height: 16),
+                      _InfoRow(
+                        label: 'Approved',
+                        value: dateFormat.format(reg.approvedAt!),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            // Actions
+            if (!reg.approved)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: HOAppButton(
+                    label: 'Approve Registration',
+                    isLoading: _isApproving,
+                    onPressed: _isApproving ? null : _approveRegistration,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Personal Information',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              _InfoRow(
-                label: 'Occupant Type',
-                value: registration.occupantType.name.toUpperCase(),
-              ),
-              _InfoRow(label: 'Full Name', value: registration.fullName),
-              _InfoRow(label: 'Phone', value: registration.phone),
-              _InfoRow(label: 'Email', value: registration.email),
-              if (registration.birthdate != null)
-                _InfoRow(
-                  label: 'Birthdate',
-                  value: dateFormat.format(registration.birthdate!),
-                ),
-              const SizedBox(height: 16),
-              const Text(
-                'Emergency Contact',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              _InfoRow(
-                label: 'Name',
-                value: registration.emergencyContactName,
-              ),
-              _InfoRow(
-                label: 'Phone',
-                value: registration.emergencyContactPhone,
-              ),
-              if (registration.idDocUrl != null) ...[
-                const SizedBox(height: 16),
-                TextButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.badge),
-                  label: const Text('View Valid ID'),
-                ),
-              ],
-              if (registration.approved && registration.approvedAt != null) ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'Approval Details',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _InfoRow(
-                  label: 'Approved At',
-                  value: dateFormat.format(registration.approvedAt!),
-                ),
-              ],
-            ],
-          ),
+          ],
         ),
       ),
-      actions: [
-        if (!registration.approved)
-          HOAppButton(
-            label: 'Approve',
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _approveRegistration(context);
-            },
-          ),
-      ],
     );
   }
 
-  Future<void> _approveRegistration(BuildContext context) async {
+  Widget _buildSwimmersTable(DateFormat dateFormat) {
+    if (_loadingSwimmers) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+            child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2))),
+      );
+    }
+    if (_swimmers == null || _swimmers!.isEmpty) {
+      return Text('No swimmers registered.',
+          style: TextStyle(color: Colors.grey[500]));
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(
+                    width: 28,
+                    child: Text('#',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13))),
+                Expanded(
+                    flex: 3,
+                    child: Text('Name',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13))),
+                Expanded(
+                    flex: 2,
+                    child: Text('Birthday',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13))),
+                SizedBox(
+                    width: 48,
+                    child: Text('Age',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13))),
+              ],
+            ),
+          ),
+          ..._swimmers!.asMap().entries.map((entry) {
+            final i = entry.key;
+            final s = entry.value;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                border: i < _swimmers!.length - 1
+                    ? Border(bottom: BorderSide(color: Colors.grey.shade200))
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                      width: 28,
+                      child: Text('${i + 1}',
+                          style: const TextStyle(fontSize: 13))),
+                  Expanded(
+                      flex: 3,
+                      child: Text(s.fullName,
+                          style: const TextStyle(fontSize: 13))),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      s.birthdate != null
+                          ? dateFormat.format(s.birthdate!)
+                          : '—',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 48,
+                    child: Text(
+                      s.age != null ? '${s.age}' : '—',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _approveRegistration() async {
+    setState(() => _isApproving = true);
     try {
       final repo = context.read<PoolAccessRepository>();
-      await repo.approveRegistration(registration.id);
-
-      if (context.mounted) {
+      await repo.approveRegistration(widget.registration.id);
+      if (mounted) {
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registration approved')),
         );
-        onRefresh();
+        widget.onRefresh();
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
+        setState(() => _isApproving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
@@ -971,54 +1955,25 @@ class _RegistrationDetailsStaffDialog extends StatelessWidget {
   }
 }
 
-// ============ SHARED WIDGETS ============
-
-class _InfoSection extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-
-  const _InfoSection({
-    required this.title,
-    required this.children,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...children,
-      ],
-    );
-  }
-}
+// ============================================================
+// SHARED WIDGETS
+// ============================================================
 
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoRow({
-    required this.label,
-    required this.value,
-  });
+  const _InfoRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 140,
+            width: 130,
             child: Text(
               label,
               style: TextStyle(

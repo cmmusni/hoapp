@@ -183,117 +183,135 @@ class _SignupPageState extends State<SignupPage> {
     }
 
     return Scaffold(
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Image.asset(
-                  'assets/images/hoapp-logo.png',
-                  height: 120,
+      body: Stack(
+        children: [
+          Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Image.asset(
+                      'assets/images/hoapp-logo.png',
+                      height: 120,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      widget.inviteToken != null
+                          ? 'Create Account to Join'
+                          : 'Create Account',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Name',
+                        prefixIcon: Icon(Icons.person),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: const Icon(Icons.email),
+                        suffixIcon: _emailLocked
+                            ? const Icon(Icons.lock_outline, size: 18)
+                            : null,
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      readOnly: _emailLocked,
+                      enabled: !_emailLocked,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.length < 6) {
+                          return 'Password must be at least 6 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Confirm Password',
+                        prefixIcon: Icon(Icons.lock_outline),
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value != _passwordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    HOAppButton(
+                      label: 'Sign Up',
+                      onPressed: _handleSignup,
+                      isLoading: _isLoading,
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () {
+                        if (widget.inviteToken != null) {
+                          final path = widget.communitySlug != null
+                              ? '/${widget.communitySlug}/login?invite=${widget.inviteToken}'
+                              : '/login?invite=${widget.inviteToken}';
+                          context.go(path);
+                        } else {
+                          context.go('/login');
+                        }
+                      },
+                      child: const Text('Already have an account? Login'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  widget.inviteToken != null
-                      ? 'Create Account to Join'
-                      : 'Create Account',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email),
-                    suffixIcon: _emailLocked
-                        ? const Icon(Icons.lock_outline, size: 18)
-                        : null,
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  readOnly: _emailLocked,
-                  enabled: !_emailLocked,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm Password',
-                    prefixIcon: Icon(Icons.lock_outline),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                HOAppButton(
-                  label: 'Sign Up',
-                  onPressed: _handleSignup,
-                  isLoading: _isLoading,
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    if (widget.inviteToken != null) {
-                      final path = widget.communitySlug != null
-                          ? '/${widget.communitySlug}/login?invite=${widget.inviteToken}'
-                          : '/login?invite=${widget.inviteToken}';
-                      context.go(path);
-                    } else {
-                      context.go('/login');
-                    }
-                  },
-                  child: const Text('Already have an account? Login'),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          Positioned(
+            top: 16,
+            left: 16,
+            child: SafeArea(
+              child: IconButton(
+                onPressed: () => context.go('/'),
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back to Home',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.grey.shade100,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -19,6 +19,7 @@ export 'src/repositories/amenity_repository.dart';
 export 'src/repositories/billing_repository.dart';
 export 'src/repositories/pool_access_repository.dart';
 export 'src/repositories/household_repository.dart';
+export 'src/repositories/security_pass_repository.dart';
 
 // Services
 export 'src/services/storage_service.dart';

@@ -20,6 +20,7 @@ interface CreateInviteRequest {
   invite_kind?: 'role' | 'household'
   new_unit_no?: string
   expires_at?: string
+  household_member_id?: string
   _jwt?: string // Optional JWT token passed in body
 }
 
@@ -81,7 +82,13 @@ serve(async (req) => {
       invite_kind = 'role',
       new_unit_no,
       expires_at,
+      household_member_id,
     } = body
+
+    console.log('=== INVITE PARAMS ===')
+    console.log('invite_kind:', invite_kind)
+    console.log('household_member_id:', household_member_id)
+    console.log('unit_id:', unit_id)
 
     const supabaseAdmin = createAdminClient()
 
@@ -174,9 +181,7 @@ serve(async (req) => {
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
     // Create invite
-    const { data: invite, error: inviteError } = await supabaseAdmin
-      .from('invites')
-      .insert({
+    const inviteData: any = {
         community_id,
         email,
         role,
@@ -185,7 +190,14 @@ serve(async (req) => {
         token,
         expires_at: expiresAtDate.toISOString(),
         invited_by: user.id,
-      })
+    }
+    if (household_member_id) {
+      inviteData.household_member_id = household_member_id
+    }
+
+    const { data: invite, error: inviteError } = await supabaseAdmin
+      .from('invites')
+      .insert(inviteData)
       .select()
       .single()
 

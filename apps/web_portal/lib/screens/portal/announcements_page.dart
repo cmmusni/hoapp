@@ -561,10 +561,14 @@ class _AnnouncementCard extends StatelessWidget {
             content: const Text(
                 'Are you sure you want to delete this announcement?'),
             actions: [
-              TextButton(
+              ElevatedButton.icon(
                 onPressed: () => Navigator.of(context).pop(true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Delete'),
+                icon: const Icon(Icons.delete, size: 16, color: Colors.white),
+                label: const Text('Delete'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[600],
+                  foregroundColor: Colors.white,
+                ),
               ),
             ],
           ),
@@ -653,21 +657,33 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.campaign_outlined,
-              color: Color(0xff215e3f), size: 24),
-          const SizedBox(width: 12),
-          const Text('Create Announcement',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
+      titlePadding: EdgeInsets.zero,
+      title: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xff215e3f),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+        child: Row(
+          children: [
+            const Icon(Icons.announcement_outlined,
+                color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            const Text('Create Announcement',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                )),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
       ),
       content: SizedBox(
         width: 500,
@@ -851,20 +867,32 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.edit_outlined, color: Color(0xff215e3f), size: 24),
-          const SizedBox(width: 12),
-          const Text('Edit Announcement',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
+      titlePadding: EdgeInsets.zero,
+      title: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xff215e3f),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+        child: Row(
+          children: [
+            const Icon(Icons.edit_outlined, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            const Text('Edit Announcement',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                )),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
       ),
       content: SizedBox(
         width: 500,
@@ -959,10 +987,6 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
         HOAppButton(
           label: 'Save',
           onPressed: _handleSave,

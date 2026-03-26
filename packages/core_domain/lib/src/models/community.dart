@@ -9,7 +9,8 @@ class Community {
   final String slug;
   final String? address;
   final Map<String, dynamic>? settings;
-  
+  final String plan; // 'starter', 'professional', 'enterprise'
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
@@ -19,6 +20,7 @@ class Community {
     required this.slug,
     this.address,
     this.settings,
+    this.plan = 'starter',
     required this.createdAt,
   });
 
@@ -34,4 +36,7 @@ class Community {
 
   String get surfaceColor =>
       settings?['brand']?['surface'] as String? ?? '#ECEFF1';
+
+  bool get isProfessional => plan == 'professional' || plan == 'enterprise';
+  bool get isEnterprise => plan == 'enterprise';
 }

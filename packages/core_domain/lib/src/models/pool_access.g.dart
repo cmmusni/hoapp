@@ -31,6 +31,7 @@ PoolAccessRegistration _$PoolAccessRegistrationFromJson(
       approvedAt: json['approved_at'] == null
           ? null
           : DateTime.parse(json['approved_at'] as String),
+      maxPax: (json['max_pax'] as num?)?.toInt() ?? 5,
       lastEditedAt: DateTime.parse(json['last_edited_at'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
@@ -56,6 +57,7 @@ Map<String, dynamic> _$PoolAccessRegistrationToJson(
       'approved': instance.approved,
       'approved_by': instance.approvedBy,
       'approved_at': instance.approvedAt?.toIso8601String(),
+      'max_pax': instance.maxPax,
       'last_edited_at': instance.lastEditedAt.toIso8601String(),
       'created_at': instance.createdAt.toIso8601String(),
     };

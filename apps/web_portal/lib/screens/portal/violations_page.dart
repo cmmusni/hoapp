@@ -526,20 +526,32 @@ class _ReportViolationDialogState extends State<_ReportViolationDialog> {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.report_outlined, color: Colors.orange, size: 24),
-          const SizedBox(width: 12),
-          const Text('Report Violation',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
+      titlePadding: EdgeInsets.zero,
+      title: Container(
+        decoration: const BoxDecoration(
+          color: Colors.orange,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+        child: Row(
+          children: [
+            const Icon(Icons.report_outlined, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            const Text('Report Violation',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                )),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
       ),
       content: SizedBox(
         width: 500,

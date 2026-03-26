@@ -26,13 +26,15 @@ serve(async (req) => {
   }
 
   return withErrorHandling(async () => {
+    // Parse body first so _jwt fallback works in validateAuth
+    const body: VerifyPaymentRequest = await req.json()
+
     // Validate authentication
-    const authResult = await validateAuth(req)
+    const authResult = await validateAuth(req, body)
     if (authResult instanceof Response) return authResult
     const { user } = authResult
 
-    // Parse and validate request body
-    const body: VerifyPaymentRequest = await req.json()
+    // Validate required fields
     const missing = validateRequired(body, ['payment_id', 'verified'])
     if (missing.length > 0) {
       return errorResponse(
@@ -53,7 +55,6 @@ serve(async (req) => {
         *,
         invoices (
           id,
-          invoice_number,
           amount,
           unit_id
         )

@@ -877,7 +877,7 @@ class _MemberCard extends StatelessWidget {
                     ),
                   const PopupMenuItem(
                     value: 'remove',
-                    child: Text('Remove'),
+                    child: Text('Remove', style: TextStyle(color: Colors.red)),
                   ),
                 ],
                 onSelected: (value) {
@@ -943,7 +943,7 @@ class _MemberCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Remove'),
+            child: const Text('Remove', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1090,7 +1090,8 @@ class _InviteMemberDialogState extends State<_InviteMemberDialog> {
         email: _emailController.text.trim(),
         role: 'resident',
         unitId: widget.member.unitId,
-        inviteKind: 'role',
+        inviteKind: 'household',
+        householdMemberId: widget.member.id,
       );
 
       if (mounted) {

@@ -174,9 +174,16 @@ class CommunityRepository {
     required int roleId,
     required Role role,
   }) async {
+    const roleToDb = {
+      Role.communityAdmin: 'community_admin',
+      Role.hoaOfficer: 'hoa_officer',
+      Role.guard: 'guard',
+      Role.resident: 'resident',
+      Role.maintenance: 'maintenance',
+    };
     await _client
         .from('user_roles')
-        .update({'role': role.name}).eq('id', roleId);
+        .update({'role': roleToDb[role]!}).eq('id', roleId);
   }
 
   Future<Map<String, dynamic>> createInvite({
@@ -186,6 +193,7 @@ class CommunityRepository {
     String? unitId,
     String? newUnitNo,
     String? inviteKind,
+    String? householdMemberId,
   }) async {
     // Refresh session to ensure we have a valid token
     await _client.auth.refreshSession();
@@ -220,6 +228,8 @@ class CommunityRepository {
           if (unitId != null) 'unit_id': unitId,
           if (newUnitNo != null) 'new_unit_no': newUnitNo,
           if (inviteKind != null) 'invite_kind': inviteKind,
+          if (householdMemberId != null)
+            'household_member_id': householdMemberId,
         }),
       );
 

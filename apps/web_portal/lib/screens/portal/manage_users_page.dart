@@ -171,6 +171,8 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
             final guards = roles.where((r) => r.role == Role.guard).toList();
             final residents =
                 roles.where((r) => r.role == Role.resident).toList();
+            final maintenanceStaff =
+                roles.where((r) => r.role == Role.maintenance).toList();
 
             return ListView(
               padding: const EdgeInsets.all(16),
@@ -237,6 +239,22 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                         onEdit: () => _showEditRoleDialog(context, role),
                         onDelete: () => _deleteRole(context, role),
                       )),
+                  const SizedBox(height: 24),
+                ],
+                if (maintenanceStaff.isNotEmpty) ...[
+                  _SectionHeader(
+                    title: 'Maintenance',
+                    count: maintenanceStaff.length,
+                    icon: Icons.build,
+                    color: Colors.teal,
+                  ),
+                  const SizedBox(height: 8),
+                  ...maintenanceStaff.map((role) => _UserRoleCard(
+                        role: role,
+                        userProfile: _userProfiles[role.userId],
+                        onEdit: () => _showEditRoleDialog(context, role),
+                        onDelete: () => _deleteRole(context, role),
+                      )),
                 ],
               ],
             );
@@ -258,11 +276,14 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     );
   }
 
-  void _showEditRoleDialog(BuildContext context, UserRole role) {
-    showDialog(
+  void _showEditRoleDialog(BuildContext context, UserRole role) async {
+    final updated = await showDialog<bool>(
       context: context,
       builder: (context) => _EditRoleDialog(role: role, onSaved: _loadRoles),
     );
+    if (updated == true && mounted) {
+      _loadRoles();
+    }
   }
 
   Future<void> _deleteRole(BuildContext context, UserRole role) async {
@@ -303,10 +324,14 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     if (confirmed == true && context.mounted) {
       try {
         final repo = context.read<CommunityRepository>();
-        await repo.deleteUser(
+        final result = await repo.deleteUser(
           targetUserId: role.userId,
           communityId: role.communityId,
         );
+
+        if (result['ok'] != true) {
+          throw Exception(result['error'] ?? 'Failed to delete user');
+        }
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -400,6 +425,8 @@ class _UserRoleCard extends StatelessWidget {
         return Colors.orange;
       case Role.resident:
         return Color.fromRGBO(39, 99, 67, 1);
+      case Role.maintenance:
+        return Colors.teal;
     }
   }
 
@@ -413,6 +440,8 @@ class _UserRoleCard extends StatelessWidget {
         return 'Security Guard';
       case Role.resident:
         return 'Resident';
+      case Role.maintenance:
+        return 'Maintenance';
     }
   }
 
@@ -712,6 +741,8 @@ class _InviteUserDialogState extends State<_InviteUserDialog> {
         return 'Security Guard';
       case Role.resident:
         return 'Resident';
+      case Role.maintenance:
+        return 'Maintenance';
     }
   }
 
@@ -738,6 +769,9 @@ class _InviteUserDialogState extends State<_InviteUserDialog> {
           break;
         case Role.resident:
           roleString = 'resident';
+          break;
+        case Role.maintenance:
+          roleString = 'maintenance';
           break;
       }
 
@@ -799,48 +833,64 @@ class _EditRoleDialogState extends State<_EditRoleDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.manage_accounts_outlined,
-              color: Color(0xff215e3f), size: 24),
-          const SizedBox(width: 12),
-          const Text('Edit User Role',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      titlePadding: EdgeInsets.zero,
+      insetPadding: EdgeInsets.zero,
+      title: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xff215e3f),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+        child: Row(
           children: [
-            DropdownButtonFormField<Role>(
-              value: _selectedRole,
-              decoration: const InputDecoration(
-                labelText: 'Role',
-                border: OutlineInputBorder(),
-              ),
-              items: Role.values.map((role) {
-                return DropdownMenuItem(
-                  value: role,
-                  child: Text(_getRoleDisplayName(role)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _selectedRole = value);
-                }
-              },
+            const Icon(Icons.manage_accounts_outlined,
+                color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            const Text('Edit User Role',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                )),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
           ],
         ),
       ),
+      content: SizedBox(
+          // 2. Define the width (e.g., 400 pixels or a percentage of the screen)
+          width: MediaQuery.of(context).size.width * 0.25,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<Role>(
+                  value: _selectedRole,
+                  decoration: const InputDecoration(
+                    labelText: 'Role',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: Role.values.map((role) {
+                    return DropdownMenuItem(
+                      value: role,
+                      child: Text(_getRoleDisplayName(role)),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedRole = value);
+                    }
+                  },
+                ),
+              ],
+            ),
+          )),
       actions: [
         HOAppButton(
           label: _isUpdating ? 'Updating...' : 'Update',
@@ -860,6 +910,8 @@ class _EditRoleDialogState extends State<_EditRoleDialog> {
         return 'Security Guard';
       case Role.resident:
         return 'Resident';
+      case Role.maintenance:
+        return 'Maintenance';
     }
   }
 
@@ -875,7 +927,7 @@ class _EditRoleDialogState extends State<_EditRoleDialog> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Role updated successfully')),
         );

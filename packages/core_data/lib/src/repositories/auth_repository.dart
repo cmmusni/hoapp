@@ -49,4 +49,10 @@ class AuthRepository {
       redirectTo: _redirectUrl,
     );
   }
+
+  Future<void> changePassword(String newPassword) async {
+    await _client.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
+  }
 }

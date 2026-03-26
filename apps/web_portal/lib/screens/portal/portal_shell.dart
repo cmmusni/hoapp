@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'onboarding_tour.dart';
 
 class PortalShell extends StatefulWidget {
   final String communitySlug;
@@ -21,6 +23,8 @@ class PortalShell extends StatefulWidget {
 class _PortalShellState extends State<PortalShell> {
   bool _isCommunityLoaded = false;
   bool _sidebarOpen = true;
+  bool _showTour = false;
+  bool _hasUnit = false;
 
   @override
   void initState() {
@@ -41,24 +45,25 @@ class _PortalShellState extends State<PortalShell> {
         appState.setActiveCommunity(community.id, community.slug);
         appState.setActiveCommunityData(community);
 
-        print('DEBUG: Community loaded: ${community.name} (${community.id})');
-
         // Load user roles
         final user = authRepo.currentUser;
-        print('DEBUG: Current user: ${user?.id}');
-
         if (user != null) {
           final userId = user.id;
-          if (userId != null && userId.isNotEmpty) {
+          if (userId.isNotEmpty) {
             try {
               final roles = await communityRepo.getUserRoles(userId);
-              print('DEBUG: User roles loaded: ${roles.length} roles');
-              for (var role in roles) {
-                print(
-                    'DEBUG: Role - ID: ${role.id}, Community: ${role.communityId}, Role: ${role.role}');
-              }
               appState.setUserRoles(roles);
-              print('DEBUG: Roles set in AppState');
+
+              // Check if user has a unit assigned
+              final memberRow = await Supabase.instance.client
+                  .from('household_members')
+                  .select('unit_id')
+                  .eq('user_id', userId)
+                  .eq('community_id', community.id)
+                  .maybeSingle();
+              if (mounted) {
+                setState(() => _hasUnit = memberRow != null);
+              }
             } catch (e) {
               print('Error loading user roles: $e');
             }
@@ -76,8 +81,30 @@ class _PortalShellState extends State<PortalShell> {
     } finally {
       if (mounted) {
         setState(() => _isCommunityLoaded = true);
+        _checkTour();
       }
     }
+  }
+
+  Future<void> _checkTour() async {
+    final user = context.read<AuthRepository>().currentUser;
+    if (user?.id == null) return;
+    final show = await OnboardingTour.shouldShow(user!.id);
+    if (show && mounted) {
+      setState(() => _showTour = true);
+    }
+  }
+
+  void _dismissTour() {
+    final user = context.read<AuthRepository>().currentUser;
+    if (user?.id != null) {
+      OnboardingTour.markCompleted(user!.id);
+    }
+    setState(() => _showTour = false);
+  }
+
+  void _replayTour() {
+    setState(() => _showTour = true);
   }
 
   @override
@@ -89,6 +116,10 @@ class _PortalShellState extends State<PortalShell> {
         'PortalShell build: user=${user?.email}, community=${appState.activeCommunity?.name}');
     final isStaff = appState.isStaff;
     final isAdmin = appState.isAdmin;
+    final isGuard = appState.activeRole?.role == Role.guard;
+    final isMaintenance = appState.activeRole?.role == Role.maintenance;
+    final isResident = appState.activeRole?.role == Role.resident;
+    final isPro = appState.isProfessional;
 
     // Get the current route to determine page title
     final currentPath =
@@ -106,6 +137,8 @@ class _PortalShellState extends State<PortalShell> {
       pageTitle = 'Amenities';
     } else if (currentPath.contains('/billing')) {
       pageTitle = 'Billing & Payments';
+    } else if (currentPath.contains('/registered-swimmers')) {
+      pageTitle = 'Registered Swimmers';
     } else if (currentPath.contains('/pool-access')) {
       pageTitle = 'Pool Access';
     } else if (currentPath.contains('/households')) {
@@ -114,6 +147,10 @@ class _PortalShellState extends State<PortalShell> {
       pageTitle = 'Manage Users';
     } else if (currentPath.contains('/settings')) {
       pageTitle = 'Settings';
+    } else if (currentPath.contains('/security-pass')) {
+      pageTitle = 'Security Pass';
+    } else if (currentPath.contains('/qr-scanner')) {
+      pageTitle = 'QR Scanner';
     } else {
       communityName = null; // Don't show community name twice on home
     }
@@ -131,8 +168,8 @@ class _PortalShellState extends State<PortalShell> {
                 curve: Curves.easeInOut,
                 width: _sidebarOpen ? 250 : 0,
                 child: _sidebarOpen
-                    ? _buildSidebar(
-                        context, user, appState, isStaff, isAdmin, currentPath)
+                    ? _buildSidebar(context, user, appState, isStaff, isAdmin,
+                        isGuard, isMaintenance, isResident, isPro, currentPath)
                     : const SizedBox.shrink(),
               ),
               // Main content
@@ -171,9 +208,23 @@ class _PortalShellState extends State<PortalShell> {
                       ],
                     ),
                   ),
-                  body: _isCommunityLoaded
-                      ? widget.child
-                      : const Center(child: CircularProgressIndicator()),
+                  body: Stack(
+                    children: [
+                      _isCommunityLoaded
+                          ? widget.child
+                          : const Center(child: CircularProgressIndicator()),
+                      if (_showTour && _isCommunityLoaded)
+                        OnboardingTour(
+                          isStaff: isStaff,
+                          isAdmin: isAdmin,
+                          isPro: isPro,
+                          isGuard: isGuard,
+                          communityName: appState.activeCommunity?.name ??
+                              widget.communitySlug,
+                          onDismiss: _dismissTour,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -207,10 +258,25 @@ class _PortalShellState extends State<PortalShell> {
               ],
             ),
           ),
-          drawer: _buildDrawer(context, user, appState, isStaff, isAdmin),
-          body: _isCommunityLoaded
-              ? widget.child
-              : const Center(child: CircularProgressIndicator()),
+          drawer: _buildDrawer(
+              context, user, appState, isStaff, isAdmin, isGuard, isPro),
+          body: Stack(
+            children: [
+              _isCommunityLoaded
+                  ? widget.child
+                  : const Center(child: CircularProgressIndicator()),
+              if (_showTour && _isCommunityLoaded)
+                OnboardingTour(
+                  isStaff: isStaff,
+                  isAdmin: isAdmin,
+                  isPro: isPro,
+                  isGuard: isGuard,
+                  communityName:
+                      appState.activeCommunity?.name ?? widget.communitySlug,
+                  onDismiss: _dismissTour,
+                ),
+            ],
+          ),
         );
       },
     );
@@ -227,7 +293,17 @@ class _PortalShellState extends State<PortalShell> {
     return PopupMenuButton<String>(
       offset: const Offset(0, 48),
       onSelected: (value) async {
-        if (value == 'signout') {
+        if (value == 'profile') {
+          if (context.mounted) {
+            _showProfileDialog(context, appState);
+          }
+        } else if (value == 'change_password') {
+          if (context.mounted) {
+            _showChangePasswordDialog(context);
+          }
+        } else if (value == 'replay_tour') {
+          _replayTour();
+        } else if (value == 'signout') {
           await context.read<AuthRepository>().signOut();
           if (context.mounted) context.go('/login');
         }
@@ -283,6 +359,38 @@ class _PortalShellState extends State<PortalShell> {
         ),
         const PopupMenuDivider(),
         const PopupMenuItem<String>(
+          value: 'profile',
+          child: Row(
+            children: [
+              Icon(Icons.person_outline, size: 18, color: Colors.blueGrey),
+              SizedBox(width: 8),
+              Text('My Profile'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'change_password',
+          child: Row(
+            children: [
+              Icon(Icons.lock_outline, size: 18, color: Colors.blueGrey),
+              SizedBox(width: 8),
+              Text('Change Password'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: 'replay_tour',
+          child: Row(
+            children: [
+              Icon(Icons.help_outline, size: 18, color: Colors.blueGrey),
+              SizedBox(width: 8),
+              Text('Help / Tour'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
           value: 'signout',
           child: Row(
             children: [
@@ -318,17 +426,41 @@ class _PortalShellState extends State<PortalShell> {
     );
   }
 
+  void _showProfileDialog(BuildContext context, AppState appState) {
+    showDialog(
+      context: context,
+      builder: (_) => _ProfileDialog(communityId: appState.activeCommunityId!),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => const _ChangePasswordDialog(),
+    );
+  }
+
   // ============ DARK SIDEBAR (Desktop) ============
 
   static const _sidebarDark = Color(0xff215e3f);
   static const _sidebarDarkLight = Color(0xFF61937A);
 
-  Widget _buildSidebar(BuildContext context, dynamic user, AppState appState,
-      bool isStaff, bool isAdmin, String currentPath) {
+  Widget _buildSidebar(
+      BuildContext context,
+      dynamic user,
+      AppState appState,
+      bool isStaff,
+      bool isAdmin,
+      bool isGuard,
+      bool isMaintenance,
+      bool isResident,
+      bool isPro,
+      String currentPath) {
+    final hasUnit = _hasUnit || isStaff || isGuard;
     final email = user?.email ?? '';
-    final roleBadge = appState.activeRole != null
+    final roleBadge = appState.activeRole != null && hasUnit
         ? _formatRole(appState.activeRole!.role)
-        : null;
+        : 'User (contact Admin to assign unit)';
 
     return ClipRect(
       child: OverflowBox(
@@ -426,16 +558,40 @@ class _PortalShellState extends State<PortalShell> {
                         Icons.report_outlined, '/violations', currentPath),
                     _buildSidebarItem(context, 'Tickets',
                         Icons.support_outlined, '/tickets', currentPath),
-                    _buildSidebarItem(context, 'Amenities', Icons.pool_outlined,
-                        '/amenities', currentPath),
-                    _buildSidebarItem(context, 'Billing & Payments',
-                        Icons.payment_outlined, '/billing', currentPath),
-                    _buildSidebarItem(
-                        context,
-                        'Pool Access',
-                        Icons.accessibility_outlined,
-                        '/pool-access',
-                        currentPath),
+                    if (!isGuard && isPro && hasUnit) ...[
+                      _buildSidebarItem(context, 'Amenities',
+                          Icons.pool_outlined, '/amenities', currentPath),
+                      _buildSidebarItem(context, 'Billing & Payments',
+                          Icons.payment_outlined, '/billing', currentPath),
+                    ],
+                    if (isPro && hasUnit) ...[
+                      ...(isResident
+                          ? [
+                              _buildSidebarItem(
+                                  context,
+                                  'Pool Access',
+                                  Icons.accessibility_outlined,
+                                  '/pool-access',
+                                  currentPath),
+                            ]
+                          : []),
+                      ...(!isResident
+                          ? [
+                              _buildSidebarItem(
+                                  context,
+                                  'Registered Swimmers',
+                                  Icons.pool_outlined,
+                                  '/registered-swimmers',
+                                  currentPath),
+                            ]
+                          : []),
+                    ],
+                    if (isPro && hasUnit)
+                      _buildSidebarItem(context, 'Security Pass',
+                          Icons.badge_outlined, '/security-pass', currentPath),
+                    if (isGuard && isPro)
+                      _buildSidebarItem(context, 'QR Scanner',
+                          Icons.qr_code_scanner, '/qr-scanner', currentPath),
                     if (isStaff) ...[
                       const Padding(
                         padding:
@@ -510,7 +666,8 @@ class _PortalShellState extends State<PortalShell> {
   }
 
   Widget _buildDrawer(BuildContext context, dynamic user, AppState appState,
-      bool isStaff, bool isAdmin) {
+      bool isStaff, bool isAdmin, bool isGuard, bool isPro) {
+    final hasUnit = _hasUnit || isStaff || isGuard;
     return Drawer(
       child: ListView(
         children: [
@@ -590,12 +747,24 @@ class _PortalShellState extends State<PortalShell> {
               '/${widget.communitySlug}/violations'),
           _buildMenuItem(context, 'Tickets', Icons.support,
               '/${widget.communitySlug}/tickets'),
-          _buildMenuItem(context, 'Amenities', Icons.pool,
-              '/${widget.communitySlug}/amenities'),
-          _buildMenuItem(context, 'Billing & Payments', Icons.payment,
-              '/${widget.communitySlug}/billing'),
-          _buildMenuItem(context, 'Pool Access', Icons.accessibility,
-              '/${widget.communitySlug}/pool-access'),
+          if (!isGuard && isPro && hasUnit) ...[
+            _buildMenuItem(context, 'Amenities', Icons.pool,
+                '/${widget.communitySlug}/amenities'),
+            _buildMenuItem(context, 'Billing & Payments', Icons.payment,
+                '/${widget.communitySlug}/billing'),
+          ],
+          if (isPro && hasUnit) ...[
+            _buildMenuItem(context, 'Pool Access', Icons.accessibility,
+                '/${widget.communitySlug}/pool-access'),
+            _buildMenuItem(context, 'Registered Swimmers', Icons.pool,
+                '/${widget.communitySlug}/registered-swimmers'),
+          ],
+          if (isPro && hasUnit)
+            _buildMenuItem(context, 'Security Pass', Icons.badge,
+                '/${widget.communitySlug}/security-pass'),
+          if (isGuard && isPro)
+            _buildMenuItem(context, 'QR Scanner', Icons.qr_code_scanner,
+                '/${widget.communitySlug}/qr-scanner'),
           if (isStaff) ...[
             const Divider(),
             _buildMenuItem(context, 'Households', Icons.family_restroom,
@@ -632,9 +801,484 @@ class _PortalShellState extends State<PortalShell> {
       case Role.hoaOfficer:
         return 'HOA Officer';
       case Role.guard:
-        return 'Guard';
+        return 'Security Guard';
       case Role.resident:
         return 'Resident';
+      case Role.maintenance:
+        return 'Maintenance';
     }
+  }
+}
+
+// ============================================================
+// PROFILE DIALOG
+// ============================================================
+
+class _ProfileDialog extends StatefulWidget {
+  final String communityId;
+
+  const _ProfileDialog({required this.communityId});
+
+  @override
+  State<_ProfileDialog> createState() => _ProfileDialogState();
+}
+
+class _ProfileDialogState extends State<_ProfileDialog> {
+  static const _brandColor = Color(0xff215e3f);
+
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+
+  bool _loading = true;
+  bool _saving = false;
+  String? _authEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    final client = SupabaseClientManager.instance;
+    final userId = client.auth.currentUser?.id;
+    _authEmail = client.auth.currentUser?.email;
+
+    if (userId == null) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+
+    final row = await client
+        .from('profiles')
+        .select()
+        .eq('user_id', userId)
+        .eq('community_id', widget.communityId)
+        .maybeSingle();
+
+    if (mounted) {
+      if (row != null) {
+        _nameController.text = (row['full_name'] as String?) ?? '';
+        _phoneController.text = (row['phone'] as String?) ?? '';
+        _emailController.text = (row['email'] as String?) ?? _authEmail ?? '';
+      } else {
+        _emailController.text = _authEmail ?? '';
+      }
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _saving = true);
+
+    try {
+      final client = SupabaseClientManager.instance;
+      final userId = client.auth.currentUser?.id;
+      if (userId == null) throw Exception('Not authenticated');
+
+      await client.from('profiles').upsert({
+        'user_id': userId,
+        'community_id': widget.communityId,
+        'full_name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'email': _emailController.text.trim(),
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      contentPadding: EdgeInsets.zero,
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_brandColor, Color(0xff2e8b57)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.person, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'My Profile',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'View and edit your information',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+
+            // Body
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(40),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person_outline),
+                        ),
+                        validator: (v) =>
+                            (v?.isEmpty ?? true) ? 'Required' : null,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _phoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone Number',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.phone_outlined),
+                        ),
+                        keyboardType: TextInputType.phone,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.email_outlined),
+                          filled: _authEmail != null && _authEmail!.isNotEmpty,
+                          fillColor: Colors.grey.shade100,
+                        ),
+                        enabled: _authEmail == null || _authEmail!.isEmpty,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: ElevatedButton.icon(
+                          onPressed: _saving ? null : _saveProfile,
+                          icon: _saving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(
+                                  Icons.save,
+                                  color: Colors.white,
+                                ),
+                          label: Text(_saving ? 'Saving...' : 'Save Profile'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _brandColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// CHANGE PASSWORD DIALOG
+// ============================================================
+
+class _ChangePasswordDialog extends StatefulWidget {
+  const _ChangePasswordDialog();
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  static const _brandColor = Color(0xff215e3f);
+
+  final _formKey = GlobalKey<FormState>();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _saving = false;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+
+  @override
+  void dispose() {
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _saving = true);
+
+    try {
+      final authRepo = context.read<AuthRepository>();
+      await authRepo.changePassword(_newPasswordController.text.trim());
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password changed successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      contentPadding: EdgeInsets.zero,
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_brandColor, Color(0xff2e8b57)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.lock_outline,
+                        color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Change Password',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Enter your new password',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+
+            // Body
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _newPasswordController,
+                      obscureText: _obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'New Password',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscureNew
+                              ? Icons.visibility_off
+                              : Icons.visibility),
+                          onPressed: () =>
+                              setState(() => _obscureNew = !_obscureNew),
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Required';
+                        if (v.length < 6) return 'At least 6 characters';
+                        return null;
+                      },
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: _obscureConfirm,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscureConfirm
+                              ? Icons.visibility_off
+                              : Icons.visibility),
+                          onPressed: () => setState(
+                              () => _obscureConfirm = !_obscureConfirm),
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Required';
+                        if (v != _newPasswordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _changePassword(),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        onPressed: _saving ? null : _changePassword,
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.check, color: Colors.white),
+                        label:
+                            Text(_saving ? 'Changing...' : 'Change Password'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _brandColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

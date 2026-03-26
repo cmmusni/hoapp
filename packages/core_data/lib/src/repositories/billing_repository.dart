@@ -263,6 +263,7 @@ class BillingRepository {
     String? rejectionReason,
     double? amount,
   }) async {
+    final jwt = _client.auth.currentSession?.accessToken;
     final response = await _client.functions.invoke(
       'verify_payment',
       body: {
@@ -271,6 +272,7 @@ class BillingRepository {
         if (receiptUrl != null) 'receipt_url': receiptUrl,
         if (rejectionReason != null) 'rejection_reason': rejectionReason,
         if (amount != null) 'amount': amount,
+        if (jwt != null) '_jwt': jwt,
       },
     );
 

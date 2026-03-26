@@ -343,10 +343,14 @@ class _TicketDetailState extends State<_TicketDetail> {
           if (isStaff)
             Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: IconButton(
+              child: ElevatedButton.icon(
                 onPressed: () => _deleteTicket(context),
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                tooltip: 'Delete Ticket',
+                icon: const Icon(Icons.delete, size: 16, color: Colors.white),
+                label: const Text('Delete Ticket'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[500],
+                  foregroundColor: Colors.white,
+                ),
               ),
             ),
         ],
@@ -591,21 +595,33 @@ class _CreateTicketDialogState extends State<_CreateTicketDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          const Icon(Icons.confirmation_number_outlined,
-              color: Color(0xff215e3f), size: 24),
-          const SizedBox(width: 12),
-          const Text('Create New Ticket',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
+      titlePadding: EdgeInsets.zero,
+      title: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xff215e3f),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+        child: Row(
+          children: [
+            const Icon(Icons.confirmation_number_outlined,
+                color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            const Text('Create New Ticket',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                )),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
       ),
       content: SizedBox(
         width: 400,
