@@ -150,7 +150,7 @@ class SupportPage extends StatelessWidget {
                               ),
                               _faqItem(
                                 'How do I upgrade my community plan?',
-                                'Contact your community admin or reach out to our sales team at sales@hoapp.net.',
+                                'Contact your community admin or reach out to our sales team at support@hoapp.net.',
                               ),
                               _faqItem(
                                 'Is my data secure?',

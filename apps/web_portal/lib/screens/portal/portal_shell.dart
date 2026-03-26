@@ -113,13 +113,14 @@ class _PortalShellState extends State<PortalShell> {
     final authRepo = context.watch<AuthRepository>();
     final user = authRepo.currentUser;
     print(
-        'PortalShell build: user=${user?.email}, community=${appState.activeCommunity?.name}');
+        'PortalShell build: user=${user?.email}, community=${appState.activeCommunity?.name} role=${appState.activeRole?.role}, hasUnit=$_hasUnit');
     final isStaff = appState.isStaff;
     final isAdmin = appState.isAdmin;
     final isGuard = appState.activeRole?.role == Role.guard;
     final isMaintenance = appState.activeRole?.role == Role.maintenance;
     final isResident = appState.activeRole?.role == Role.resident;
     final isPro = appState.isProfessional;
+    print('isMaintenance: $isMaintenance');
 
     // Get the current route to determine page title
     final currentPath =
@@ -150,7 +151,7 @@ class _PortalShellState extends State<PortalShell> {
     } else if (currentPath.contains('/security-pass')) {
       pageTitle = 'Security Pass';
     } else if (currentPath.contains('/qr-scanner')) {
-      pageTitle = 'QR Scanner';
+      pageTitle = 'QR Pass Scanner';
     } else {
       communityName = null; // Don't show community name twice on home
     }
@@ -258,8 +259,8 @@ class _PortalShellState extends State<PortalShell> {
               ],
             ),
           ),
-          drawer: _buildDrawer(
-              context, user, appState, isStaff, isAdmin, isGuard, isPro),
+          drawer: _buildDrawer(context, user, appState, isStaff, isAdmin,
+              isGuard, isMaintenance, isResident, isPro, currentPath),
           body: Stack(
             children: [
               _isCommunityLoaded
@@ -558,14 +559,14 @@ class _PortalShellState extends State<PortalShell> {
                         Icons.report_outlined, '/violations', currentPath),
                     _buildSidebarItem(context, 'Tickets',
                         Icons.support_outlined, '/tickets', currentPath),
-                    if (!isGuard && isPro && hasUnit) ...[
+                    if (!isGuard && !isMaintenance && isPro && hasUnit) ...[
                       _buildSidebarItem(context, 'Amenities',
                           Icons.pool_outlined, '/amenities', currentPath),
                       _buildSidebarItem(context, 'Billing & Payments',
                           Icons.payment_outlined, '/billing', currentPath),
                     ],
                     if (isPro && hasUnit) ...[
-                      ...(isResident
+                      ...(!isGuard && !isMaintenance
                           ? [
                               _buildSidebarItem(
                                   context,
@@ -589,8 +590,8 @@ class _PortalShellState extends State<PortalShell> {
                     if (isPro && hasUnit)
                       _buildSidebarItem(context, 'Security Pass',
                           Icons.badge_outlined, '/security-pass', currentPath),
-                    if (isGuard && isPro)
-                      _buildSidebarItem(context, 'QR Scanner',
+                    if ((isGuard || isMaintenance) && isPro)
+                      _buildSidebarItem(context, 'QR Pass Scanner',
                           Icons.qr_code_scanner, '/qr-scanner', currentPath),
                     if (isStaff) ...[
                       const Padding(
@@ -665,128 +666,160 @@ class _PortalShellState extends State<PortalShell> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context, dynamic user, AppState appState,
-      bool isStaff, bool isAdmin, bool isGuard, bool isPro) {
+  Widget _buildDrawer(
+      BuildContext context,
+      dynamic user,
+      AppState appState,
+      bool isStaff,
+      bool isAdmin,
+      bool isGuard,
+      bool isMaintenance,
+      bool isResident,
+      bool isPro,
+      String currentPath) {
     final hasUnit = _hasUnit || isStaff || isGuard;
     return Drawer(
-      child: ListView(
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/hoapp-logo-with-bg.png'),
-                fit: BoxFit.cover,
+      backgroundColor: Colors.white,
+      child: ListTileTheme(
+        tileColor: Colors.white,
+        child: ListView(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/images/hoapp-logo-with-bg.png'),
+                  fit: BoxFit.cover,
+                ),
               ),
+              child: const SizedBox.shrink(),
             ),
-            child: const SizedBox.shrink(),
-          ),
-          if (user?.email != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user!.email!,
-                    style: TextStyle(
-                      color: Colors.grey.shade800,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+            if (user?.email != null)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user!.email!,
+                      style: TextStyle(
+                        color: Colors.grey.shade800,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      if (appState.activeRole != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        if (appState.activeRole != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
                               color: Theme.of(context)
                                   .colorScheme
                                   .primary
-                                  .withOpacity(0.3),
-                              width: 1,
+                                  .withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              _formatRole(appState.activeRole!.role),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          child: Text(
-                            _formatRole(appState.activeRole!.role),
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    appState.activeCommunity?.name ?? '',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      appState.activeCommunity?.name ?? '',
+                      style:
+                          TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          const Divider(height: 1),
-          _buildMenuItem(context, 'Announcements', Icons.announcement,
-              '/${widget.communitySlug}/announcements'),
-          _buildMenuItem(context, 'Violations', Icons.report,
-              '/${widget.communitySlug}/violations'),
-          _buildMenuItem(context, 'Tickets', Icons.support,
-              '/${widget.communitySlug}/tickets'),
-          if (!isGuard && isPro && hasUnit) ...[
-            _buildMenuItem(context, 'Amenities', Icons.pool,
-                '/${widget.communitySlug}/amenities'),
-            _buildMenuItem(context, 'Billing & Payments', Icons.payment,
-                '/${widget.communitySlug}/billing'),
+            const Divider(height: 1),
+            _buildMenuItem(context, 'Announcements', Icons.announcement,
+                '/${widget.communitySlug}/announcements', currentPath),
+            _buildMenuItem(context, 'Violations', Icons.report,
+                '/${widget.communitySlug}/violations', currentPath),
+            _buildMenuItem(context, 'Tickets', Icons.support,
+                '/${widget.communitySlug}/tickets', currentPath),
+            if (!isGuard && !isMaintenance && isPro && hasUnit) ...[
+              _buildMenuItem(context, 'Amenities', Icons.pool,
+                  '/${widget.communitySlug}/amenities', currentPath),
+              _buildMenuItem(context, 'Billing & Payments', Icons.payment,
+                  '/${widget.communitySlug}/billing', currentPath),
+            ],
+            if (isPro && hasUnit) ...[
+              if (!isGuard && !isMaintenance)
+                _buildMenuItem(context, 'Pool Access', Icons.accessibility,
+                    '/${widget.communitySlug}/pool-access', currentPath),
+              if (!isResident)
+                _buildMenuItem(
+                    context,
+                    'Registered Swimmers',
+                    Icons.pool,
+                    '/${widget.communitySlug}/registered-swimmers',
+                    currentPath),
+            ],
+            if (isPro && hasUnit)
+              _buildMenuItem(context, 'Security Pass', Icons.badge,
+                  '/${widget.communitySlug}/security-pass', currentPath),
+            if ((isGuard || isMaintenance) && isPro)
+              _buildMenuItem(context, 'QR Pass Scanner', Icons.qr_code_scanner,
+                  '/${widget.communitySlug}/qr-scanner', currentPath),
+            if (isStaff) ...[
+              const Divider(),
+              _buildMenuItem(context, 'Households', Icons.family_restroom,
+                  '/${widget.communitySlug}/households', currentPath),
+              _buildMenuItem(context, 'Manage Users', Icons.people,
+                  '/${widget.communitySlug}/manage-users', currentPath),
+            ],
+            if (isAdmin) ...[
+              const Divider(),
+              _buildMenuItem(context, 'Settings', Icons.settings,
+                  '/${widget.communitySlug}/settings', currentPath),
+            ],
           ],
-          if (isPro && hasUnit) ...[
-            _buildMenuItem(context, 'Pool Access', Icons.accessibility,
-                '/${widget.communitySlug}/pool-access'),
-            _buildMenuItem(context, 'Registered Swimmers', Icons.pool,
-                '/${widget.communitySlug}/registered-swimmers'),
-          ],
-          if (isPro && hasUnit)
-            _buildMenuItem(context, 'Security Pass', Icons.badge,
-                '/${widget.communitySlug}/security-pass'),
-          if (isGuard && isPro)
-            _buildMenuItem(context, 'QR Scanner', Icons.qr_code_scanner,
-                '/${widget.communitySlug}/qr-scanner'),
-          if (isStaff) ...[
-            const Divider(),
-            _buildMenuItem(context, 'Households', Icons.family_restroom,
-                '/${widget.communitySlug}/households'),
-            _buildMenuItem(context, 'Manage Users', Icons.people,
-                '/${widget.communitySlug}/manage-users'),
-          ],
-          if (isAdmin) ...[
-            const Divider(),
-            _buildMenuItem(context, 'Settings', Icons.settings,
-                '/${widget.communitySlug}/settings'),
-          ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildMenuItem(
-      BuildContext context, String title, IconData icon, String route) {
+  Widget _buildMenuItem(BuildContext context, String title, IconData icon,
+      String route, String currentPath) {
+    final routeSegment = route.split('/').last;
+    final pathSegments = currentPath.split('/');
+    final isActive = pathSegments.contains(routeSegment);
     return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
+      leading: Icon(icon, color: isActive ? const Color(0xff215e3f) : null),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+          color: isActive ? const Color(0xff215e3f) : null,
+        ),
+      ),
+      tileColor:
+          isActive ? const Color(0xff215e3f).withOpacity(0.08) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       onTap: () {
         Navigator.of(context).pop();
         context.go(route);

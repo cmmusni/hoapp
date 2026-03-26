@@ -28,7 +28,7 @@ class LandingPage extends StatelessWidget {
               child: Column(
                 children: [
                   // Spacing for fixed navigation bar
-                  const SizedBox(height: 72),
+                  const SizedBox(height: 96),
 
                   // Main content
                   Container(
