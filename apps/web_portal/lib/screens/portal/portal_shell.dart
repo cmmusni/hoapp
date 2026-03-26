@@ -54,6 +54,10 @@ class _PortalShellState extends State<PortalShell> {
               final roles = await communityRepo.getUserRoles(userId);
               appState.setUserRoles(roles);
 
+              // Check platform admin role
+              final isPlatformAdmin = await communityRepo.isPlatformAdmin();
+              appState.setPlatformAdmin(isPlatformAdmin);
+
               // Check if user has a unit assigned
               final memberRow = await Supabase.instance.client
                   .from('household_members')
@@ -304,6 +308,8 @@ class _PortalShellState extends State<PortalShell> {
           }
         } else if (value == 'replay_tour') {
           _replayTour();
+        } else if (value == 'platform_admin') {
+          if (context.mounted) context.go('/admin');
         } else if (value == 'signout') {
           await context.read<AuthRepository>().signOut();
           if (context.mounted) context.go('/login');
@@ -390,6 +396,24 @@ class _PortalShellState extends State<PortalShell> {
             ],
           ),
         ),
+        if (appState.isPlatformAdmin) ...[
+          const PopupMenuDivider(),
+          const PopupMenuItem<String>(
+            value: 'platform_admin',
+            child: Row(
+              children: [
+                Icon(Icons.admin_panel_settings,
+                    size: 18, color: Color(0xff215e3f)),
+                SizedBox(width: 8),
+                Text('Platform Admin',
+                    style: TextStyle(
+                      color: Color(0xff215e3f),
+                      fontWeight: FontWeight.w600,
+                    )),
+              ],
+            ),
+          ),
+        ],
         const PopupMenuDivider(),
         const PopupMenuItem<String>(
           value: 'signout',

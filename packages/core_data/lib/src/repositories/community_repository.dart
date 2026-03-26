@@ -8,6 +8,21 @@ import '../config.dart';
 class CommunityRepository {
   final SupabaseClient _client = SupabaseClientManager.instance;
 
+  /// Check if the current user is a platform admin (app_admin)
+  Future<bool> isPlatformAdmin() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return false;
+
+    final row = await _client
+        .from('platform_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'app_admin')
+        .maybeSingle();
+
+    return row != null;
+  }
+
   Future<Community?> getCommunityBySlug(String slug) async {
     final response = await _client
         .from('communities')
@@ -311,5 +326,63 @@ class CommunityRepository {
     }
 
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  // ─── Beta Access Requests ─────────────────────────────────
+
+  /// Fetch all beta access requests (admin only)
+  Future<List<Map<String, dynamic>>> getBetaAccessRequests() async {
+    final response = await _client
+        .from('beta_access_requests')
+        .select()
+        .order('created_at', ascending: false);
+
+    return (response as List).cast<Map<String, dynamic>>();
+  }
+
+  /// Provision a community for a beta requester
+  Future<Map<String, dynamic>> provisionCommunity({
+    required String requestId,
+    required String communityName,
+    required String communitySlug,
+    required String password,
+  }) async {
+    final session = _client.auth.currentSession;
+    if (session == null) throw Exception('Not authenticated');
+
+    const functionsUrl =
+        '${AppConfig.supabaseUrl}/functions/v1/provision_community';
+
+    final response = await http.post(
+      Uri.parse(functionsUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${session.accessToken}',
+        'apikey': AppConfig.supabaseAnonKey,
+      },
+      body: jsonEncode({
+        'request_id': requestId,
+        'community_name': communityName,
+        'community_slug': communitySlug,
+        'password': password,
+      }),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode != 200) {
+      throw Exception(data['error'] ?? 'Failed to provision community');
+    }
+
+    return data;
+  }
+
+  /// Reject a beta access request
+  Future<void> rejectBetaRequest(String requestId) async {
+    await _client.from('beta_access_requests').update({
+      'status': 'rejected',
+      'processed_by': _client.auth.currentUser?.id,
+      'processed_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', requestId);
   }
 }

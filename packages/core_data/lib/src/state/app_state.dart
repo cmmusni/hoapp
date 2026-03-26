@@ -11,11 +11,13 @@ class AppState extends ChangeNotifier {
   String? _activeCommunitySlug;
   Community? _activeCommunity;
   List<UserRole>? _userRoles;
+  bool _isPlatformAdmin = false;
 
   String? get activeCommunityId => _activeCommunityId;
   String? get activeCommunitySlug => _activeCommunitySlug;
   Community? get activeCommunity => _activeCommunity;
   List<UserRole>? get userRoles => _userRoles;
+  bool get isPlatformAdmin => _isPlatformAdmin;
 
   UserRole? get activeRole {
     if (_activeCommunityId == null || _userRoles == null) return null;
@@ -74,6 +76,11 @@ class AppState extends ChangeNotifier {
 
   void setUserRoles(List<UserRole> roles) {
     _userRoles = roles;
+    notifyListeners();
+  }
+
+  void setPlatformAdmin(bool value) {
+    _isPlatformAdmin = value;
     notifyListeners();
   }
 }

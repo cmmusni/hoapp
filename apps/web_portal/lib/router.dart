@@ -20,6 +20,7 @@ import 'screens/portal/manage_users_page.dart';
 import 'screens/portal/settings_page.dart';
 import 'screens/portal/security_pass_page.dart';
 import 'screens/portal/qr_scanner_page.dart';
+import 'screens/portal/platform_admin_shell.dart';
 import 'screens/portal/plan_gate.dart';
 import 'screens/features_page.dart';
 import 'screens/pricing_page.dart';
@@ -122,6 +123,16 @@ GoRouter createRouter({String? lastCommunitySlug}) {
       GoRoute(
         path: '/create-community',
         builder: (context, state) => const CreateCommunityPage(),
+      ),
+      // Platform admin (cross-community management)
+      GoRoute(
+        path: '/admin',
+        redirect: (context, state) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session == null) return '/login';
+          return null;
+        },
+        builder: (context, state) => const PlatformAdminShell(),
       ),
 
       // Demo scaffolding route (UI showcase with mock data)
