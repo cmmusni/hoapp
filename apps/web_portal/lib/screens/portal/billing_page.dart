@@ -748,204 +748,209 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
           ],
         ),
       ),
-      content: SizedBox(
-        width: 500,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Period info
-              if (widget.invoice.periodStart != null ||
-                  widget.invoice.periodEnd != null) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    children: [
-                      if (widget.invoice.description != null)
-                        Text(
-                          widget.invoice.description!,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.55,
+        ),
+        child: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Period info
+                if (widget.invoice.periodStart != null ||
+                    widget.invoice.periodEnd != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        if (widget.invoice.description != null)
+                          Text(
+                            widget.invoice.description!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
                           ),
-                        ),
-                      if (widget.invoice.periodStart != null &&
-                          widget.invoice.periodEnd != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Period: ${dateFormat.format(widget.invoice.periodStart!)} – ${dateFormat.format(widget.invoice.periodEnd!)}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
+                        if (widget.invoice.periodStart != null &&
+                            widget.invoice.periodEnd != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Period: ${dateFormat.format(widget.invoice.periodStart!)} – ${dateFormat.format(widget.invoice.periodEnd!)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Line items breakdown
+                FutureBuilder<List<InvoiceLineItem>>(
+                  future: _lineItemsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Center(
+                            child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))),
+                      );
+                    }
+
+                    final items = snapshot.data ?? [];
+
+                    if (items.isEmpty) {
+                      // No line items — just show the total
+                      return _buildTotalRow(currencyFormat);
+                    }
+
+                    return Column(
+                      children: [
+                        ...items.map((item) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.label,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                        if (item.metadata != null &&
+                                            item.metadata!['detail'] != null)
+                                          Text(
+                                            item.metadata!['detail'] as String,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[500],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    currencyFormat.format(item.amount),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                        const Divider(height: 16),
+                        _buildTotalRow(currencyFormat),
+                      ],
+                    );
+                  },
+                ),
+
+                if (widget.invoice.notes != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.note_outlined,
+                            size: 16, color: Colors.amber[700]),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.invoice.notes!,
+                            style: TextStyle(
+                                fontSize: 13, color: Colors.amber[900]),
                           ),
                         ),
                       ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Line items breakdown
-              FutureBuilder<List<InvoiceLineItem>>(
-                future: _lineItemsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Center(
-                          child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2))),
-                    );
-                  }
-
-                  final items = snapshot.data ?? [];
-
-                  if (items.isEmpty) {
-                    // No line items — just show the total
-                    return _buildTotalRow(currencyFormat);
-                  }
-
-                  return Column(
-                    children: [
-                      ...items.map((item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.label,
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                      if (item.metadata != null &&
-                                          item.metadata!['detail'] != null)
-                                        Text(
-                                          item.metadata!['detail'] as String,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[500],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  currencyFormat.format(item.amount),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )),
-                      const Divider(height: 16),
-                      _buildTotalRow(currencyFormat),
-                    ],
-                  );
-                },
-              ),
-
-              if (widget.invoice.notes != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.note_outlined,
-                          size: 16, color: Colors.amber[700]),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          widget.invoice.notes!,
-                          style:
-                              TextStyle(fontSize: 13, color: Colors.amber[900]),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-              const Divider(),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.payments_outlined,
-                      size: 18, color: Colors.grey[600]),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Payment History',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              FutureBuilder<List<Payment>>(
-                future: _paymentsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(),
+
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.payments_outlined,
+                        size: 18, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Payment History',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[800],
                       ),
-                    );
-                  }
-
-                  final payments = snapshot.data ?? [];
-
-                  if (payments.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'No payments submitted yet',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    );
-                  }
-
-                  return Column(
-                    children: payments.map((payment) {
-                      return _PaymentCard(
-                        payment: payment,
-                        isStaff: widget.isStaff,
-                        onRefresh: () {
-                          _loadPayments();
-                          widget.onRefresh();
-                        },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                FutureBuilder<List<Payment>>(
+                  future: _paymentsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: CircularProgressIndicator(),
+                        ),
                       );
-                    }).toList(),
-                  );
-                },
-              ),
-            ],
+                    }
+
+                    final payments = snapshot.data ?? [];
+
+                    if (payments.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'No payments submitted yet',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: payments.map((payment) {
+                        return _PaymentCard(
+                          payment: payment,
+                          isStaff: widget.isStaff,
+                          onRefresh: () {
+                            _loadPayments();
+                            widget.onRefresh();
+                          },
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1727,6 +1732,15 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
     _loadUnits();
   }
 
+  void _recalcTotal() {
+    if (_lineItems.isEmpty) return;
+    double total = 0;
+    for (final item in _lineItems) {
+      total += double.tryParse(item.amountController.text) ?? 0;
+    }
+    _amountController.text = total > 0 ? total.toStringAsFixed(2) : '';
+  }
+
   void _loadUnits() {
     final appState = context.read<AppState>();
     final repo = context.read<HouseholdRepository>();
@@ -2175,20 +2189,24 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
   }
 
   void _addLineItem() {
+    final amtCtrl = TextEditingController();
+    amtCtrl.addListener(_recalcTotal);
     setState(() {
       _lineItems.add(_LineItemEntry(
         labelController: TextEditingController(),
-        amountController: TextEditingController(),
+        amountController: amtCtrl,
       ));
     });
   }
 
   void _removeLineItem(int index) {
+    _lineItems[index].labelController.dispose();
+    _lineItems[index].amountController.removeListener(_recalcTotal);
+    _lineItems[index].amountController.dispose();
     setState(() {
-      _lineItems[index].labelController.dispose();
-      _lineItems[index].amountController.dispose();
       _lineItems.removeAt(index);
     });
+    _recalcTotal();
   }
 }
 
