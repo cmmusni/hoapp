@@ -1,13 +1,15 @@
 {
-    "name": "web_portal",
-    "short_name": "web_portal",
+    "name": "HOApp — Community Management Platform",
+    "short_name": "HOApp",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#215E3F",
+    "description": "A modern HOA management platform for homeowners associations. Manage announcements, billing, households, violations, amenities, pool access, and security passes.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "categories": ["business", "productivity"],
+    "lang": "en-US",
     "icons": [
         {
             "src": "icons/Icon-192.png",

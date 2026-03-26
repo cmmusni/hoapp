@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+Allow: /features
+Allow: /pricing
+Allow: /support
+Allow: /contact
+Allow: /login
+Allow: /signup
+
+# Disallow portal internal pages (require auth)
+Disallow: /*/announcements
+Disallow: /*/violations
+Disallow: /*/tickets
+Disallow: /*/amenities
+Disallow: /*/billing
+Disallow: /*/pool-access
+Disallow: /*/households
+Disallow: /*/manage-users
+Disallow: /*/settings
+Disallow: /*/security-pass
+Disallow: /*/qr-scanner
+Disallow: /*/registered-swimmers
+Disallow: /auth/callback
+Disallow: /create-community
+
+Sitemap: https://hoapp.net/sitemap.xml

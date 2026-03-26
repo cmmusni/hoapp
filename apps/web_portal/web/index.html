@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,29 +18,98 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- iOS meta tags & icons -->
+  <!-- Primary SEO Meta Tags -->
+  <title>HOApp — Efficient Management, Effortless Community</title>
+  <meta name="description" content="HOApp is a modern HOA management platform for homeowners associations and residential communities. Manage announcements, billing, households, violations, amenities, pool access, and security passes — all in one place.">
+  <meta name="keywords" content="HOA management, homeowners association, community management, billing, announcements, violations, amenities, pool access, security pass, household management, residential community">
+  <meta name="author" content="HOApp">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://hoapp.net/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://hoapp.net/">
+  <meta property="og:title" content="HOApp — Efficient Management, Effortless Community">
+  <meta property="og:description" content="A modern HOA management platform. Manage announcements, billing, households, violations, amenities, and more for your residential community.">
+  <meta property="og:image" content="https://hoapp.net/icons/Icon-512.png">
+  <meta property="og:site_name" content="HOApp">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://hoapp.net/">
+  <meta name="twitter:title" content="HOApp — Efficient Management, Effortless Community">
+  <meta name="twitter:description" content="A modern HOA management platform. Manage announcements, billing, households, violations, amenities, and more for your residential community.">
+  <meta name="twitter:image" content="https://hoapp.net/icons/Icon-512.png">
+
+  <!-- Theme & Mobile -->
+  <meta name="theme-color" content="#215E3F">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="web_portal">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HOApp">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/Icon-512.png">
 
-  <title>web_portal</title>
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "HOApp",
+    "url": "https://hoapp.net",
+    "description": "A modern HOA management platform for homeowners associations and residential communities.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Free Starter plan available"
+    },
+    "featureList": [
+      "Community Announcements",
+      "Billing & Payments",
+      "Household Management",
+      "Violation Tracking",
+      "Amenity Booking",
+      "Pool Access Management",
+      "Security Pass with QR Codes",
+      "Ticketing System"
+    ]
+  }
+  </script>
+
   <link rel="manifest" href="manifest.json">
+
+  <!-- Preconnect to Supabase for performance -->
+  <link rel="preconnect" href="https://rdkpxdgxepybuswyirrs.supabase.co">
+  <link rel="dns-prefetch" href="https://rdkpxdgxepybuswyirrs.supabase.co">
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <!-- SEO: Noscript fallback for crawlers -->
+  <noscript>
+    <h1>HOApp — Efficient Management, Effortless Community</h1>
+    <p>HOApp is a modern HOA management platform for homeowners associations. Manage announcements, billing, households, violations, amenities, pool access, and security passes.</p>
+    <ul>
+      <li>Community Announcements</li>
+      <li>Billing &amp; Payments</li>
+      <li>Household Management</li>
+      <li>Violation Tracking</li>
+      <li>Amenity Booking</li>
+      <li>Pool Access</li>
+      <li>Security Pass with QR</li>
+      <li>Support Tickets</li>
+    </ul>
+    <p><a href="https://hoapp.net/login">Login</a> | <a href="https://hoapp.net/features">Features</a> | <a href="https://hoapp.net/pricing">Pricing</a></p>
+  </noscript>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
