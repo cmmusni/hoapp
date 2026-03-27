@@ -49,6 +49,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant NotificationsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _load();
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try {

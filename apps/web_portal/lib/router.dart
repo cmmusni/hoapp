@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/landing_page.dart';
@@ -376,7 +377,7 @@ GoRouter createRouter({String? lastCommunitySlug}) {
               }
               return null;
             },
-            builder: (context, state) => const NotificationsPage(),
+            builder: (context, state) => NotificationsPage(key: ValueKey(state.uri.toString())),
           ),
           GoRoute(
             path: '/:community/qr-scanner',
