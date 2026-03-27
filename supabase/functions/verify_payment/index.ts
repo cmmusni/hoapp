@@ -55,6 +55,7 @@ serve(async (req) => {
         *,
         invoices (
           id,
+          invoice_number,
           amount,
           unit_id
         )
