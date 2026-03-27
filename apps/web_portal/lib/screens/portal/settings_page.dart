@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
@@ -402,23 +403,28 @@ class _BrandingDialog extends StatefulWidget {
 
 class _BrandingDialogState extends State<_BrandingDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _primaryColorController;
+  late Color _primaryColor;
   String? _logoUrl;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _primaryColorController = TextEditingController(
-      text: widget.community.primaryColor,
-    );
+    _primaryColor = _parseColor(widget.community.primaryColor);
     _logoUrl = widget.community.logoUrl;
   }
 
-  @override
-  void dispose() {
-    _primaryColorController.dispose();
-    super.dispose();
+  Color _parseColor(String hex) {
+    try {
+      final hexCode = hex.replaceAll('#', '');
+      return Color(int.parse('FF$hexCode', radix: 16));
+    } catch (_) {
+      return const Color(0xFF215E3F);
+    }
+  }
+
+  String _colorToHex(Color color) {
+    return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
   }
 
   @override
@@ -501,21 +507,74 @@ class _BrandingDialogState extends State<_BrandingDialog> {
                   },
                 ),
                 const SizedBox(height: 20),
-                TextFormField(
-                  controller: _primaryColorController,
-                  decoration: const InputDecoration(
-                    labelText: 'Primary Color',
-                    border: OutlineInputBorder(),
-                    hintText: '#215E3F',
-                    helperText: 'Hex color code (e.g., #215E3F)',
-                  ),
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Required';
-                    if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value!)) {
-                      return 'Invalid hex color';
-                    }
-                    return null;
+                const Text('Primary Color',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) {
+                        Color pickerColor = _primaryColor;
+                        return AlertDialog(
+                          title: const Text('Pick a color'),
+                          content: SingleChildScrollView(
+                            child: ColorPicker(
+                              pickerColor: pickerColor,
+                              onColorChanged: (c) => pickerColor = c,
+                              enableAlpha: false,
+                              labelTypes: const [],
+                              pickerAreaHeightPercent: 0.7,
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() => _primaryColor = pickerColor);
+                                Navigator.of(ctx).pop();
+                              },
+                              child: const Text('Select'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
                   },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[400]!),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: _primaryColor,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _colorToHex(_primaryColor),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.colorize, color: Colors.grey[600]),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -568,7 +627,7 @@ class _BrandingDialogState extends State<_BrandingDialog> {
       final updatedSettings = <String, dynamic>{
         ...?widget.community.settings,
         'brand': {
-          'primary': _primaryColorController.text.trim(),
+          'primary': _colorToHex(_primaryColor),
           'surface': widget.community.surfaceColor,
         },
       };
