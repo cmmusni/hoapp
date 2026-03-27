@@ -1439,9 +1439,25 @@ class _StaffViewState extends State<_StaffView> {
     }
   }
 
+  void _openStaffRegistration() {
+    showDialog(
+      context: context,
+      builder: (_) => _StaffRegistrationDialog(
+        onRegistered: _loadRegistrations,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openStaffRegistration,
+        backgroundColor: _brandColor,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.person_add),
+        label: const Text('Register Swimmers'),
+      ),
       body: RefreshIndicator(
         onRefresh: () async => _loadRegistrations(),
         child: FutureBuilder<List<PoolAccessRegistration>>(
@@ -1488,6 +1504,11 @@ class _StaffViewState extends State<_StaffView> {
                       'Pool access registrations will appear here',
                       style: TextStyle(color: Colors.grey[600]),
                     ),
+                    const SizedBox(height: 24),
+                    HOAppButton(
+                      label: 'Register Swimmers for a Unit',
+                      onPressed: _openStaffRegistration,
+                    ),
                   ],
                 ),
               );
@@ -1506,6 +1527,731 @@ class _StaffViewState extends State<_StaffView> {
           },
         ),
       ),
+    );
+  }
+}
+
+// ============================================================
+// STAFF REGISTRATION DIALOG
+// ============================================================
+
+class _StaffRegistrationDialog extends StatefulWidget {
+  final VoidCallback onRegistered;
+
+  const _StaffRegistrationDialog({required this.onRegistered});
+
+  @override
+  State<_StaffRegistrationDialog> createState() =>
+      _StaffRegistrationDialogState();
+}
+
+class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _emergencyNameController = TextEditingController();
+  final _emergencyPhoneController = TextEditingController();
+
+  List<Unit> _availableUnits = []; // units without existing registrations
+  Unit? _selectedUnit;
+  OccupantType _occupantType = OccupantType.resident;
+  bool _isLoadingUnits = true;
+  bool _isSubmitting = false;
+  String? _loadError;
+
+  late int _maxPax;
+  final List<_SwimmerEntry> _swimmers = [_SwimmerEntry()];
+  List<String> _unitMemberNames = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _maxPax = 5;
+    _loadUnits();
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _emergencyNameController.dispose();
+    _emergencyPhoneController.dispose();
+    for (final s in _swimmers) {
+      s.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _loadUnits() async {
+    try {
+      final appState = context.read<AppState>();
+      final communityId = appState.activeCommunityId;
+      if (communityId == null) throw Exception('No community selected');
+
+      final householdRepo = context.read<HouseholdRepository>();
+      final poolRepo = context.read<PoolAccessRepository>();
+
+      final allUnits = await householdRepo.getUnits(communityId);
+      final registrations = await poolRepo.getRegistrations(communityId);
+
+      // Filter out units that already have a registration
+      final registeredUnitIds =
+          registrations.where((r) => r.unitId != null).map((r) => r.unitId).toSet();
+
+      if (mounted) {
+        setState(() {
+          _availableUnits =
+              allUnits.where((u) => !registeredUnitIds.contains(u.id)).toList();
+          _isLoadingUnits = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadError = e.toString();
+          _isLoadingUnits = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _onUnitSelected(Unit? unit) async {
+    setState(() {
+      _selectedUnit = unit;
+      _unitMemberNames = [];
+    });
+
+    if (unit == null) return;
+
+    // Update max pax based on unit type
+    _maxPax = _maxPaxForUnitType(unit.unitType);
+
+    // Trim swimmers if exceeding new max
+    while (_swimmers.length > _maxPax) {
+      _swimmers.last.dispose();
+      _swimmers.removeLast();
+    }
+
+    // Fetch unit members for autocomplete
+    try {
+      final householdRepo = context.read<HouseholdRepository>();
+      final members = await householdRepo.getHouseholdMembers(unit.id);
+      if (mounted) {
+        setState(() {
+          _unitMemberNames = members
+              .map((m) => m.displayName)
+              .where((n) => n != 'Unknown')
+              .toList();
+        });
+      }
+    } catch (_) {}
+
+    setState(() {});
+  }
+
+  void _addSwimmer() {
+    if (_swimmers.length >= _maxPax) return;
+    setState(() => _swimmers.add(_SwimmerEntry()));
+  }
+
+  void _removeSwimmer(int index) {
+    if (_swimmers.length <= 1) return;
+    setState(() {
+      _swimmers[index].dispose();
+      _swimmers.removeAt(index);
+    });
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedUnit == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a unit.')),
+      );
+      return;
+    }
+
+    final validSwimmers = _swimmers
+        .where((s) => s.nameController.text.trim().isNotEmpty)
+        .toList();
+    if (validSwimmers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one swimmer.')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final appState = context.read<AppState>();
+      final repo = context.read<PoolAccessRepository>();
+
+      final regId = await repo.staffCreateRegistration(
+        communityId: appState.activeCommunityId!,
+        unitId: _selectedUnit!.id,
+        occupantType: _occupantType,
+        fullName: _fullNameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        emergencyContactName: _emergencyNameController.text.trim(),
+        emergencyContactPhone: _emergencyPhoneController.text.trim(),
+        maxPax: _maxPax,
+      );
+
+      await repo.saveSwimmers(
+        registrationId: regId,
+        swimmers: validSwimmers.map((s) {
+          return {
+            'full_name': s.nameController.text.trim(),
+            if (s.birthdate != null)
+              'birthdate': s.birthdate!.toIso8601String(),
+          };
+        }).toList(),
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Swimmers registered for Unit ${_selectedUnit!.unitNo}'),
+          ),
+        );
+        widget.onRegistered();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: SizedBox(
+        width: 580,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_brandColor, Color(0xff2e8b57)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_add, color: Colors.white, size: 28),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Register Swimmers',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Create a pool registration on behalf of a unit',
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            // Body
+            if (_isLoadingUnits)
+              const Padding(
+                padding: EdgeInsets.all(48),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_loadError != null)
+              Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    const Icon(Icons.error_outline,
+                        size: 48, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text('Error loading units: $_loadError'),
+                  ],
+                ),
+              )
+            else
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Unit selector
+                        _sectionHeader('Select Unit', Icons.home),
+                        const SizedBox(height: 8),
+                        if (_availableUnits.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: Colors.orange.withOpacity(0.3)),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.info_outline,
+                                    size: 20, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'All units already have pool registrations.',
+                                    style: TextStyle(color: Colors.orange),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else ...[
+                          DropdownButtonFormField<Unit>(
+                            value: _selectedUnit,
+                            decoration: const InputDecoration(
+                              labelText: 'Unit',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.home_outlined),
+                            ),
+                            items: _availableUnits.map((unit) {
+                              return DropdownMenuItem(
+                                value: unit,
+                                child: Text(
+                                    'Unit ${unit.unitNo}${unit.unitType != null ? ' (${unit.unitType})' : ''}'),
+                              );
+                            }).toList(),
+                            onChanged: _onUnitSelected,
+                            validator: (v) =>
+                                v == null ? 'Please select a unit' : null,
+                          ),
+                          if (_selectedUnit != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _brandColor.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.pool,
+                                      size: 16, color: _brandColor),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Max $_maxPax swimmers allowed',
+                                    style: const TextStyle(
+                                      color: _brandColor,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                        const SizedBox(height: 20),
+
+                        // Personal info
+                        _sectionHeader('Registrant Information', Icons.person),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<OccupantType>(
+                          value: _occupantType,
+                          decoration: const InputDecoration(
+                            labelText: 'Occupant Type',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: OccupantType.values.map((type) {
+                            return DropdownMenuItem(
+                              value: type,
+                              child: Text(type.name[0].toUpperCase() +
+                                  type.name.substring(1)),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _occupantType = value);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _fullNameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Owner / Tenant Name',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.person),
+                          ),
+                          validator: (v) =>
+                              (v?.isEmpty ?? true) ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _phoneController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Phone',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.phone),
+                                ),
+                                keyboardType: TextInputType.phone,
+                                validator: (v) =>
+                                    (v?.isEmpty ?? true) ? 'Required' : null,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _emailController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.email),
+                                ),
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (v) {
+                                  if (v?.isEmpty ?? true) return 'Required';
+                                  if (!v!.contains('@')) return 'Invalid email';
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Swimmers
+                        _sectionHeader('Swimmers', Icons.pool),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_swimmers.length} of $_maxPax swimmers',
+                          style: TextStyle(
+                            color: _swimmers.length >= _maxPax
+                                ? Colors.red
+                                : Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ..._buildSwimmerRows(),
+                        const SizedBox(height: 8),
+                        if (_swimmers.length < _maxPax)
+                          OutlinedButton.icon(
+                            onPressed: _addSwimmer,
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Add Swimmer'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _brandColor,
+                              side: const BorderSide(color: _brandColor),
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+
+                        // Emergency contact
+                        _sectionHeader('Emergency Contact', Icons.emergency),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _emergencyNameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Contact Name',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.person_outline),
+                                ),
+                                validator: (v) =>
+                                    (v?.isEmpty ?? true) ? 'Required' : null,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _emergencyPhoneController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Contact Phone',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.phone_outlined),
+                                ),
+                                keyboardType: TextInputType.phone,
+                                validator: (v) =>
+                                    (v?.isEmpty ?? true) ? 'Required' : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Info banner
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border:
+                                Border.all(color: Colors.blue.withOpacity(0.2)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info_outline,
+                                  size: 20, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'This registration will be automatically approved since it is created by staff.',
+                                  style: TextStyle(
+                                      fontSize: 13, color: Colors.blue),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            // Actions
+            if (!_isLoadingUnits && _loadError == null && _availableUnits.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: HOAppButton(
+                    label: 'Register Swimmers',
+                    isLoading: _isSubmitting,
+                    onPressed:
+                        _isSubmitting || _selectedUnit == null ? null : _submit,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildSwimmerRows() {
+    final dateFormat = DateFormat('MMM dd, yyyy');
+    return List.generate(_swimmers.length, (index) {
+      final entry = _swimmers[index];
+      return Card(
+        elevation: 0,
+        margin: const EdgeInsets.only(bottom: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: _brandColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _brandColor,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 3,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return RawAutocomplete<String>(
+                      textEditingController: entry.nameController,
+                      focusNode: entry.focusNode,
+                      optionsBuilder: (textEditingValue) {
+                        final query = textEditingValue.text.toLowerCase();
+                        if (query.isEmpty) return const [];
+                        return _unitMemberNames.where(
+                          (name) => name.toLowerCase().contains(query),
+                        );
+                      },
+                      fieldViewBuilder:
+                          (context, controller, focusNode, onFieldSubmitted) {
+                        return TextFormField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Name',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                            errorStyle: TextStyle(height: 0.5),
+                          ),
+                          validator: (v) =>
+                              (v?.isEmpty ?? true) ? 'Required' : null,
+                          onFieldSubmitted: (_) => onFieldSubmitted(),
+                        );
+                      },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: 200,
+                                maxWidth: constraints.maxWidth,
+                              ),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, i) {
+                                  final option = options.elementAt(i);
+                                  return ListTile(
+                                    dense: true,
+                                    leading: const Icon(Icons.person_outline,
+                                        size: 18),
+                                    title: Text(option,
+                                        style: const TextStyle(fontSize: 14)),
+                                    onTap: () => onSelected(option),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: InkWell(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: entry.birthdate ??
+                          DateTime.now()
+                              .subtract(const Duration(days: 365 * 18)),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                    );
+                    if (date != null) {
+                      setState(() => entry.birthdate = date);
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Birthday',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      suffixIcon: Icon(Icons.calendar_today, size: 18),
+                    ),
+                    child: Text(
+                      entry.birthdate != null
+                          ? dateFormat.format(entry.birthdate!)
+                          : '',
+                      style: TextStyle(
+                        color: entry.birthdate != null ? null : Colors.grey,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 44,
+                child: Text(
+                  entry.age != null ? 'Age ${entry.age}' : '',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (_swimmers.length > 1)
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline,
+                      color: Colors.red, size: 20),
+                  onPressed: () => _removeSwimmer(index),
+                  tooltip: 'Remove',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _sectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: _brandColor, size: 18),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }

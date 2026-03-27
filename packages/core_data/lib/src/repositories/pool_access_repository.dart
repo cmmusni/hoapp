@@ -119,6 +119,66 @@ class PoolAccessRepository {
     return registration.canEdit;
   }
 
+  // ============ STAFF REGISTRATION ============
+
+  /// Staff creates a registration on behalf of a unit (auto-approved)
+  Future<String> staffCreateRegistration({
+    required String communityId,
+    required String unitId,
+    required OccupantType occupantType,
+    required String fullName,
+    required String phone,
+    required String email,
+    required String emergencyContactName,
+    required String emergencyContactPhone,
+    int maxPax = 5,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Not authenticated');
+
+    final data = {
+      'community_id': communityId,
+      'user_id': userId,
+      'unit_id': unitId,
+      'occupant_type': occupantType.name,
+      'full_name': fullName,
+      'phone': phone,
+      'email': email,
+      'emergency_contact_name': emergencyContactName,
+      'emergency_contact_phone': emergencyContactPhone,
+      'max_pax': maxPax,
+      'acknowledgements': {'pool_rules': true, 'liability_waiver': true},
+      'rules_version': 'v1',
+      'approved': true,
+      'approved_by': userId,
+      'approved_at': DateTime.now().toIso8601String(),
+    };
+
+    final response = await _client
+        .from('pool_access_registrations')
+        .insert(data)
+        .select()
+        .single();
+
+    return response['id'] as String;
+  }
+
+  /// Get registration for a specific unit
+  Future<PoolAccessRegistration?> getRegistrationByUnit(
+    String communityId,
+    String unitId,
+  ) async {
+    final response = await _client
+        .from('pool_access_registrations')
+        .select()
+        .eq('community_id', communityId)
+        .eq('unit_id', unitId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return PoolAccessRegistration.fromJson(response);
+  }
+
   // ============ SWIMMERS ============
 
   /// Get all registered swimmers for a community (with registrant info)

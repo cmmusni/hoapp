@@ -220,6 +220,8 @@ class _PortalShellState extends State<PortalShell> {
       pageTitle = 'Amenities';
     } else if (currentPath.contains('/billing')) {
       pageTitle = 'Billing & Payments';
+    } else if (currentPath.contains('/expenses')) {
+      pageTitle = 'Expense Tracker';
     } else if (currentPath.contains('/registered-swimmers')) {
       pageTitle = 'Registered Swimmers';
     } else if (currentPath.contains('/pool-access')) {
@@ -721,6 +723,12 @@ class _PortalShellState extends State<PortalShell> {
                       _buildSidebarItem(context, 'Billing & Payments',
                           Icons.payment_outlined, '/billing', currentPath,
                           badge: _pendingPayments),
+                      _buildSidebarItem(
+                          context,
+                          'Expense Tracker',
+                          Icons.account_balance_wallet_outlined,
+                          '/expenses',
+                          currentPath),
                     ],
                     if (isPro && (hasUnit || isStaff)) ...[
                       ...(!isGuard && !isMaintenance
@@ -965,6 +973,12 @@ class _PortalShellState extends State<PortalShell> {
               _buildMenuItem(context, 'Billing & Payments', Icons.payment,
                   '/${widget.communitySlug}/billing', currentPath,
                   badge: _pendingPayments),
+              _buildMenuItem(
+                  context,
+                  'Expense Tracker',
+                  Icons.account_balance_wallet,
+                  '/${widget.communitySlug}/expenses',
+                  currentPath),
             ],
             if (isPro && hasUnit) ...[
               if (!isGuard && !isMaintenance)

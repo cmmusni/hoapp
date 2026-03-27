@@ -18,6 +18,8 @@ class _BillingPageState extends State<BillingPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _showChart = true;
+  int _myPendingCount = 0;
+  int _allPendingCount = 0;
 
   @override
   void initState() {
@@ -25,12 +27,102 @@ class _BillingPageState extends State<BillingPage>
     final appState = context.read<AppState>();
     final isStaff = appState.isStaff;
     _tabController = TabController(length: isStaff ? 2 : 1, vsync: this);
+    if (isStaff) _loadTabBadges();
+  }
+
+  Future<void> _loadTabBadges() async {
+    final appState = context.read<AppState>();
+    final communityId = appState.activeCommunityId;
+    if (communityId == null) return;
+
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+
+    try {
+      // All pending payments in community
+      final allResult = await client
+          .from('payments')
+          .select('id')
+          .eq('community_id', communityId)
+          .eq('status', 'submitted')
+          .count(CountOption.exact);
+
+      int myCount = 0;
+      if (userId != null) {
+        // Get user's unit
+        final household = await client
+            .from('household_members')
+            .select('unit_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (household != null) {
+          final unitId = household['unit_id'] as String;
+          // Get invoice IDs for user's unit
+          final invoiceIds = await client
+              .from('invoices')
+              .select('id')
+              .eq('community_id', communityId)
+              .eq('unit_id', unitId);
+          final ids =
+              (invoiceIds as List).map((e) => e['id'] as String).toList();
+          if (ids.isNotEmpty) {
+            final myResult = await client
+                .from('payments')
+                .select('id')
+                .eq('community_id', communityId)
+                .eq('status', 'submitted')
+                .inFilter('invoice_id', ids)
+                .count(CountOption.exact);
+            myCount = myResult.count;
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _allPendingCount = allResult.count;
+          _myPendingCount = myCount;
+        });
+      }
+    } catch (e) {
+      // Silently fail — badges are non-critical
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Widget _buildTabLabel(String text, int count) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(text),
+          if (count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                count > 99 ? '99+' : '$count',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -49,9 +141,9 @@ class _BillingPageState extends State<BillingPage>
           if (isStaff)
             TabBar(
               controller: _tabController,
-              tabs: const [
-                Tab(text: 'My Invoices'),
-                Tab(text: 'All Invoices'),
+              tabs: [
+                _buildTabLabel('My Invoices', _myPendingCount),
+                _buildTabLabel('All Invoices', _allPendingCount),
               ],
             ),
           Expanded(
