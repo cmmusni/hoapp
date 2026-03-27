@@ -63,14 +63,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
       final results = await Future.wait([
         client
             .from('payments')
-            .select('id, amount, status, created_at, invoice_id, invoices!inner(invoice_number)')
+            .select(
+                'id, amount, status, created_at, invoice_id, invoices!inner(category, amount)')
             .eq('community_id', communityId)
             .eq('status', 'submitted')
             .order('created_at', ascending: false)
             .limit(50),
         client
             .from('tickets')
-            .select('id, subject, status, created_at')
+            .select('id, type, status, created_at')
             .eq('community_id', communityId)
             .eq('status', 'open')
             .order('created_at', ascending: false)
@@ -84,7 +85,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             .limit(50),
         client
             .from('feedback')
-            .select('id, title, status, created_at')
+            .select('id, subject, status, created_at')
             .eq('community_id', communityId)
             .eq('status', 'open')
             .order('created_at', ascending: false)
@@ -100,14 +101,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
       // Payments
       for (final row in results[0] as List) {
-        final invoiceNum = row['invoices']?['invoice_number'] ?? '';
+        final invoiceCat = row['invoices']?['category'] ?? '';
         items.add(_NotificationItem(
           id: row['id'].toString(),
           type: 'payment',
           title: 'Payment Submitted',
-          subtitle: 'Invoice $invoiceNum — ₱${row['amount']}',
+          subtitle: '${invoiceCat.toString().toUpperCase()} — ₱${row['amount']}',
           status: row['status'] ?? '',
-          createdAt: DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
+          createdAt:
+              DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
           route: '/$slug/billing',
           icon: Icons.payment,
           color: Colors.orange,
@@ -120,9 +122,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           id: row['id'].toString(),
           type: 'ticket',
           title: 'Open Ticket',
-          subtitle: row['subject'] ?? 'No subject',
+          subtitle: '${(row['type'] as String? ?? 'general').toUpperCase()} ticket',
           status: row['status'] ?? '',
-          createdAt: DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
+          createdAt:
+              DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
           route: '/$slug/tickets',
           icon: Icons.support,
           color: Colors.blue,
@@ -137,7 +140,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           title: 'Violation',
           subtitle: row['title'] ?? 'No title',
           status: row['status'] ?? '',
-          createdAt: DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
+          createdAt:
+              DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
           route: '/$slug/violations',
           icon: Icons.report,
           color: Colors.red,
@@ -150,9 +154,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           id: row['id'].toString(),
           type: 'feedback',
           title: 'Open Feedback',
-          subtitle: row['title'] ?? 'No title',
+          subtitle: row['subject'] ?? 'No subject',
           status: row['status'] ?? '',
-          createdAt: DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
+          createdAt:
+              DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
           route: '/$slug/feedback',
           icon: Icons.feedback,
           color: Colors.purple,
@@ -168,7 +173,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           title: 'Pending Booking',
           subtitle: amenityName,
           status: row['status'] ?? '',
-          createdAt: DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
+          createdAt:
+              DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
           route: '/$slug/amenities',
           icon: Icons.pool,
           color: Colors.teal,
@@ -224,7 +230,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final types = ['all', 'payment', 'ticket', 'violation', 'feedback', 'booking'];
+    final types = [
+      'all',
+      'payment',
+      'ticket',
+      'violation',
+      'feedback',
+      'booking'
+    ];
     final filtered = _filtered;
 
     return Padding(
@@ -315,8 +328,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       )
                     : ListView.separated(
                         itemCount: filtered.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1),
+                        separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final item = filtered[index];
                           return _buildNotificationTile(item);

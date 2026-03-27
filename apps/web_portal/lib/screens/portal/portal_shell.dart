@@ -34,7 +34,11 @@ class _PortalShellState extends State<PortalShell> {
   int _pendingBookings = 0;
 
   int get _totalNotifications =>
-      _pendingPayments + _openTickets + _pendingViolations + _openFeedback + _pendingBookings;
+      _pendingPayments +
+      _openTickets +
+      _pendingViolations +
+      _openFeedback +
+      _pendingBookings;
 
   @override
   void initState() {
@@ -463,12 +467,14 @@ class _PortalShellState extends State<PortalShell> {
           value: 'notifications',
           child: Row(
             children: [
-              const Icon(Icons.notifications_outlined, size: 18, color: Colors.blueGrey),
+              const Icon(Icons.notifications_outlined,
+                  size: 18, color: Colors.blueGrey),
               const SizedBox(width: 8),
               const Expanded(child: Text('Notifications')),
               if (_totalNotifications > 0)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.redAccent,
                     borderRadius: BorderRadius.circular(10),
