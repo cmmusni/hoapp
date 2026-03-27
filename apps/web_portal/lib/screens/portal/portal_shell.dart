@@ -647,10 +647,10 @@ class _PortalShellState extends State<PortalShell> {
                           Icons.family_restroom_outlined,
                           '/households',
                           currentPath),
-                      _buildSidebarItem(context, 'Manage Users',
-                          Icons.people_outlined, '/manage-users', currentPath),
                     ],
                     if (isAdmin) ...[
+                      _buildSidebarItem(context, 'Manage Users',
+                          Icons.people_outlined, '/manage-users', currentPath),
                       const Padding(
                         padding:
                             EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -850,10 +850,10 @@ class _PortalShellState extends State<PortalShell> {
               const Divider(),
               _buildMenuItem(context, 'Households', Icons.family_restroom,
                   '/${widget.communitySlug}/households', currentPath),
-              _buildMenuItem(context, 'Manage Users', Icons.people,
-                  '/${widget.communitySlug}/manage-users', currentPath),
             ],
             if (isAdmin) ...[
+              _buildMenuItem(context, 'Manage Users', Icons.people,
+                  '/${widget.communitySlug}/manage-users', currentPath),
               const Divider(),
               _buildMenuItem(context, 'Settings', Icons.settings,
                   '/${widget.communitySlug}/settings', currentPath),
