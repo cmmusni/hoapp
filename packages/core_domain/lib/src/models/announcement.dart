@@ -22,6 +22,9 @@ class Announcement {
   @JsonKey(name: 'image_url')
   final String? imageUrl;
 
+  @JsonKey(name: 'attachment_url')
+  final String? attachmentUrl;
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
@@ -34,6 +37,7 @@ class Announcement {
     required this.publishAt,
     required this.createdBy,
     this.imageUrl,
+    this.attachmentUrl,
     required this.createdAt,
   });
 

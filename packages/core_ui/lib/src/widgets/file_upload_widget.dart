@@ -183,6 +183,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
 class ImageUploadWidget extends StatefulWidget {
   final String bucket;
   final String? folder;
+  final int maxSizeBytes;
   final Function(String url) onUploadComplete;
   final String? initialUrl;
 
@@ -190,6 +191,7 @@ class ImageUploadWidget extends StatefulWidget {
     super.key,
     required this.bucket,
     this.folder,
+    this.maxSizeBytes = 5 * 1024 * 1024, // 5MB default
     required this.onUploadComplete,
     this.initialUrl,
   });
@@ -246,8 +248,19 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
                   ? 'Upload Image'
                   : 'Change Image'),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'Max size: ${_formatBytes(widget.maxSizeBytes)}',
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
       ],
     );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
   Future<void> _pickAndUpload() async {
@@ -259,6 +272,16 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
 
       if (file == null) {
         setState(() => _isUploading = false);
+        return;
+      }
+
+      if (!storageService.validateFileSize(file, widget.maxSizeBytes)) {
+        setState(() => _isUploading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Image too large. Max ${_formatBytes(widget.maxSizeBytes)}')),
+          );
+        }
         return;
       }
 

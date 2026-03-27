@@ -813,15 +813,6 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            if (_unitNo != null)
-                              Text(
-                                'Unit $_unitNo',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
                           ],
                         ),
                       ),
@@ -859,6 +850,15 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  if (_unitNo != null)
+                    Text(
+                      'Unit $_unitNo',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   Text(
                     currencyFormat.format(widget.invoice.amount),
                     style: const TextStyle(

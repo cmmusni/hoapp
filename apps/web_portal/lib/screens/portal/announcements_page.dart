@@ -4,6 +4,8 @@ import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:html' as html;
 
 class AnnouncementsPage extends StatefulWidget {
   const AnnouncementsPage({super.key});
@@ -458,6 +460,13 @@ class _AnnouncementCard extends StatelessWidget {
                   ),
                 ],
 
+                // Attachment
+                if (announcement.attachmentUrl != null &&
+                    announcement.attachmentUrl!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildAttachmentChip(context, announcement.attachmentUrl!),
+                ],
+
                 // Date line
                 const SizedBox(height: 14),
                 Text(
@@ -644,6 +653,81 @@ class _AnnouncementCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildAttachmentChip(BuildContext context, String url) {
+    final fileName = _extractFileName(url);
+    final ext = fileName.split('.').last.toLowerCase();
+    final isPdf = ext == 'pdf';
+    final icon = isPdf ? Icons.picture_as_pdf : Icons.description;
+    final color = isPdf ? Colors.red[600]! : Colors.blue[600]!;
+    final label = ext.toUpperCase();
+
+    return InkWell(
+      onTap: () => html.window.open(url, '_blank'),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                fileName,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.open_in_new, size: 14, color: color.withOpacity(0.6)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _extractFileName(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final segments = uri.pathSegments;
+      if (segments.isNotEmpty) {
+        final raw = segments.last;
+        // Remove timestamp prefix (e.g., "1234567890_")
+        final underscoreIdx = raw.indexOf('_');
+        if (underscoreIdx > 0 && underscoreIdx < 14) {
+          return Uri.decodeComponent(raw.substring(underscoreIdx + 1));
+        }
+        return Uri.decodeComponent(raw);
+      }
+    } catch (_) {}
+    return 'Attachment';
+  }
 }
 
 class _CreateAnnouncementDialog extends StatefulWidget {
@@ -663,6 +747,7 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
   bool _pinned = false;
   bool _isLoading = false;
   String? _uploadedImageUrl;
+  String? _uploadedAttachmentUrl;
 
   @override
   void dispose() {
@@ -791,6 +876,46 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                   },
                 ),
               ],
+              const SizedBox(height: 16),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Document attachment (optional)',
+                    style: TextStyle(fontSize: 13, color: Colors.grey)),
+              ),
+              const SizedBox(height: 8),
+              if (_uploadedAttachmentUrl != null) ...[
+                Card(
+                  child: ListTile(
+                    leading: Icon(
+                      _uploadedAttachmentUrl!.toLowerCase().contains('.pdf')
+                          ? Icons.picture_as_pdf
+                          : Icons.description,
+                      color: _uploadedAttachmentUrl!.toLowerCase().contains('.pdf')
+                          ? Colors.red[600]
+                          : Colors.blue[600],
+                    ),
+                    title: const Text('Document uploaded'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () =>
+                          setState(() => _uploadedAttachmentUrl = null),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                FileUploadWidget(
+                  bucket: 'announcement-attachments',
+                  folder: context.read<AppState>().activeCommunityId,
+                  fileType: FileType.custom,
+                  allowedExtensions: const ['pdf', 'doc', 'docx'],
+                  maxSizeBytes: 25 * 1024 * 1024, // 25MB
+                  onUploadComplete: (url) {
+                    if (url.isNotEmpty) {
+                      setState(() => _uploadedAttachmentUrl = url);
+                    }
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -820,6 +945,7 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
         body: _bodyController.text.trim(),
         pinned: _pinned,
         imageUrl: _uploadedImageUrl,
+        attachmentUrl: _uploadedAttachmentUrl,
       );
 
       if (mounted) {
@@ -864,6 +990,7 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
   late bool _pinned;
   bool _isLoading = false;
   String? _uploadedImageUrl;
+  String? _uploadedAttachmentUrl;
 
   @override
   void initState() {
@@ -872,6 +999,7 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
     _bodyController = TextEditingController(text: widget.announcement.body);
     _pinned = widget.announcement.pinned;
     _uploadedImageUrl = widget.announcement.imageUrl;
+    _uploadedAttachmentUrl = widget.announcement.attachmentUrl;
   }
 
   @override
@@ -1000,6 +1128,46 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                   },
                 ),
               ],
+              const SizedBox(height: 16),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Document attachment (optional)',
+                    style: TextStyle(fontSize: 13, color: Colors.grey)),
+              ),
+              const SizedBox(height: 8),
+              if (_uploadedAttachmentUrl != null) ...[
+                Card(
+                  child: ListTile(
+                    leading: Icon(
+                      _uploadedAttachmentUrl!.toLowerCase().contains('.pdf')
+                          ? Icons.picture_as_pdf
+                          : Icons.description,
+                      color: _uploadedAttachmentUrl!.toLowerCase().contains('.pdf')
+                          ? Colors.red[600]
+                          : Colors.blue[600],
+                    ),
+                    title: const Text('Document uploaded'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () =>
+                          setState(() => _uploadedAttachmentUrl = null),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                FileUploadWidget(
+                  bucket: 'announcement-attachments',
+                  folder: context.read<AppState>().activeCommunityId,
+                  fileType: FileType.custom,
+                  allowedExtensions: const ['pdf', 'doc', 'docx'],
+                  maxSizeBytes: 25 * 1024 * 1024, // 25MB
+                  onUploadComplete: (url) {
+                    if (url.isNotEmpty) {
+                      setState(() => _uploadedAttachmentUrl = url);
+                    }
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -1029,6 +1197,7 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
           'body': _bodyController.text.trim(),
           'pinned': _pinned,
           'image_url': _uploadedImageUrl,
+          'attachment_url': _uploadedAttachmentUrl,
         },
       );
 

@@ -15,6 +15,7 @@ Announcement _$AnnouncementFromJson(Map<String, dynamic> json) => Announcement(
       publishAt: DateTime.parse(json['publish_at'] as String),
       createdBy: json['created_by'] as String,
       imageUrl: json['image_url'] as String?,
+      attachmentUrl: json['attachment_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
 
@@ -28,5 +29,6 @@ Map<String, dynamic> _$AnnouncementToJson(Announcement instance) =>
       'publish_at': instance.publishAt.toIso8601String(),
       'created_by': instance.createdBy,
       'image_url': instance.imageUrl,
+      'attachment_url': instance.attachmentUrl,
       'created_at': instance.createdAt.toIso8601String(),
     };

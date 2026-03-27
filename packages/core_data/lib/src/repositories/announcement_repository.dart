@@ -62,6 +62,7 @@ class AnnouncementRepository {
     bool pinned = false,
     DateTime? publishAt,
     String? imageUrl,
+    String? attachmentUrl,
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not authenticated');
@@ -76,6 +77,9 @@ class AnnouncementRepository {
     };
     if (imageUrl != null) {
       data['image_url'] = imageUrl;
+    }
+    if (attachmentUrl != null) {
+      data['attachment_url'] = attachmentUrl;
     }
 
     await _client.from('announcements').insert(data);

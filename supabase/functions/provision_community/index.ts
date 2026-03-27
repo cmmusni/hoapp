@@ -5,6 +5,7 @@ import {
   jsonResponse,
   errorResponse,
 } from '../_shared/utils.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 interface ProvisionRequest {
   request_id: string
@@ -113,7 +114,7 @@ serve(async (req) => {
         // Use the existing user
         console.log('User already exists, using existing:', existingUser.id)
         return await provisionCommunity(
-          supabaseAdmin, existingUser, betaRequest, community_name, community_slug, caller.id, request_id
+          supabaseAdmin, existingUser, betaRequest, community_name, community_slug, caller.id, request_id, password
         )
       }
       console.error('Create user error:', createUserError)
@@ -121,7 +122,7 @@ serve(async (req) => {
     }
 
     return await provisionCommunity(
-      supabaseAdmin, newUser.user, betaRequest, community_name, community_slug, caller.id, request_id
+      supabaseAdmin, newUser.user, betaRequest, community_name, community_slug, caller.id, request_id, password
     )
   } catch (err) {
     console.error('provision_community error:', err)
@@ -137,6 +138,7 @@ async function provisionCommunity(
   communitySlug: string,
   processedBy: string,
   requestId: string,
+  password: string,
 ) {
   // 2. Create community
   const { data: community, error: communityError } = await supabaseAdmin
@@ -218,6 +220,32 @@ async function provisionCommunity(
     })
 
   const portalUrl = `https://hoapp.net/${communitySlug}/login`
+
+  // 7. Send welcome email with credentials
+  await sendEmail({
+    to: betaRequest.email,
+    subject: `Welcome to HOApp – Your community "${communityName}" is ready!`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; color: #1f2937;">
+        <div style="background: linear-gradient(135deg, #215e3f, #2e8b57); padding: 24px 32px; border-radius: 12px 12px 0 0;">
+          <h1 style="color: #fff; margin: 0; font-size: 22px;">Welcome to HOApp!</h1>
+        </div>
+        <div style="padding: 24px 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+          <p>Hi ${betaRequest.name},</p>
+          <p>Great news — your beta access request has been approved and your community <strong>${communityName}</strong> is ready to go.</p>
+          <p>Here are your login details:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+            <tr><td style="padding: 8px 12px; color: #6b7280; width: 120px;">Portal URL</td><td style="padding: 8px 12px;"><a href="${portalUrl}" style="color: #215e3f;">${portalUrl}</a></td></tr>
+            <tr style="background: #f9fafb;"><td style="padding: 8px 12px; color: #6b7280;">Email</td><td style="padding: 8px 12px;">${betaRequest.email}</td></tr>
+            <tr><td style="padding: 8px 12px; color: #6b7280;">Password</td><td style="padding: 8px 12px;"><code style="background: #f3f4f6; padding: 2px 8px; border-radius: 4px;">${password}</code></td></tr>
+          </table>
+          <p style="color: #dc2626; font-size: 13px;">Please change your password after your first login.</p>
+          <a href="${portalUrl}" style="display: inline-block; margin-top: 12px; padding: 12px 28px; background: #215e3f; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Log In Now</a>
+          <p style="margin-top: 24px; font-size: 13px; color: #9ca3af;">If you didn't request this, please ignore this email.</p>
+        </div>
+      </div>
+    `,
+  }).catch((err: unknown) => console.error('Welcome email error:', err))
 
   return jsonResponse({
     ok: true,
