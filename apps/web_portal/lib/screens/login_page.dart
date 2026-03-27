@@ -178,9 +178,16 @@ class _LoginPageState extends State<LoginPage> {
             }
           }
         } else {
-          // No token at all — silently try to claim any pending invites
+          // No token at all — only try to claim pending invites for new users
+          // Skip for users who already have roles (prevents cross-community assignment)
           try {
-            await communityRepo.acceptPendingInvites();
+            final userId = Supabase.instance.client.auth.currentUser?.id;
+            if (userId != null) {
+              final existingRoles = await communityRepo.getUserRoles(userId);
+              if (existingRoles.isEmpty) {
+                await communityRepo.acceptPendingInvites();
+              }
+            }
           } catch (e) {
             debugPrint('Auto-accept pending invites failed (non-blocking): $e');
           }
