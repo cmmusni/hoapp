@@ -15,6 +15,7 @@ import 'screens/portal/tickets_page.dart';
 import 'screens/portal/amenities_page.dart';
 import 'screens/portal/billing_page.dart';
 import 'screens/portal/expenses_page.dart';
+import 'screens/portal/expense_income_chart_page.dart';
 import 'screens/portal/pool_access_page.dart';
 import 'screens/portal/registered_swimmers_page.dart';
 import 'screens/portal/households_page.dart';
@@ -288,6 +289,21 @@ GoRouter createRouter({String? lastCommunitySlug}) {
             builder: (context, state) => const PlanGate(
               feature: 'Expense Tracker',
               child: ExpensesPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/:community/financial-reports',
+            redirect: (context, state) {
+              final session = Supabase.instance.client.auth.currentSession;
+              if (session == null) {
+                final community = state.pathParameters['community']!;
+                return '/$community/login';
+              }
+              return null;
+            },
+            builder: (context, state) => const PlanGate(
+              feature: 'Financial Reports',
+              child: ExpenseIncomeChartPage(),
             ),
           ),
           GoRoute(

@@ -28,7 +28,7 @@ cd ../../apps/web_portal && flutter pub get
 
 # Build web application
 echo "Building web application..."
-flutter build web --release \
+flutter build web --release --no-tree-shake-icons \
   --dart-define=SUPABASE_URL="$SUPABASE_URL" \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 

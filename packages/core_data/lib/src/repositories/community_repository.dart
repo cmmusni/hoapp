@@ -394,18 +394,22 @@ class CommunityRepository {
     required String category,
     required String subject,
     required String description,
+    String? imageUrl,
   }) async {
     final user = _client.auth.currentUser;
     if (user == null) throw Exception('Not authenticated');
 
-    await _client.from('feedback').insert({
+    final row = <String, dynamic>{
       'community_id': communityId,
       'user_id': user.id,
       'user_email': user.email ?? '',
       'category': category,
       'subject': subject,
       'description': description,
-    });
+    };
+    if (imageUrl != null) row['image_url'] = imageUrl;
+
+    await _client.from('feedback').insert(row);
   }
 
   /// Get feedback for a community (staff sees all, residents see own)
@@ -431,6 +435,11 @@ class CommunityRepository {
     if (adminNotes != null) updates['admin_notes'] = adminNotes;
 
     await _client.from('feedback').update(updates).eq('id', feedbackId);
+  }
+
+  /// Delete feedback (staff only)
+  Future<void> deleteFeedback(String feedbackId) async {
+    await _client.from('feedback').delete().eq('id', feedbackId);
   }
 
   /// Update community settings (e.g. logo_url, brand colors)

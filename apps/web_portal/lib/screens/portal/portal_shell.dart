@@ -5,6 +5,7 @@ import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'onboarding_tour.dart';
+import 'chatbot/chatbot_widget.dart';
 
 class PortalShell extends StatefulWidget {
   final String communitySlug;
@@ -254,6 +255,8 @@ class _PortalShellState extends State<PortalShell> {
       pageTitle = 'Amenities';
     } else if (currentPath.contains('/billing')) {
       pageTitle = 'Billing & Payments';
+    } else if (currentPath.contains('/financial-reports')) {
+      pageTitle = 'Financial Reports';
     } else if (currentPath.contains('/expenses')) {
       pageTitle = 'Expense Tracker';
     } else if (currentPath.contains('/registered-swimmers')) {
@@ -346,6 +349,12 @@ class _PortalShellState extends State<PortalShell> {
                               widget.communitySlug,
                           onDismiss: _dismissTour,
                         ),
+                      if (_isCommunityLoaded)
+                        PortalChatbot(
+                          communitySlug: widget.communitySlug,
+                          currentPath: currentPath,
+                          userRole: appState.activeRole?.role.name,
+                        ),
                     ],
                   ),
                 ),
@@ -397,6 +406,12 @@ class _PortalShellState extends State<PortalShell> {
                   communityName:
                       appState.activeCommunity?.name ?? widget.communitySlug,
                   onDismiss: _dismissTour,
+                ),
+              if (_isCommunityLoaded)
+                PortalChatbot(
+                  communitySlug: widget.communitySlug,
+                  currentPath: currentPath,
+                  userRole: appState.activeRole?.role.name,
                 ),
             ],
           ),
@@ -773,6 +788,12 @@ class _PortalShellState extends State<PortalShell> {
                                 Icons.account_balance_wallet_outlined,
                                 '/expenses',
                                 currentPath),
+                            _buildSidebarItem(
+                                context,
+                                'Financial Reports',
+                                Icons.analytics_outlined,
+                                '/financial-reports',
+                                currentPath),
                           ],
                           if (isPro && (hasUnit || isStaff)) ...[
                             ...(!isGuard && !isMaintenance
@@ -1050,6 +1071,8 @@ class _PortalShellState extends State<PortalShell> {
                     Icons.account_balance_wallet,
                     '/${widget.communitySlug}/expenses',
                     currentPath),
+                _buildMenuItem(context, 'Financial Reports', Icons.analytics,
+                    '/${widget.communitySlug}/financial-reports', currentPath),
               ],
               if (isPro && hasUnit) ...[
                 if (!isGuard && !isMaintenance)

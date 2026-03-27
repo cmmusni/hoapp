@@ -1,6 +1,6 @@
 {
   "installCommand": "bash vercel_install.sh",
-  "buildCommand": "export PATH=\"$PATH:$(pwd)/flutter/bin\" && cd apps/web_portal && flutter build web --release",
+  "buildCommand": "export PATH=\"$PATH:$(pwd)/flutter/bin\" && cd apps/web_portal && flutter build web --release --no-tree-shake-icons",
   "outputDirectory": "apps/web_portal/build/web",
   "framework": null,
   "rewrites": [

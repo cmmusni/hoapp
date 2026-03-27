@@ -1,6 +1,6 @@
 [build]
   publish = "apps/web_portal/build/web"
-  command = "cd apps/web_portal && flutter build web --release --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"
+  command = "cd apps/web_portal && flutter build web --release --no-tree-shake-icons --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"
 
 [[redirects]]
   from = "/*"

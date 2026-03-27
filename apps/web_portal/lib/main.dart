@@ -34,6 +34,7 @@ void main() async {
         Provider(create: (_) => TicketRepository()),
         Provider(create: (_) => AmenityRepository()),
         Provider(create: (_) => BillingRepository()),
+        Provider(create: (_) => RecurringBillingRepository()),
         Provider(create: (_) => ExpenseRepository()),
         Provider(create: (_) => IncomeRepository()),
         Provider(create: (_) => PoolAccessRepository()),

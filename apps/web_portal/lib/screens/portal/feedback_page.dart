@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:intl/intl.dart';
 
 class FeedbackPage extends StatefulWidget {
@@ -99,7 +100,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _showSubmitDialog(context),
-                      icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                      icon:
+                          const Icon(Icons.add, size: 18, color: Colors.white),
                       label: const Text('Submit Feedback'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _brand,
@@ -242,6 +244,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
     final description = item['description'] as String? ?? '';
     final email = item['user_email'] as String? ?? '';
     final adminNotes = item['admin_notes'] as String?;
+    final imageUrl = item['image_url'] as String?;
     final createdAt = DateTime.tryParse(item['created_at'] ?? '');
 
     return Card(
@@ -297,6 +300,11 @@ class _FeedbackPageState extends State<FeedbackPage> {
                   if (adminNotes != null && adminNotes.isNotEmpty) ...[
                     Icon(Icons.comment_outlined,
                         size: 14, color: Colors.orange.shade400),
+                    const SizedBox(width: 4),
+                  ],
+                  if (imageUrl != null && imageUrl.isNotEmpty) ...[
+                    Icon(Icons.image_outlined,
+                        size: 14, color: Colors.blue.shade400),
                     const SizedBox(width: 4),
                   ],
                   Icon(Icons.schedule, size: 14, color: Colors.grey.shade400),
@@ -381,6 +389,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
     final subjectCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     String category = 'general';
+    String? uploadedImageUrl;
     bool submitting = false;
 
     showDialog(
@@ -522,6 +531,20 @@ class _FeedbackPageState extends State<FeedbackPage> {
                           validator: (v) =>
                               (v?.trim().isEmpty ?? true) ? 'Required' : null,
                         ),
+                        const SizedBox(height: 14),
+                        const Text('Attach Image (optional)',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 13)),
+                        const SizedBox(height: 8),
+                        ImageUploadWidget(
+                          bucket: 'feedback-images',
+                          folder: context.read<AppState>().activeCommunityId,
+                          onUploadComplete: (url) {
+                            if (url.isNotEmpty) {
+                              setDialogState(() => uploadedImageUrl = url);
+                            }
+                          },
+                        ),
                         const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
@@ -543,6 +566,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                         category: category,
                                         subject: subjectCtrl.text.trim(),
                                         description: descCtrl.text.trim(),
+                                        imageUrl: uploadedImageUrl,
                                       );
                                       if (ctx.mounted) Navigator.pop(ctx);
                                       _load();
@@ -612,6 +636,50 @@ class _FeedbackPageState extends State<FeedbackPage> {
     );
   }
 
+  // ============ DELETE FEEDBACK ============
+
+  void _confirmDeleteFeedback(BuildContext dialogCtx, String feedbackId) {
+    showDialog(
+      context: dialogCtx,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Feedback'),
+        content: const Text(
+            'Are you sure you want to delete this feedback? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx); // close confirm dialog
+              Navigator.pop(dialogCtx); // close detail dialog
+              try {
+                final repo = context.read<CommunityRepository>();
+                await repo.deleteFeedback(feedbackId);
+                _load();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Feedback deleted'),
+                    backgroundColor: _brand,
+                  ));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting feedback: $e')),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ============ DETAIL DIALOG ============
 
   void _showDetailDialog(
@@ -621,6 +689,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
     final category = item['category'] as String? ?? 'general';
     final email = item['user_email'] as String? ?? '';
     final adminNotes = item['admin_notes'] as String? ?? '';
+    final imageUrl = item['image_url'] as String?;
     final createdAt = DateTime.tryParse(item['created_at'] ?? '');
     String status = item['status'] as String? ?? 'open';
     final notesCtrl = TextEditingController(text: adminNotes);
@@ -633,256 +702,306 @@ class _FeedbackPageState extends State<FeedbackPage> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           contentPadding: EdgeInsets.zero,
-          content: SizedBox(
-            width: 520,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Banner
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [_brand, Color(0xff2e8b57)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.8,
+            ),
+            child: SizedBox(
+              width: 520,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Banner
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [_brand, Color(0xff2e8b57)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
                     ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      _categoryIcon(category),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(subject,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                _categoryBadge(category),
-                                const SizedBox(width: 8),
-                                _statusBadge(status),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(ctx),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                ),
-                // Body
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Meta row
-                      Row(
-                        children: [
-                          Icon(Icons.person_outline,
-                              size: 16, color: Colors.grey.shade500),
-                          const SizedBox(width: 6),
-                          Text(email,
-                              style: TextStyle(
-                                  color: Colors.grey.shade600, fontSize: 13)),
-                          const Spacer(),
-                          Icon(Icons.schedule,
-                              size: 16, color: Colors.grey.shade500),
-                          const SizedBox(width: 6),
-                          Text(
-                            createdAt != null
-                                ? DateFormat('MMM d, yyyy h:mm a')
-                                    .format(createdAt.toLocal())
-                                : '',
-                            style: TextStyle(
-                                color: Colors.grey.shade600, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text('Description',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 13)),
-                      const SizedBox(height: 6),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: SelectableText(
-                          description,
-                          style: const TextStyle(fontSize: 14, height: 1.5),
-                        ),
-                      ),
-                      // Admin section
-                      if (isStaff) ...[
-                        const SizedBox(height: 20),
-                        const Divider(),
-                        const SizedBox(height: 12),
-                        const Text('Admin Response',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 13)),
-                        const SizedBox(height: 10),
-                        // Status dropdown
-                        Row(
-                          children: [
-                            const Text('Status:',
-                                style: TextStyle(fontSize: 13)),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: status,
-                                  isDense: true,
-                                  items: const [
-                                    DropdownMenuItem(
-                                        value: 'open', child: Text('Open')),
-                                    DropdownMenuItem(
-                                        value: 'in_review',
-                                        child: Text('In Review')),
-                                    DropdownMenuItem(
-                                        value: 'planned',
-                                        child: Text('Planned')),
-                                    DropdownMenuItem(
-                                        value: 'resolved',
-                                        child: Text('Resolved')),
-                                    DropdownMenuItem(
-                                        value: 'closed', child: Text('Closed')),
-                                  ],
-                                  onChanged: (v) {
-                                    if (v != null) {
-                                      setDialogState(() => status = v);
-                                    }
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: notesCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Admin Notes',
-                            border: OutlineInputBorder(),
-                            hintText: 'Add notes or a response for the user...',
-                          ),
-                          maxLines: 3,
-                        ),
-                        const SizedBox(height: 14),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 42,
-                          child: ElevatedButton.icon(
-                            onPressed: saving
-                                ? null
-                                : () async {
-                                    setDialogState(() => saving = true);
-                                    try {
-                                      final repo =
-                                          context.read<CommunityRepository>();
-                                      await repo.updateFeedback(
-                                        feedbackId: item['id'],
-                                        status: status,
-                                        adminNotes: notesCtrl.text.trim(),
-                                      );
-                                      if (ctx.mounted) Navigator.pop(ctx);
-                                      _load();
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(const SnackBar(
-                                          content: Text('Feedback updated'),
-                                          backgroundColor: _brand,
-                                        ));
-                                      }
-                                    } catch (e) {
-                                      setDialogState(() => saving = false);
-                                      if (ctx.mounted) {
-                                        ScaffoldMessenger.of(ctx).showSnackBar(
-                                            SnackBar(
-                                                content: Text('Error: $e')));
-                                      }
-                                    }
-                                  },
-                            icon: saving
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.white))
-                                : const Icon(Icons.save, color: Colors.white),
-                            label: Text(saving ? 'Saving...' : 'Save Changes'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _brand,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
-                            ),
-                          ),
-                        ),
-                      ] else ...[
-                        // Non-staff: show admin notes if present
-                        if (adminNotes.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          const SizedBox(height: 12),
-                          Row(
+                    child: Row(
+                      children: [
+                        _categoryIcon(category),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.admin_panel_settings,
-                                  size: 16, color: _brand),
-                              const SizedBox(width: 6),
-                              const Text('Admin Response',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13)),
+                              Text(subject,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  _categoryBadge(category),
+                                  const SizedBox(width: 8),
+                                  _statusBadge(status),
+                                ],
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.white70),
+                          onPressed: () =>
+                              _confirmDeleteFeedback(ctx, item['id']),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          tooltip: 'Delete',
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.pop(ctx),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Body
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Meta row
+                          Row(
+                            children: [
+                              Icon(Icons.person_outline,
+                                  size: 16, color: Colors.grey.shade500),
+                              const SizedBox(width: 6),
+                              Text(email,
+                                  style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 13)),
+                              const Spacer(),
+                              Icon(Icons.schedule,
+                                  size: 16, color: Colors.grey.shade500),
+                              const SizedBox(width: 6),
+                              Text(
+                                createdAt != null
+                                    ? DateFormat('MMM d, yyyy h:mm a')
+                                        .format(createdAt.toLocal())
+                                    : '',
+                                style: TextStyle(
+                                    color: Colors.grey.shade600, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('Description',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 13)),
+                          const SizedBox(height: 6),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: _brand.withOpacity(0.05),
+                              color: Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: _brand.withOpacity(0.2)),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
                             child: SelectableText(
-                              adminNotes,
+                              description,
                               style: const TextStyle(fontSize: 14, height: 1.5),
                             ),
                           ),
+                          // Attached image
+                          if (imageUrl != null && imageUrl.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            const Text('Attached Image',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 13)),
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                imageUrl,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stack) {
+                                  return Container(
+                                    height: 120,
+                                    color: Colors.grey[200],
+                                    child: const Center(
+                                        child: Icon(Icons.broken_image)),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                          // Admin section
+                          if (isStaff) ...[
+                            const SizedBox(height: 20),
+                            const Divider(),
+                            const SizedBox(height: 12),
+                            const Text('Admin Response',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 13)),
+                            const SizedBox(height: 10),
+                            // Status dropdown
+                            Row(
+                              children: [
+                                const Text('Status:',
+                                    style: TextStyle(fontSize: 13)),
+                                const SizedBox(width: 12),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    border:
+                                        Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: status,
+                                      isDense: true,
+                                      items: const [
+                                        DropdownMenuItem(
+                                            value: 'open', child: Text('Open')),
+                                        DropdownMenuItem(
+                                            value: 'in_review',
+                                            child: Text('In Review')),
+                                        DropdownMenuItem(
+                                            value: 'planned',
+                                            child: Text('Planned')),
+                                        DropdownMenuItem(
+                                            value: 'resolved',
+                                            child: Text('Resolved')),
+                                        DropdownMenuItem(
+                                            value: 'closed',
+                                            child: Text('Closed')),
+                                      ],
+                                      onChanged: (v) {
+                                        if (v != null) {
+                                          setDialogState(() => status = v);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: notesCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Admin Notes',
+                                border: OutlineInputBorder(),
+                                hintText:
+                                    'Add notes or a response for the user...',
+                              ),
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 42,
+                              child: ElevatedButton.icon(
+                                onPressed: saving
+                                    ? null
+                                    : () async {
+                                        setDialogState(() => saving = true);
+                                        try {
+                                          final repo = context
+                                              .read<CommunityRepository>();
+                                          await repo.updateFeedback(
+                                            feedbackId: item['id'],
+                                            status: status,
+                                            adminNotes: notesCtrl.text.trim(),
+                                          );
+                                          if (ctx.mounted) Navigator.pop(ctx);
+                                          _load();
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(const SnackBar(
+                                              content: Text('Feedback updated'),
+                                              backgroundColor: _brand,
+                                            ));
+                                          }
+                                        } catch (e) {
+                                          setDialogState(() => saving = false);
+                                          if (ctx.mounted) {
+                                            ScaffoldMessenger.of(ctx)
+                                                .showSnackBar(SnackBar(
+                                                    content:
+                                                        Text('Error: $e')));
+                                          }
+                                        }
+                                      },
+                                icon: saving
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white))
+                                    : const Icon(Icons.save,
+                                        color: Colors.white),
+                                label:
+                                    Text(saving ? 'Saving...' : 'Save Changes'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _brand,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            // Non-staff: show admin notes if present
+                            if (adminNotes.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              const Divider(),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Icon(Icons.admin_panel_settings,
+                                      size: 16, color: _brand),
+                                  const SizedBox(width: 6),
+                                  const Text('Admin Response',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13)),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: _brand.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: _brand.withOpacity(0.2)),
+                                ),
+                                child: SelectableText(
+                                  adminNotes,
+                                  style: const TextStyle(
+                                      fontSize: 14, height: 1.5),
+                                ),
+                              ),
+                            ],
+                          ],
                         ],
-                      ],
-                    ],
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
