@@ -85,36 +85,28 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 const SizedBox(height: 24),
 
-                // // Branding
-                // Row(
-                //   children: [
-                //     Text(
-                //       'Branding',
-                //       style: Theme.of(context).textTheme.titleLarge,
-                //     ),
-                //     const Spacer(),
-                //     if (isAdmin)
-                //       TextButton.icon(
-                //         onPressed: () =>
-                //             _showBrandingDialog(context, community),
-                //         icon: const Icon(Icons.edit),
-                //         label: const Text('Edit'),
-                //       ),
-                //   ],
-                // ),
-                // const SizedBox(height: 16),
-                // _BrandingPreview(
-                //   primaryColor: _parseBrandingValue<String>(
-                //     community.settings,
-                //     'primaryColor',
-                //     '#215E3F',
-                //   ),
-                //   logoUrl: _parseBrandingValue<String>(
-                //     community.settings,
-                //     'logoUrl',
-                //     '', // Empty string instead of null
-                //   ),
-                // ),
+                // Branding
+                Row(
+                  children: [
+                    Text(
+                      'Branding',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const Spacer(),
+                    if (isAdmin)
+                      TextButton.icon(
+                        onPressed: () =>
+                            _showBrandingDialog(context, community),
+                        icon: const Icon(Icons.edit),
+                        label: const Text('Edit'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _BrandingPreview(
+                  primaryColor: community.primaryColor,
+                  logoUrl: community.logoUrl,
+                ),
 
                 const SizedBox(height: 24),
 
@@ -176,14 +168,6 @@ class _SettingsPageState extends State<SettingsPage> {
         },
       ),
     );
-  }
-
-  T _parseBrandingValue<T>(
-      Map<String, dynamic>? settings, String key, T defaultValue) {
-    if (settings == null) return defaultValue;
-    final value = settings[key];
-    if (value is T) return value;
-    return defaultValue;
   }
 
   void _showBrandingDialog(BuildContext context, Community community) {
@@ -318,7 +302,7 @@ class _BrandingPreview extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (logoUrl != null) ...[
+            if (logoUrl != null && logoUrl!.isNotEmpty) ...[
               Center(
                 child: Image.network(
                   logoUrl!,
@@ -419,25 +403,21 @@ class _BrandingDialog extends StatefulWidget {
 class _BrandingDialogState extends State<_BrandingDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _primaryColorController;
-  late final TextEditingController _logoUrlController;
+  String? _logoUrl;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    final settings = widget.community.settings ?? {};
     _primaryColorController = TextEditingController(
-      text: settings['primaryColor'] ?? '#215E3F',
+      text: widget.community.primaryColor,
     );
-    _logoUrlController = TextEditingController(
-      text: settings['logoUrl'] ?? '',
-    );
+    _logoUrl = widget.community.logoUrl;
   }
 
   @override
   void dispose() {
     _primaryColorController.dispose();
-    _logoUrlController.dispose();
     super.dispose();
   }
 
@@ -461,68 +441,116 @@ class _BrandingDialogState extends State<_BrandingDialog> {
           ),
         ],
       ),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _primaryColorController,
-                decoration: const InputDecoration(
-                  labelText: 'Primary Color',
-                  border: OutlineInputBorder(),
-                  hintText: '#215E3F',
-                  helperText: 'Hex color code (e.g., #215E3F)',
-                ),
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return 'Required';
-                  if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value!)) {
-                    return 'Invalid hex color';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _logoUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Logo URL (optional)',
-                  border: OutlineInputBorder(),
-                  hintText: 'https://example.com/logo.png',
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning_amber,
-                        size: 20, color: Colors.orange),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Branding changes affect all users in this community.',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+      content: SizedBox(
+        width: 400,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Community Logo',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                if (_logoUrl != null && _logoUrl!.isNotEmpty) ...[
+                  Center(
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            _logoUrl!,
+                            height: 100,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: 100,
+                              width: 100,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.broken_image),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: InkWell(
+                            onTap: () => setState(() => _logoUrl = null),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close,
+                                  size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                ImageUploadWidget(
+                  bucket: 'community-logos',
+                  folder: widget.community.id,
+                  initialUrl: null,
+                  onUploadComplete: (url) {
+                    if (url.isNotEmpty) setState(() => _logoUrl = url);
+                  },
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _primaryColorController,
+                  decoration: const InputDecoration(
+                    labelText: 'Primary Color',
+                    border: OutlineInputBorder(),
+                    hintText: '#215E3F',
+                    helperText: 'Hex color code (e.g., #215E3F)',
+                  ),
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) return 'Required';
+                    if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value!)) {
+                      return 'Invalid hex color';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber,
+                          size: 20, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Branding changes affect all users in this community.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
       actions: [
-        HOAppButton(
-          label: 'Save',
-          onPressed: _handleSave,
-          isLoading: _isLoading,
+        SizedBox(
+          width: 120,
+          child: HOAppButton(
+            label: 'Save',
+            onPressed: _handleSave,
+            isLoading: _isLoading,
+          ),
         ),
       ],
     );
@@ -535,26 +563,31 @@ class _BrandingDialogState extends State<_BrandingDialog> {
 
     try {
       final repo = context.read<CommunityRepository>();
+      final appState = context.read<AppState>();
 
-      final updatedSettings = {
+      final updatedSettings = <String, dynamic>{
         ...?widget.community.settings,
-        'primaryColor': _primaryColorController.text.trim(),
-        if (_logoUrlController.text.trim().isNotEmpty)
-          'logoUrl': _logoUrlController.text.trim(),
+        'brand': {
+          'primary': _primaryColorController.text.trim(),
+          'surface': widget.community.surfaceColor,
+        },
       };
+      if (_logoUrl != null && _logoUrl!.isNotEmpty) {
+        updatedSettings['logo_url'] = _logoUrl;
+      } else {
+        updatedSettings.remove('logo_url');
+      }
 
-      final updatedCommunity = Community(
-        id: widget.community.id,
-        name: widget.community.name,
-        slug: widget.community.slug,
-        address: widget.community.address,
+      await repo.updateCommunitySettings(
+        communityId: widget.community.id,
         settings: updatedSettings,
-        createdAt: widget.community.createdAt,
       );
 
-      // TODO: updateCommunity method doesn't exist yet
-      // await repo.updateCommunity(updatedCommunity);
-      await Future.delayed(const Duration(milliseconds: 500)); // Stub for now
+      // Refresh community in AppState
+      final refreshed = await repo.getCommunityById(widget.community.id);
+      if (refreshed != null) {
+        appState.setActiveCommunityData(refreshed);
+      }
 
       if (mounted) {
         Navigator.of(context).pop();

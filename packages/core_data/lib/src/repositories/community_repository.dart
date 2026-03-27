@@ -432,4 +432,14 @@ class CommunityRepository {
 
     await _client.from('feedback').update(updates).eq('id', feedbackId);
   }
+
+  /// Update community settings (e.g. logo_url, brand colors)
+  Future<void> updateCommunitySettings({
+    required String communityId,
+    required Map<String, dynamic> settings,
+  }) async {
+    await _client
+        .from('communities')
+        .update({'settings': settings}).eq('id', communityId);
+  }
 }

@@ -513,11 +513,22 @@ class _PortalShellState extends State<PortalShell> {
                 width: double.infinity,
                 color: Colors.white,
                 padding: const EdgeInsets.all(16),
-                child: Image.asset(
-                  'assets/images/hoapp-logo.png',
-                  fit: BoxFit.contain,
-                  height: 38,
-                ),
+                child: appState.activeCommunity?.logoUrl != null
+                    ? Image.network(
+                        appState.activeCommunity!.logoUrl!,
+                        fit: BoxFit.contain,
+                        height: 38,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/hoapp-logo.png',
+                          fit: BoxFit.contain,
+                          height: 38,
+                        ),
+                      )
+                    : Image.asset(
+                        'assets/images/hoapp-logo.png',
+                        fit: BoxFit.contain,
+                        height: 38,
+                      ),
               ),
               // User header
               Container(
@@ -716,13 +727,30 @@ class _PortalShellState extends State<PortalShell> {
         child: ListView(
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/images/hoapp-logo-with-bg.png'),
-                  fit: BoxFit.cover,
-                ),
+              decoration: BoxDecoration(
+                image: appState.activeCommunity?.logoUrl == null
+                    ? const DecorationImage(
+                        image:
+                            AssetImage('assets/images/hoapp-logo-with-bg.png'),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+                color: appState.activeCommunity?.logoUrl != null
+                    ? Colors.white
+                    : null,
               ),
-              child: const SizedBox.shrink(),
+              child: appState.activeCommunity?.logoUrl != null
+                  ? Center(
+                      child: Image.network(
+                        appState.activeCommunity!.logoUrl!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/hoapp-logo.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
             if (user?.email != null)
               Container(

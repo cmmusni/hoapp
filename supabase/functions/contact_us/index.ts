@@ -5,6 +5,7 @@ import {
   errorResponse,
   createAdminClient,
 } from '../_shared/utils.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 interface ContactRequest {
   name: string
@@ -62,6 +63,37 @@ serve(async (req) => {
       console.error('Insert error:', error)
       return errorResponse('Failed to save message', 500)
     }
+
+    // Send email notification to support
+    await sendEmail({
+      to: 'support@hoapp.net',
+      subject: `[Contact Form] ${body.subject.trim()}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #215e3f;">New Contact Form Submission</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px; font-weight: bold; vertical-align: top;">Name:</td>
+              <td style="padding: 8px;">${body.name.trim()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; vertical-align: top;">Email:</td>
+              <td style="padding: 8px;"><a href="mailto:${body.email.trim()}">${body.email.trim()}</a></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; vertical-align: top;">Subject:</td>
+              <td style="padding: 8px;">${body.subject.trim()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; vertical-align: top;">Message:</td>
+              <td style="padding: 8px; white-space: pre-wrap;">${body.message.trim()}</td>
+            </tr>
+          </table>
+          <hr style="margin-top: 24px; border: none; border-top: 1px solid #eee;" />
+          <p style="color: #888; font-size: 12px;">This message was sent from the HOApp contact form.</p>
+        </div>
+      `,
+    })
 
     return jsonResponse({ ok: true, message: 'Message received' })
   } catch (err) {

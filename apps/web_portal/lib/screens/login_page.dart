@@ -25,6 +25,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _communityName;
+  String? _communityLogoUrl;
   String? _errorMessage;
 
   String _formatSlugAsName(String slug) {
@@ -108,6 +109,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted && community != null) {
         setState(() {
           _communityName = community.name;
+          _communityLogoUrl = community.logoUrl;
         });
       }
     } catch (e) {
@@ -736,13 +738,28 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Image.asset(
-                      'assets/images/hoapp-logo.png',
-                      height: 120,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const SizedBox(height: 120);
-                      },
-                    ),
+                    _communityLogoUrl != null
+                        ? Image.network(
+                            _communityLogoUrl!,
+                            height: 120,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/images/hoapp-logo.png',
+                                height: 120,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const SizedBox(height: 120);
+                                },
+                              );
+                            },
+                          )
+                        : Image.asset(
+                            'assets/images/hoapp-logo.png',
+                            height: 120,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const SizedBox(height: 120);
+                            },
+                          ),
                     const SizedBox(height: 24),
                     Text(
                       widget.communitySlug != null
