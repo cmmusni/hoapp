@@ -735,12 +735,29 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
   Future<List<Payment>>? _paymentsFuture;
   Future<List<InvoiceLineItem>>? _lineItemsFuture;
   bool _isDeleting = false;
+  String? _unitNo;
 
   @override
   void initState() {
     super.initState();
     _loadPayments();
     _loadLineItems();
+    _loadUnitNo();
+  }
+
+  void _loadUnitNo() async {
+    try {
+      final result = await Supabase.instance.client
+          .from('units')
+          .select('unit_no')
+          .eq('id', widget.invoice.unitId)
+          .maybeSingle();
+      if (result != null && mounted) {
+        setState(() {
+          _unitNo = result['unit_no'] as String?;
+        });
+      }
+    } catch (_) {}
   }
 
   void _loadLineItems() {
@@ -783,16 +800,31 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        _getCategoryLabel(widget.invoice.category),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.5,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getCategoryLabel(widget.invoice.category),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            if (_unitNo != null)
+                              Text(
+                                'Unit $_unitNo',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
@@ -1073,7 +1105,8 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.delete_outline, size: 18),
+                          : const Icon(Icons.delete_outline,
+                              size: 18, color: Colors.red),
                       label: Text(_isDeleting ? 'Deleting...' : 'Delete'),
                       style: TextButton.styleFrom(foregroundColor: Colors.red),
                     ),

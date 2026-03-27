@@ -107,8 +107,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
             .from('announcements')
             .select('id, title, created_at, publish_at')
             .eq('community_id', communityId)
-            .gte('publish_at',
-                DateTime.now().subtract(const Duration(days: 7)).toIso8601String())
             .lte('publish_at', DateTime.now().toIso8601String())
             .order('publish_at', ascending: false)
             .limit(50),
@@ -198,17 +196,31 @@ class _NotificationsPageState extends State<NotificationsPage> {
         ));
       }
 
-      // Announcements
+      // Announcements — only show unread ones
+      final userId = client.auth.currentUser?.id;
+      String? lastReadAt;
+      if (userId != null) {
+        final readRow = await client
+            .from('announcement_reads')
+            .select('last_read_at')
+            .eq('user_id', userId)
+            .eq('community_id', communityId)
+            .maybeSingle();
+        lastReadAt = readRow?['last_read_at'] as String?;
+      }
       for (final row in results[5] as List) {
+        final publishAt = row['publish_at'] ?? row['created_at'] ?? '';
+        // Skip if user has already read past this announcement
+        if (lastReadAt != null && publishAt.compareTo(lastReadAt) <= 0) {
+          continue;
+        }
         items.add(_NotificationItem(
           id: row['id'].toString(),
           type: 'announcement',
           title: 'New Announcement',
           subtitle: row['title'] ?? 'No title',
           status: 'new',
-          createdAt:
-              DateTime.tryParse(row['publish_at'] ?? row['created_at'] ?? '') ??
-                  DateTime.now(),
+          createdAt: DateTime.tryParse(publishAt) ?? DateTime.now(),
           route: '/$slug/announcements',
           icon: Icons.announcement,
           color: Colors.green,

@@ -21,8 +21,8 @@ class ExpenseRepository {
     }
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      query = query.or(
-          'description.ilike.%$searchQuery%,vendor.ilike.%$searchQuery%');
+      query = query
+          .or('description.ilike.%$searchQuery%,vendor.ilike.%$searchQuery%');
     }
 
     var finalQuery = query.order('expense_date', ascending: false);
@@ -52,8 +52,8 @@ class ExpenseRepository {
     }
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      query = query.or(
-          'description.ilike.%$searchQuery%,vendor.ilike.%$searchQuery%');
+      query = query
+          .or('description.ilike.%$searchQuery%,vendor.ilike.%$searchQuery%');
     }
 
     final response = await query;
@@ -112,8 +112,7 @@ class ExpenseRepository {
     if (description != null) updates['description'] = description;
     if (amount != null) updates['amount'] = amount;
     if (expenseDate != null) {
-      updates['expense_date'] =
-          expenseDate.toIso8601String().split('T').first;
+      updates['expense_date'] = expenseDate.toIso8601String().split('T').first;
     }
     if (vendor != null) updates['vendor'] = vendor;
     if (receiptUrl != null) updates['receipt_url'] = receiptUrl;

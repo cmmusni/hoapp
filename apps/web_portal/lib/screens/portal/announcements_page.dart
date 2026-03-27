@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AnnouncementsPage extends StatefulWidget {
   const AnnouncementsPage({super.key});
@@ -19,6 +20,23 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   void initState() {
     super.initState();
     _loadAnnouncements();
+    _markAnnouncementsRead();
+  }
+
+  Future<void> _markAnnouncementsRead() async {
+    final appState = context.read<AppState>();
+    final communityId = appState.activeCommunityId;
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    if (communityId == null || userId == null) return;
+
+    try {
+      await client.from('announcement_reads').upsert({
+        'user_id': userId,
+        'community_id': communityId,
+        'last_read_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id,community_id');
+    } catch (_) {}
   }
 
   @override

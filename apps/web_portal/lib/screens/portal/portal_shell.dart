@@ -122,18 +122,31 @@ class _PortalShellState extends State<PortalShell> {
     if (communityId == null) return;
 
     final client = Supabase.instance.client;
-    final sevenDaysAgo =
-        DateTime.now().subtract(const Duration(days: 7)).toIso8601String();
 
     try {
-      // Announcements badge applies to all users
-      final announcementResult = await client
+      // Announcements badge: only count unread (published after user's last read)
+      final userId = client.auth.currentUser?.id;
+      String? lastReadAt;
+      if (userId != null) {
+        final readRow = await client
+            .from('announcement_reads')
+            .select('last_read_at')
+            .eq('user_id', userId)
+            .eq('community_id', communityId)
+            .maybeSingle();
+        lastReadAt = readRow?['last_read_at'] as String?;
+      }
+
+      var announcementQuery = client
           .from('announcements')
           .select('id')
           .eq('community_id', communityId)
-          .gte('publish_at', sevenDaysAgo)
-          .lte('publish_at', DateTime.now().toIso8601String())
-          .count(CountOption.exact);
+          .lte('publish_at', DateTime.now().toIso8601String());
+      if (lastReadAt != null) {
+        announcementQuery = announcementQuery.gt('publish_at', lastReadAt);
+      }
+      final announcementResult =
+          await announcementQuery.count(CountOption.exact);
 
       if (mounted) {
         setState(() => _newAnnouncements = announcementResult.count);

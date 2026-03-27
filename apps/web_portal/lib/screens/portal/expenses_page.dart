@@ -176,12 +176,12 @@ class _ExpenseSummaryHeader extends StatelessWidget {
           final lastMonthStart = DateTime(now.year, now.month - 1, 1);
 
           for (final e in snapshot.data!) {
-            if (e.expenseDate.isAfter(
-                thisMonthStart.subtract(const Duration(days: 1)))) {
+            if (e.expenseDate
+                .isAfter(thisMonthStart.subtract(const Duration(days: 1)))) {
               totalThisMonth += e.amount;
               countThisMonth++;
-            } else if (e.expenseDate.isAfter(
-                lastMonthStart.subtract(const Duration(days: 1)))) {
+            } else if (e.expenseDate
+                .isAfter(lastMonthStart.subtract(const Duration(days: 1)))) {
               totalLastMonth += e.amount;
             }
           }
@@ -694,8 +694,8 @@ class _ExpenseDetailsDialogState extends State<_ExpenseDetailsDialog> {
                       ),
                       const SizedBox(height: 12),
                       InkWell(
-                        onTap: () =>
-                            _showReceiptDialog(context, widget.expense.receiptUrl!),
+                        onTap: () => _showReceiptDialog(
+                            context, widget.expense.receiptUrl!),
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           height: 180,
@@ -747,16 +747,19 @@ class _ExpenseDetailsDialogState extends State<_ExpenseDetailsDialog> {
                 children: [
                   if (widget.isAdmin)
                     TextButton.icon(
-                      onPressed: _isDeleting
-                          ? null
-                          : () => _confirmDelete(context),
+                      onPressed:
+                          _isDeleting ? null : () => _confirmDelete(context),
                       icon: _isDeleting
                           ? const SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.delete_outline, size: 18),
+                          : const Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Colors.red,
+                            ),
                       label: Text(_isDeleting ? 'Deleting...' : 'Delete'),
                       style: TextButton.styleFrom(foregroundColor: Colors.red),
                     ),
@@ -1003,8 +1006,7 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                   children: ExpenseCategory.values.map((category) {
                     final isSelected = _selectedCategory == category;
                     return InkWell(
-                      onTap: () =>
-                          setState(() => _selectedCategory = category),
+                      onTap: () => setState(() => _selectedCategory = category),
                       borderRadius: BorderRadius.circular(10),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
@@ -1046,8 +1048,7 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     hintText: 'e.g., Lobby cleaning supplies',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) =>
-                      (v?.isEmpty ?? true) ? 'Required' : null,
+                  validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -1083,8 +1084,7 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                       context: context,
                       initialDate: _expenseDate,
                       firstDate: DateTime(2020),
-                      lastDate:
-                          DateTime.now().add(const Duration(days: 1)),
+                      lastDate: DateTime.now().add(const Duration(days: 1)),
                     );
                     if (date != null) {
                       setState(() => _expenseDate = date);
@@ -1105,8 +1105,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text('Receipt / Proof (Optional)',
-                      style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w500)),
+                      style:
+                          TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                 ),
                 const SizedBox(height: 8),
                 _receiptUrl != null
@@ -1145,8 +1145,7 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                       )
                     : ImageUploadWidget(
                         bucket: 'expense-receipts',
-                        folder:
-                            Supabase.instance.client.auth.currentUser?.id,
+                        folder: Supabase.instance.client.auth.currentUser?.id,
                         onUploadComplete: (url) {
                           if (url.isNotEmpty) {
                             setState(() => _receiptUrl = url);

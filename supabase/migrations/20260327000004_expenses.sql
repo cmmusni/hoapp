@@ -26,50 +26,22 @@ ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 -- Staff can view all expenses in their community
 CREATE POLICY "Staff can view community expenses"
   ON public.expenses FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_roles.user_id = auth.uid()
-        AND user_roles.community_id = expenses.community_id
-        AND user_roles.role IN ('admin', 'staff', 'maintenance')
-    )
-  );
+  USING (is_community_staff(community_id));
 
 -- Staff can create expenses
 CREATE POLICY "Staff can create expenses"
   ON public.expenses FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_roles.user_id = auth.uid()
-        AND user_roles.community_id = expenses.community_id
-        AND user_roles.role IN ('admin', 'staff')
-    )
-  );
+  WITH CHECK (is_community_staff(community_id));
 
 -- Staff can update expenses
 CREATE POLICY "Staff can update expenses"
   ON public.expenses FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_roles.user_id = auth.uid()
-        AND user_roles.community_id = expenses.community_id
-        AND user_roles.role IN ('admin', 'staff')
-    )
-  );
+  USING (is_community_staff(community_id));
 
--- Admin can delete expenses
-CREATE POLICY "Admin can delete expenses"
+-- Staff can delete expenses
+CREATE POLICY "Staff can delete expenses"
   ON public.expenses FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_roles.user_id = auth.uid()
-        AND user_roles.community_id = expenses.community_id
-        AND user_roles.role = 'admin'
-    )
-  );
+  USING (is_community_staff(community_id));
 
 -- Storage bucket for expense receipts
 INSERT INTO storage.buckets (id, name, public)
