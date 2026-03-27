@@ -46,6 +46,15 @@ class _PortalShellState extends State<PortalShell> {
     _loadCommunity();
   }
 
+  @override
+  void didUpdateWidget(covariant PortalShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Refresh badge counts when the route (child) changes
+    if (oldWidget.child != widget.child) {
+      _loadBadgeCounts();
+    }
+  }
+
   Future<void> _loadCommunity() async {
     try {
       final communityRepo = context.read<CommunityRepository>();

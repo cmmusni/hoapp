@@ -106,7 +106,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           id: row['id'].toString(),
           type: 'payment',
           title: 'Payment Submitted',
-          subtitle: '${invoiceCat.toString().toUpperCase()} — ₱${row['amount']}',
+          subtitle:
+              '${invoiceCat.toString().toUpperCase()} — ₱${row['amount']}',
           status: row['status'] ?? '',
           createdAt:
               DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
@@ -122,7 +123,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           id: row['id'].toString(),
           type: 'ticket',
           title: 'Open Ticket',
-          subtitle: '${(row['type'] as String? ?? 'general').toUpperCase()} ticket',
+          subtitle:
+              '${(row['type'] as String? ?? 'general').toUpperCase()} ticket',
           status: row['status'] ?? '',
           createdAt:
               DateTime.tryParse(row['created_at'] ?? '') ?? DateTime.now(),
