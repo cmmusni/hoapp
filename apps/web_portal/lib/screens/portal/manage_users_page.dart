@@ -15,6 +15,7 @@ class ManageUsersPage extends StatefulWidget {
 class _ManageUsersPageState extends State<ManageUsersPage> {
   Future<List<UserRole>>? _rolesFuture;
   Map<String, UserProfile> _userProfiles = {};
+  bool _isLoadingProfiles = false;
   String? _lastLoadedCommunityId;
 
   @override
@@ -44,6 +45,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
 
     if (appState.activeCommunityId != null) {
       setState(() {
+        _isLoadingProfiles = true;
         _rolesFuture = repo.getCommunityUserRoles(appState.activeCommunityId!);
       });
 
@@ -74,10 +76,16 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
         if (mounted) {
           setState(() {
             _userProfiles = profiles;
+            _isLoadingProfiles = false;
           });
         }
       } catch (e) {
         print('Failed to load user profiles: $e');
+        if (mounted) {
+          setState(() {
+            _isLoadingProfiles = false;
+          });
+        }
       }
     }
   }
@@ -116,7 +124,8 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
         child: FutureBuilder<List<UserRole>>(
           future: _rolesFuture,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (snapshot.connectionState == ConnectionState.waiting ||
+                _isLoadingProfiles) {
               return const Center(child: CircularProgressIndicator());
             }
 

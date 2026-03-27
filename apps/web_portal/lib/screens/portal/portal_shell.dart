@@ -636,7 +636,9 @@ class _PortalShellState extends State<PortalShell> {
     final email = user?.email ?? '';
     final roleBadge = appState.activeRole != null && hasUnit
         ? _formatRole(appState.activeRole!.role)
-        : 'User (contact Admin to assign unit)';
+        : _isCommunityLoaded
+            ? 'User (contact Admin to assign unit)'
+            : '';
 
     return ClipRect(
       child: OverflowBox(
@@ -732,96 +734,121 @@ class _PortalShellState extends State<PortalShell> {
 
               // Nav items
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  children: [
-                    _buildSidebarItem(
-                        context,
-                        'Announcements',
-                        Icons.announcement_outlined,
-                        '/announcements',
-                        currentPath,
-                        badge: _newAnnouncements),
-                    _buildSidebarItem(context, 'Violations',
-                        Icons.report_outlined, '/violations', currentPath,
-                        badge: _pendingViolations),
-                    _buildSidebarItem(context, 'Tickets',
-                        Icons.support_outlined, '/tickets', currentPath,
-                        badge: _openTickets),
-                    if (!isGuard &&
-                        !isMaintenance &&
-                        (hasUnit || isStaff) &&
-                        isPro) ...[
-                      _buildSidebarItem(context, 'Amenities',
-                          Icons.pool_outlined, '/amenities', currentPath,
-                          badge: _pendingBookings),
-                      _buildSidebarItem(context, 'Billing & Payments',
-                          Icons.payment_outlined, '/billing', currentPath,
-                          badge: _pendingPayments),
-                      _buildSidebarItem(
-                          context,
-                          'Expense Tracker',
-                          Icons.account_balance_wallet_outlined,
-                          '/expenses',
-                          currentPath),
-                    ],
-                    if (isPro && (hasUnit || isStaff)) ...[
-                      ...(!isGuard && !isMaintenance
-                          ? [
-                              _buildSidebarItem(
-                                  context,
-                                  'Pool Access',
-                                  Icons.accessibility_outlined,
-                                  '/pool-access',
-                                  currentPath),
-                            ]
-                          : []),
-                      ...(!isResident
-                          ? [
-                              _buildSidebarItem(
-                                  context,
-                                  'Registered Swimmers',
-                                  Icons.pool_outlined,
-                                  '/registered-swimmers',
-                                  currentPath),
-                            ]
-                          : []),
-                    ],
-                    if (isPro && (hasUnit || isStaff))
-                      _buildSidebarItem(context, 'Security Pass',
-                          Icons.badge_outlined, '/security-pass', currentPath),
-                    if ((isGuard || isMaintenance) && isPro)
-                      _buildSidebarItem(context, 'QR Pass Scanner',
-                          Icons.qr_code_scanner, '/qr-scanner', currentPath),
-                    _buildSidebarItem(context, 'Feedback',
-                        Icons.feedback_outlined, '/feedback', currentPath,
-                        badge: _openFeedback),
-                    if (isStaff) ...[
-                      const Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                        child: Divider(color: _sidebarDarkLight, height: 1),
+                child: !_isCommunityLoaded
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white70,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        children: [
+                          _buildSidebarItem(
+                              context,
+                              'Announcements',
+                              Icons.announcement_outlined,
+                              '/announcements',
+                              currentPath,
+                              badge: _newAnnouncements),
+                          _buildSidebarItem(context, 'Violations',
+                              Icons.report_outlined, '/violations', currentPath,
+                              badge: _pendingViolations),
+                          _buildSidebarItem(context, 'Tickets',
+                              Icons.support_outlined, '/tickets', currentPath,
+                              badge: _openTickets),
+                          if (!isGuard &&
+                              !isMaintenance &&
+                              (hasUnit || isStaff) &&
+                              isPro) ...[
+                            _buildSidebarItem(context, 'Amenities',
+                                Icons.pool_outlined, '/amenities', currentPath,
+                                badge: _pendingBookings),
+                            _buildSidebarItem(context, 'Billing & Payments',
+                                Icons.payment_outlined, '/billing', currentPath,
+                                badge: _pendingPayments),
+                            _buildSidebarItem(
+                                context,
+                                'Expense Tracker',
+                                Icons.account_balance_wallet_outlined,
+                                '/expenses',
+                                currentPath),
+                          ],
+                          if (isPro && (hasUnit || isStaff)) ...[
+                            ...(!isGuard && !isMaintenance
+                                ? [
+                                    _buildSidebarItem(
+                                        context,
+                                        'Pool Access',
+                                        Icons.accessibility_outlined,
+                                        '/pool-access',
+                                        currentPath),
+                                  ]
+                                : []),
+                            ...(!isResident
+                                ? [
+                                    _buildSidebarItem(
+                                        context,
+                                        'Registered Swimmers',
+                                        Icons.pool_outlined,
+                                        '/registered-swimmers',
+                                        currentPath),
+                                  ]
+                                : []),
+                          ],
+                          if (isPro && (hasUnit || isStaff))
+                            _buildSidebarItem(
+                                context,
+                                'Security Pass',
+                                Icons.badge_outlined,
+                                '/security-pass',
+                                currentPath),
+                          if ((isGuard || isMaintenance) && isPro)
+                            _buildSidebarItem(
+                                context,
+                                'QR Pass Scanner',
+                                Icons.qr_code_scanner,
+                                '/qr-scanner',
+                                currentPath),
+                          if (isStaff) ...[
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 12),
+                              child:
+                                  Divider(color: _sidebarDarkLight, height: 1),
+                            ),
+                            _buildSidebarItem(
+                                context,
+                                'Households',
+                                Icons.family_restroom_outlined,
+                                '/households',
+                                currentPath),
+                          ],
+                          if (isAdmin) ...[
+                            _buildSidebarItem(
+                                context,
+                                'Manage Users',
+                                Icons.people_outlined,
+                                '/manage-users',
+                                currentPath),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 12),
+                              child:
+                                  Divider(color: _sidebarDarkLight, height: 1),
+                            ),
+                            _buildSidebarItem(
+                                context,
+                                'Settings',
+                                Icons.settings_outlined,
+                                '/settings',
+                                currentPath),
+                          ],
+                          _buildSidebarItem(context, 'Feedback',
+                              Icons.feedback_outlined, '/feedback', currentPath,
+                              badge: _openFeedback),
+                        ],
                       ),
-                      _buildSidebarItem(
-                          context,
-                          'Households',
-                          Icons.family_restroom_outlined,
-                          '/households',
-                          currentPath),
-                    ],
-                    if (isAdmin) ...[
-                      _buildSidebarItem(context, 'Manage Users',
-                          Icons.people_outlined, '/manage-users', currentPath),
-                      const Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                        child: Divider(color: _sidebarDarkLight, height: 1),
-                      ),
-                      _buildSidebarItem(context, 'Settings',
-                          Icons.settings_outlined, '/settings', currentPath),
-                    ],
-                  ],
-                ),
               ),
             ],
           ),
@@ -993,61 +1020,74 @@ class _PortalShellState extends State<PortalShell> {
                 ),
               ),
             const Divider(height: 1),
-            _buildMenuItem(context, 'Announcements', Icons.announcement,
-                '/${widget.communitySlug}/announcements', currentPath,
-                badge: _newAnnouncements),
-            _buildMenuItem(context, 'Violations', Icons.report,
-                '/${widget.communitySlug}/violations', currentPath,
-                badge: _pendingViolations),
-            _buildMenuItem(context, 'Tickets', Icons.support,
-                '/${widget.communitySlug}/tickets', currentPath,
-                badge: _openTickets),
-            if (!isGuard && !isMaintenance && isPro && hasUnit) ...[
-              _buildMenuItem(context, 'Amenities', Icons.pool,
-                  '/${widget.communitySlug}/amenities', currentPath,
-                  badge: _pendingBookings),
-              _buildMenuItem(context, 'Billing & Payments', Icons.payment,
-                  '/${widget.communitySlug}/billing', currentPath,
-                  badge: _pendingPayments),
-              _buildMenuItem(
-                  context,
-                  'Expense Tracker',
-                  Icons.account_balance_wallet,
-                  '/${widget.communitySlug}/expenses',
-                  currentPath),
-            ],
-            if (isPro && hasUnit) ...[
-              if (!isGuard && !isMaintenance)
-                _buildMenuItem(context, 'Pool Access', Icons.accessibility,
-                    '/${widget.communitySlug}/pool-access', currentPath),
-              if (!isResident)
+            if (!_isCommunityLoaded)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else ...[
+              _buildMenuItem(context, 'Announcements', Icons.announcement,
+                  '/${widget.communitySlug}/announcements', currentPath,
+                  badge: _newAnnouncements),
+              _buildMenuItem(context, 'Violations', Icons.report,
+                  '/${widget.communitySlug}/violations', currentPath,
+                  badge: _pendingViolations),
+              _buildMenuItem(context, 'Tickets', Icons.support,
+                  '/${widget.communitySlug}/tickets', currentPath,
+                  badge: _openTickets),
+              if (!isGuard && !isMaintenance && isPro && hasUnit) ...[
+                _buildMenuItem(context, 'Amenities', Icons.pool,
+                    '/${widget.communitySlug}/amenities', currentPath,
+                    badge: _pendingBookings),
+                _buildMenuItem(context, 'Billing & Payments', Icons.payment,
+                    '/${widget.communitySlug}/billing', currentPath,
+                    badge: _pendingPayments),
                 _buildMenuItem(
                     context,
-                    'Registered Swimmers',
-                    Icons.pool,
-                    '/${widget.communitySlug}/registered-swimmers',
+                    'Expense Tracker',
+                    Icons.account_balance_wallet,
+                    '/${widget.communitySlug}/expenses',
                     currentPath),
-            ],
-            if (isPro && hasUnit)
-              _buildMenuItem(context, 'Security Pass', Icons.badge,
-                  '/${widget.communitySlug}/security-pass', currentPath),
-            if ((isGuard || isMaintenance) && isPro)
-              _buildMenuItem(context, 'QR Pass Scanner', Icons.qr_code_scanner,
-                  '/${widget.communitySlug}/qr-scanner', currentPath),
-            _buildMenuItem(context, 'Feedback', Icons.feedback,
-                '/${widget.communitySlug}/feedback', currentPath,
-                badge: _openFeedback),
-            if (isStaff) ...[
-              const Divider(),
-              _buildMenuItem(context, 'Households', Icons.family_restroom,
-                  '/${widget.communitySlug}/households', currentPath),
-            ],
-            if (isAdmin) ...[
-              _buildMenuItem(context, 'Manage Users', Icons.people,
-                  '/${widget.communitySlug}/manage-users', currentPath),
-              const Divider(),
-              _buildMenuItem(context, 'Settings', Icons.settings,
-                  '/${widget.communitySlug}/settings', currentPath),
+              ],
+              if (isPro && hasUnit) ...[
+                if (!isGuard && !isMaintenance)
+                  _buildMenuItem(context, 'Pool Access', Icons.accessibility,
+                      '/${widget.communitySlug}/pool-access', currentPath),
+                if (!isResident)
+                  _buildMenuItem(
+                      context,
+                      'Registered Swimmers',
+                      Icons.pool,
+                      '/${widget.communitySlug}/registered-swimmers',
+                      currentPath),
+              ],
+              if (isPro && hasUnit)
+                _buildMenuItem(context, 'Security Pass', Icons.badge,
+                    '/${widget.communitySlug}/security-pass', currentPath),
+              if ((isGuard || isMaintenance) && isPro)
+                _buildMenuItem(
+                    context,
+                    'QR Pass Scanner',
+                    Icons.qr_code_scanner,
+                    '/${widget.communitySlug}/qr-scanner',
+                    currentPath),
+              if (isStaff) ...[
+                const Divider(),
+                _buildMenuItem(context, 'Households', Icons.family_restroom,
+                    '/${widget.communitySlug}/households', currentPath),
+              ],
+              if (isAdmin) ...[
+                _buildMenuItem(context, 'Manage Users', Icons.people,
+                    '/${widget.communitySlug}/manage-users', currentPath),
+                const Divider(),
+                _buildMenuItem(context, 'Settings', Icons.settings,
+                    '/${widget.communitySlug}/settings', currentPath),
+              ],
+              _buildMenuItem(context, 'Feedback', Icons.feedback,
+                  '/${widget.communitySlug}/feedback', currentPath,
+                  badge: _openFeedback),
             ],
           ],
         ),
@@ -1386,15 +1426,18 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   static const _brandColor = Color(0xff215e3f);
 
   final _formKey = GlobalKey<FormState>();
+  final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   bool _saving = false;
+  bool _obscureOld = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
 
   @override
   void dispose() {
+    _oldPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -1407,7 +1450,10 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
 
     try {
       final authRepo = context.read<AuthRepository>();
-      await authRepo.changePassword(_newPasswordController.text.trim());
+      await authRepo.changePassword(
+        oldPassword: _oldPasswordController.text,
+        newPassword: _newPasswordController.text.trim(),
+      );
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -1476,7 +1522,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          'Enter your new password',
+                          'Verify your identity and set a new password',
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 13,
@@ -1502,6 +1548,28 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                 key: _formKey,
                 child: Column(
                   children: [
+                    TextFormField(
+                      controller: _oldPasswordController,
+                      obscureText: _obscureOld,
+                      decoration: InputDecoration(
+                        labelText: 'Current Password',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscureOld
+                              ? Icons.visibility_off
+                              : Icons.visibility),
+                          onPressed: () =>
+                              setState(() => _obscureOld = !_obscureOld),
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Required';
+                        return null;
+                      },
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 14),
                     TextFormField(
                       controller: _newPasswordController,
                       obscureText: _obscureNew,

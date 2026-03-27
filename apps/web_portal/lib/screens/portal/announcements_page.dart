@@ -790,133 +790,104 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
       ),
       content: SizedBox(
         width: 500,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  hintText: 'Enter announcement title',
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    hintText: 'Enter announcement title',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a title';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _bodyController,
-                decoration: const InputDecoration(
-                  labelText: 'Message',
-                  hintText: 'Enter announcement details',
-                  alignLabelWithHint: true,
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _bodyController,
+                  decoration: const InputDecoration(
+                    labelText: 'Message',
+                    hintText: 'Enter announcement details',
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: 5,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a message';
+                    }
+                    return null;
+                  },
                 ),
-                maxLines: 5,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a message';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              CheckboxListTile(
-                value: _pinned,
-                onChanged: (value) => setState(() => _pinned = value ?? false),
-                title: const Text('Pin to top'),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
-              ),
-              const SizedBox(height: 8),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Image (optional)',
-                    style: TextStyle(fontSize: 13, color: Colors.grey)),
-              ),
-              const SizedBox(height: 8),
-              if (_uploadedImageUrl != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Stack(
-                    children: [
-                      Image.network(
-                        _uploadedImageUrl!,
-                        height: 140,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: IconButton(
-                          onPressed: () =>
-                              setState(() => _uploadedImageUrl = null),
-                          icon: const Icon(Icons.close, color: Colors.white),
-                          style: IconButton.styleFrom(
-                              backgroundColor: Colors.black54),
-                          iconSize: 18,
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  value: _pinned,
+                  onChanged: (value) =>
+                      setState(() => _pinned = value ?? false),
+                  title: const Text('Pin to top'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const SizedBox(height: 8),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Image (optional)',
+                      style: TextStyle(fontSize: 13, color: Colors.grey)),
+                ),
+                const SizedBox(height: 8),
+                if (_uploadedImageUrl != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Stack(
+                      children: [
+                        Image.network(
+                          _uploadedImageUrl!,
+                          height: 140,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                ImageUploadWidget(
-                  bucket: 'announcement-images',
-                  folder: context.read<AppState>().activeCommunityId,
-                  onUploadComplete: (url) {
-                    if (url.isNotEmpty) {
-                      setState(() => _uploadedImageUrl = url);
-                    }
-                  },
-                ),
-              ],
-              const SizedBox(height: 16),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Document attachment (optional)',
-                    style: TextStyle(fontSize: 13, color: Colors.grey)),
-              ),
-              const SizedBox(height: 8),
-              if (_uploadedAttachmentUrl != null) ...[
-                Card(
-                  child: ListTile(
-                    leading: Icon(
-                      _uploadedAttachmentUrl!.toLowerCase().contains('.pdf')
-                          ? Icons.picture_as_pdf
-                          : Icons.description,
-                      color: _uploadedAttachmentUrl!.toLowerCase().contains('.pdf')
-                          ? Colors.red[600]
-                          : Colors.blue[600],
-                    ),
-                    title: const Text('Document uploaded'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () =>
-                          setState(() => _uploadedAttachmentUrl = null),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: IconButton(
+                            onPressed: () =>
+                                setState(() => _uploadedImageUrl = null),
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            style: IconButton.styleFrom(
+                                backgroundColor: Colors.black54),
+                            iconSize: 18,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ] else ...[
+                  ImageUploadWidget(
+                    bucket: 'announcement-images',
+                    folder: context.read<AppState>().activeCommunityId,
+                    onUploadComplete: (url) {
+                      if (url.isNotEmpty) {
+                        setState(() => _uploadedImageUrl = url);
+                      }
+                    },
+                  ),
+                ],
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Document attachment (optional)',
+                      style: TextStyle(fontSize: 13, color: Colors.grey)),
                 ),
-              ] else ...[
-                FileUploadWidget(
-                  bucket: 'announcement-attachments',
-                  folder: context.read<AppState>().activeCommunityId,
-                  fileType: FileType.custom,
-                  allowedExtensions: const ['pdf', 'doc', 'docx'],
-                  maxSizeBytes: 25 * 1024 * 1024, // 25MB
-                  onUploadComplete: (url) {
-                    if (url.isNotEmpty) {
-                      setState(() => _uploadedAttachmentUrl = url);
-                    }
-                  },
-                ),
+                const SizedBox(height: 8),
+                _buildAttachmentSection(),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -927,6 +898,28 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
           isLoading: _isLoading,
         ),
       ],
+    );
+  }
+
+  Widget _buildAttachmentSection() {
+    if (_uploadedAttachmentUrl != null) {
+      return _AttachmentCard(
+        url: _uploadedAttachmentUrl!,
+        onRemove: () => setState(() => _uploadedAttachmentUrl = null),
+        onReplace: () => setState(() => _uploadedAttachmentUrl = null),
+      );
+    }
+    return FileUploadWidget(
+      bucket: 'announcement-attachments',
+      folder: context.read<AppState>().activeCommunityId,
+      fileType: FileType.custom,
+      allowedExtensions: const ['pdf', 'doc', 'docx'],
+      maxSizeBytes: 25 * 1024 * 1024, // 25MB
+      onUploadComplete: (url) {
+        if (url.isNotEmpty) {
+          setState(() => _uploadedAttachmentUrl = url);
+        }
+      },
     );
   }
 
@@ -1042,133 +1035,104 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
       ),
       content: SizedBox(
         width: 500,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  hintText: 'Enter announcement title',
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    hintText: 'Enter announcement title',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a title';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _bodyController,
-                decoration: const InputDecoration(
-                  labelText: 'Message',
-                  hintText: 'Enter announcement details',
-                  alignLabelWithHint: true,
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _bodyController,
+                  decoration: const InputDecoration(
+                    labelText: 'Message',
+                    hintText: 'Enter announcement details',
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: 5,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a message';
+                    }
+                    return null;
+                  },
                 ),
-                maxLines: 5,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a message';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              CheckboxListTile(
-                value: _pinned,
-                onChanged: (value) => setState(() => _pinned = value ?? false),
-                title: const Text('Pin to top'),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
-              ),
-              const SizedBox(height: 8),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Image (optional)',
-                    style: TextStyle(fontSize: 13, color: Colors.grey)),
-              ),
-              const SizedBox(height: 8),
-              if (_uploadedImageUrl != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Stack(
-                    children: [
-                      Image.network(
-                        _uploadedImageUrl!,
-                        height: 140,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: IconButton(
-                          onPressed: () =>
-                              setState(() => _uploadedImageUrl = null),
-                          icon: const Icon(Icons.close, color: Colors.white),
-                          style: IconButton.styleFrom(
-                              backgroundColor: Colors.black54),
-                          iconSize: 18,
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  value: _pinned,
+                  onChanged: (value) =>
+                      setState(() => _pinned = value ?? false),
+                  title: const Text('Pin to top'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const SizedBox(height: 8),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Image (optional)',
+                      style: TextStyle(fontSize: 13, color: Colors.grey)),
+                ),
+                const SizedBox(height: 8),
+                if (_uploadedImageUrl != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Stack(
+                      children: [
+                        Image.network(
+                          _uploadedImageUrl!,
+                          height: 140,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                ImageUploadWidget(
-                  bucket: 'announcement-images',
-                  folder: context.read<AppState>().activeCommunityId,
-                  onUploadComplete: (url) {
-                    if (url.isNotEmpty) {
-                      setState(() => _uploadedImageUrl = url);
-                    }
-                  },
-                ),
-              ],
-              const SizedBox(height: 16),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Document attachment (optional)',
-                    style: TextStyle(fontSize: 13, color: Colors.grey)),
-              ),
-              const SizedBox(height: 8),
-              if (_uploadedAttachmentUrl != null) ...[
-                Card(
-                  child: ListTile(
-                    leading: Icon(
-                      _uploadedAttachmentUrl!.toLowerCase().contains('.pdf')
-                          ? Icons.picture_as_pdf
-                          : Icons.description,
-                      color: _uploadedAttachmentUrl!.toLowerCase().contains('.pdf')
-                          ? Colors.red[600]
-                          : Colors.blue[600],
-                    ),
-                    title: const Text('Document uploaded'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () =>
-                          setState(() => _uploadedAttachmentUrl = null),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: IconButton(
+                            onPressed: () =>
+                                setState(() => _uploadedImageUrl = null),
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            style: IconButton.styleFrom(
+                                backgroundColor: Colors.black54),
+                            iconSize: 18,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ] else ...[
+                  ImageUploadWidget(
+                    bucket: 'announcement-images',
+                    folder: context.read<AppState>().activeCommunityId,
+                    onUploadComplete: (url) {
+                      if (url.isNotEmpty) {
+                        setState(() => _uploadedImageUrl = url);
+                      }
+                    },
+                  ),
+                ],
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Document attachment (optional)',
+                      style: TextStyle(fontSize: 13, color: Colors.grey)),
                 ),
-              ] else ...[
-                FileUploadWidget(
-                  bucket: 'announcement-attachments',
-                  folder: context.read<AppState>().activeCommunityId,
-                  fileType: FileType.custom,
-                  allowedExtensions: const ['pdf', 'doc', 'docx'],
-                  maxSizeBytes: 25 * 1024 * 1024, // 25MB
-                  onUploadComplete: (url) {
-                    if (url.isNotEmpty) {
-                      setState(() => _uploadedAttachmentUrl = url);
-                    }
-                  },
-                ),
+                const SizedBox(height: 8),
+                _buildAttachmentSection(),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -1179,6 +1143,28 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
           isLoading: _isLoading,
         ),
       ],
+    );
+  }
+
+  Widget _buildAttachmentSection() {
+    if (_uploadedAttachmentUrl != null) {
+      return _AttachmentCard(
+        url: _uploadedAttachmentUrl!,
+        onRemove: () => setState(() => _uploadedAttachmentUrl = null),
+        onReplace: () => setState(() => _uploadedAttachmentUrl = null),
+      );
+    }
+    return FileUploadWidget(
+      bucket: 'announcement-attachments',
+      folder: context.read<AppState>().activeCommunityId,
+      fileType: FileType.custom,
+      allowedExtensions: const ['pdf', 'doc', 'docx'],
+      maxSizeBytes: 25 * 1024 * 1024, // 25MB
+      onUploadComplete: (url) {
+        if (url.isNotEmpty) {
+          setState(() => _uploadedAttachmentUrl = url);
+        }
+      },
     );
   }
 
@@ -1219,5 +1205,93 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
         setState(() => _isLoading = false);
       }
     }
+  }
+}
+
+/// Shared attachment card used in both Create and Edit dialogs.
+/// Shows filename, file type badge, and remove/replace actions.
+class _AttachmentCard extends StatelessWidget {
+  final String url;
+  final VoidCallback onRemove;
+  final VoidCallback onReplace;
+
+  const _AttachmentCard({
+    required this.url,
+    required this.onRemove,
+    required this.onReplace,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fileName = _extractFileName(url);
+    final ext = fileName.split('.').last.toLowerCase();
+    final isPdf = ext == 'pdf';
+    final icon = isPdf ? Icons.picture_as_pdf : Icons.description;
+    final color = isPdf ? Colors.red[600]! : Colors.blue[600]!;
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: color.withOpacity(0.25)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Icon(icon, size: 28, color: color),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fileName,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    ext.toUpperCase(),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Replace document',
+              icon: const Icon(Icons.swap_horiz, size: 20),
+              onPressed: onReplace,
+              splashRadius: 18,
+            ),
+            IconButton(
+              tooltip: 'Remove document',
+              icon:
+                  Icon(Icons.delete_outline, size: 20, color: Colors.red[400]),
+              onPressed: onRemove,
+              splashRadius: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _extractFileName(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final segments = uri.pathSegments;
+      if (segments.isNotEmpty) {
+        final raw = segments.last;
+        final underscoreIdx = raw.indexOf('_');
+        if (underscoreIdx > 0 && underscoreIdx < 14) {
+          return Uri.decodeComponent(raw.substring(underscoreIdx + 1));
+        }
+        return Uri.decodeComponent(raw);
+      }
+    } catch (_) {}
+    return 'Attachment';
   }
 }

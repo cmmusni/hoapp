@@ -7,22 +7,31 @@ CREATE TABLE IF NOT EXISTS public.announcement_reads (
   UNIQUE (user_id, community_id)
 );
 
-CREATE INDEX idx_announcement_reads_user ON public.announcement_reads(user_id, community_id);
+CREATE INDEX IF NOT EXISTS idx_announcement_reads_user ON public.announcement_reads(user_id, community_id);
 
 -- RLS
 ALTER TABLE public.announcement_reads ENABLE ROW LEVEL SECURITY;
 
 -- Users can read their own record
-CREATE POLICY "Users can view own announcement reads"
-  ON public.announcement_reads FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can view own announcement reads"
+    ON public.announcement_reads FOR SELECT
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Users can insert their own record
-CREATE POLICY "Users can insert own announcement reads"
-  ON public.announcement_reads FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can insert own announcement reads"
+    ON public.announcement_reads FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Users can update their own record
-CREATE POLICY "Users can update own announcement reads"
-  ON public.announcement_reads FOR UPDATE
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can update own announcement reads"
+    ON public.announcement_reads FOR UPDATE
+    USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

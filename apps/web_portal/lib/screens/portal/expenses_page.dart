@@ -4,6 +4,7 @@ import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ExpensesPage extends StatefulWidget {
@@ -16,6 +17,7 @@ class ExpensesPage extends StatefulWidget {
 class _ExpensesPageState extends State<ExpensesPage> {
   Future<List<Expense>>? _expensesFuture;
   ExpenseCategory? _filterCategory;
+  bool _showChart = true;
 
   @override
   void initState() {
@@ -52,9 +54,10 @@ class _ExpensesPageState extends State<ExpensesPage> {
     return Scaffold(
       body: Column(
         children: [
-          // Summary header
-          _ExpenseSummaryHeader(
-            expensesFuture: _expensesFuture,
+          // Expense trend chart (collapsible)
+          _ExpenseTrendChart(
+            visible: _showChart,
+            onToggle: () => setState(() => _showChart = !_showChart),
           ),
           // Filter bar
           _FilterBar(
@@ -152,113 +155,241 @@ class _ExpensesPageState extends State<ExpensesPage> {
   }
 }
 
-// ============ SUMMARY HEADER ============
+// ============ EXPENSE TREND CHART ============
 
-class _ExpenseSummaryHeader extends StatelessWidget {
-  final Future<List<Expense>>? expensesFuture;
+class _ExpenseMonthlyData {
+  final String month;
+  final double total;
+  _ExpenseMonthlyData(this.month, this.total);
+}
 
-  const _ExpenseSummaryHeader({required this.expensesFuture});
+class _ExpenseTrendChart extends StatefulWidget {
+  final bool visible;
+  final VoidCallback onToggle;
+
+  const _ExpenseTrendChart({required this.visible, required this.onToggle});
+
+  @override
+  State<_ExpenseTrendChart> createState() => _ExpenseTrendChartState();
+}
+
+class _ExpenseTrendChartState extends State<_ExpenseTrendChart> {
+  List<_ExpenseMonthlyData>? _monthlyData;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChartData();
+  }
+
+  Future<void> _loadChartData() async {
+    final appState = context.read<AppState>();
+    final repo = context.read<ExpenseRepository>();
+    final communityId = appState.activeCommunityId;
+    if (communityId == null) return;
+
+    try {
+      final expenses = await repo.getExpenses(communityId);
+      final now = DateTime.now();
+      final months = <_ExpenseMonthlyData>[];
+      for (int i = 5; i >= -1; i--) {
+        final month = DateTime(now.year, now.month - i, 1);
+        final monthEnd = DateTime(month.year, month.month + 1, 0);
+        final label = DateFormat('MMM').format(month);
+        double total = 0;
+        for (final e in expenses) {
+          if (e.expenseDate.isAfter(month.subtract(const Duration(days: 1))) &&
+              e.expenseDate
+                  .isBefore(monthEnd.add(const Duration(days: 1)))) {
+            total += e.amount;
+          }
+        }
+        months.add(_ExpenseMonthlyData(label, total));
+      }
+      if (mounted) {
+        setState(() {
+          _monthlyData = months;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final theme = Theme.of(context);
 
-    return FutureBuilder<List<Expense>>(
-      future: expensesFuture,
-      builder: (context, snapshot) {
-        double totalThisMonth = 0;
-        double totalLastMonth = 0;
-        int countThisMonth = 0;
-
-        if (snapshot.hasData) {
-          final now = DateTime.now();
-          final thisMonthStart = DateTime(now.year, now.month, 1);
-          final lastMonthStart = DateTime(now.year, now.month - 1, 1);
-
-          for (final e in snapshot.data!) {
-            if (e.expenseDate
-                .isAfter(thisMonthStart.subtract(const Duration(days: 1)))) {
-              totalThisMonth += e.amount;
-              countThisMonth++;
-            } else if (e.expenseDate
-                .isAfter(lastMonthStart.subtract(const Duration(days: 1)))) {
-              totalLastMonth += e.amount;
-            }
-          }
-        }
-
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          decoration: BoxDecoration(
-            color: const Color(0xff215e3f).withOpacity(0.05),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'This Month',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      currencyFormat.format(totalThisMonth),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xff215e3f),
-                      ),
-                    ),
-                    Text(
-                      '$countThisMonth expense${countThisMonth == 1 ? '' : 's'}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                    ),
-                  ],
+    return Column(
+      children: [
+        InkWell(
+          onTap: widget.onToggle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Icon(Icons.trending_up,
+                    size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Expense Trend',
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+                const Spacer(),
+                Icon(
+                  widget.visible ? Icons.expand_less : Icons.expand_more,
+                  color: Colors.grey,
                 ),
-              ),
-              Container(
-                width: 1,
-                height: 50,
-                color: Colors.grey[300],
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Last Month',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[600],
-                        ),
+              ],
+            ),
+          ),
+        ),
+        if (widget.visible)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            child: _loading
+                ? const SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : (_monthlyData == null ||
+                        _monthlyData!.every((m) => m.total == 0))
+                    ? Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text('No expense data to display',
+                            style: TextStyle(color: Colors.grey[500])),
+                      )
+                    : SizedBox(
+                        height: 220,
+                        child: _buildChart(theme),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        currencyFormat.format(totalLastMonth),
-                        style: TextStyle(
-                          fontSize: 20,
+          ),
+        const Divider(height: 1),
+      ],
+    );
+  }
+
+  Widget _buildChart(ThemeData theme) {
+    final data = _monthlyData!;
+    final maxY = data.fold<double>(0, (prev, m) => m.total > prev ? m.total : prev);
+    final ceilY = maxY == 0 ? 5000.0 : (maxY * 1.3);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 24, 8),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _legendDot(Colors.redAccent, 'Expenses'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: ceilY / 4,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 55,
+                      interval: ceilY / 4,
+                      getTitlesWidget: (value, meta) => Text(
+                        '₱${NumberFormat.compact().format(value)}',
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      getTitlesWidget: (value, meta) {
+                        final idx = value.toInt();
+                        if (idx < 0 || idx >= data.length)
+                          return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(data[idx].month,
+                              style: theme.textTheme.labelSmall),
+                        );
+                      },
+                    ),
+                  ),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(show: false),
+                minY: 0,
+                maxY: ceilY,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: List.generate(data.length,
+                        (i) => FlSpot(i.toDouble(), data[i].total)),
+                    isCurved: true,
+                    color: Colors.redAccent,
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                        radius: 3,
+                        color: Colors.redAccent,
+                        strokeColor: Colors.white,
+                        strokeWidth: 1.5,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: Colors.redAccent.withOpacity(0.08),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (spots) => spots.map((s) {
+                      return LineTooltipItem(
+                        'Expenses: ₱${NumberFormat('#,##0').format(s.y)}',
+                        const TextStyle(
+                          color: Colors.white,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey[700],
+                          fontSize: 12,
                         ),
-                      ),
-                    ],
+                      );
+                    }).toList(),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+
+  Widget _legendDot(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
     );
   }
 }

@@ -16,32 +16,44 @@ CREATE TABLE IF NOT EXISTS public.expenses (
 );
 
 -- Indexes
-CREATE INDEX idx_expenses_community ON public.expenses(community_id);
-CREATE INDEX idx_expenses_category ON public.expenses(community_id, category);
-CREATE INDEX idx_expenses_date ON public.expenses(community_id, expense_date DESC);
+CREATE INDEX IF NOT EXISTS idx_expenses_community ON public.expenses(community_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_category ON public.expenses(community_id, category);
+CREATE INDEX IF NOT EXISTS idx_expenses_date ON public.expenses(community_id, expense_date DESC);
 
 -- RLS
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 
 -- Staff can view all expenses in their community
-CREATE POLICY "Staff can view community expenses"
-  ON public.expenses FOR SELECT
-  USING (is_community_staff(community_id));
+DO $$ BEGIN
+  CREATE POLICY "Staff can view community expenses"
+    ON public.expenses FOR SELECT
+    USING (is_community_staff(community_id));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Staff can create expenses
-CREATE POLICY "Staff can create expenses"
-  ON public.expenses FOR INSERT
-  WITH CHECK (is_community_staff(community_id));
+DO $$ BEGIN
+  CREATE POLICY "Staff can create expenses"
+    ON public.expenses FOR INSERT
+    WITH CHECK (is_community_staff(community_id));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Staff can update expenses
-CREATE POLICY "Staff can update expenses"
-  ON public.expenses FOR UPDATE
-  USING (is_community_staff(community_id));
+DO $$ BEGIN
+  CREATE POLICY "Staff can update expenses"
+    ON public.expenses FOR UPDATE
+    USING (is_community_staff(community_id));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Staff can delete expenses
-CREATE POLICY "Staff can delete expenses"
-  ON public.expenses FOR DELETE
-  USING (is_community_staff(community_id));
+DO $$ BEGIN
+  CREATE POLICY "Staff can delete expenses"
+    ON public.expenses FOR DELETE
+    USING (is_community_staff(community_id));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Storage bucket for expense receipts
 INSERT INTO storage.buckets (id, name, public)
@@ -49,20 +61,29 @@ VALUES ('expense-receipts', 'expense-receipts', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for expense-receipts bucket
-CREATE POLICY "Staff can upload expense receipts"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'expense-receipts'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  CREATE POLICY "Staff can upload expense receipts"
+    ON storage.objects FOR INSERT
+    WITH CHECK (
+      bucket_id = 'expense-receipts'
+      AND auth.role() = 'authenticated'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE POLICY "Anyone can view expense receipts"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'expense-receipts');
+DO $$ BEGIN
+  CREATE POLICY "Anyone can view expense receipts"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'expense-receipts');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE POLICY "Staff can delete expense receipts"
-  ON storage.objects FOR DELETE
-  USING (
-    bucket_id = 'expense-receipts'
-    AND auth.role() = 'authenticated'
-  );
+DO $$ BEGIN
+  CREATE POLICY "Staff can delete expense receipts"
+    ON storage.objects FOR DELETE
+    USING (
+      bucket_id = 'expense-receipts'
+      AND auth.role() = 'authenticated'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

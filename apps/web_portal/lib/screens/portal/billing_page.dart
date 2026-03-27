@@ -26,7 +26,7 @@ class _BillingPageState extends State<BillingPage>
     super.initState();
     final appState = context.read<AppState>();
     final isStaff = appState.isStaff;
-    _tabController = TabController(length: isStaff ? 2 : 1, vsync: this);
+    _tabController = TabController(length: isStaff ? 3 : 1, vsync: this);
     if (isStaff) _loadTabBadges();
   }
 
@@ -144,6 +144,7 @@ class _BillingPageState extends State<BillingPage>
               tabs: [
                 _buildTabLabel('My Invoices', _myPendingCount),
                 _buildTabLabel('All Invoices', _allPendingCount),
+                const Tab(text: 'Income'),
               ],
             ),
           Expanded(
@@ -153,6 +154,7 @@ class _BillingPageState extends State<BillingPage>
                     children: const [
                       _InvoiceListView(showMyInvoices: true),
                       _InvoiceListView(showMyInvoices: false),
+                      _IncomeTrackerView(),
                     ],
                   )
                 : const _InvoiceListView(showMyInvoices: true),
@@ -850,15 +852,30 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  if (_unitNo != null)
-                    Text(
-                      'Unit $_unitNo',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                  Row(
+                    children: [
+                      if (_unitNo != null) ...[
+                        Text(
+                          'Unit $_unitNo',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Text(
+                        'INV-${widget.invoice.id.substring(0, 8).toUpperCase()}',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
                   Text(
                     currencyFormat.format(widget.invoice.amount),
                     style: const TextStyle(
@@ -2364,4 +2381,868 @@ class _LineItemEntry {
     required this.labelController,
     required this.amountController,
   });
+}
+
+// ============ INCOME TRACKER ============
+
+class _IncomeTrackerView extends StatefulWidget {
+  const _IncomeTrackerView();
+
+  @override
+  State<_IncomeTrackerView> createState() => _IncomeTrackerViewState();
+}
+
+class _IncomeTrackerViewState extends State<_IncomeTrackerView> {
+  bool _loading = true;
+  double _verifiedTotal = 0;
+  double _manualTotal = 0;
+  List<Payment> _verifiedPayments = [];
+  List<ManualIncome> _manualEntries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final appState = context.read<AppState>();
+    final communityId = appState.activeCommunityId;
+    if (communityId == null) return;
+
+    final repo = context.read<IncomeRepository>();
+
+    // Load verified payments (from existing payments table)
+    try {
+      final vPayments = await repo.getVerifiedPayments(communityId);
+      final vTotal = await repo.getTotalVerifiedIncome(communityId);
+      if (mounted) {
+        setState(() {
+          _verifiedPayments = vPayments;
+          _verifiedTotal = vTotal;
+        });
+      }
+    } catch (_) {}
+
+    // Load manual income (table may not be deployed yet)
+    try {
+      final mEntries = await repo.getManualIncome(communityId);
+      final mTotal = await repo.getTotalManualIncome(communityId);
+      if (mounted) {
+        setState(() {
+          _manualEntries = mEntries;
+          _manualTotal = mTotal;
+        });
+      }
+    } catch (_) {}
+
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final grandTotal = _verifiedTotal + _manualTotal;
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() => _loading = true);
+        await _loadData();
+      },
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Summary cards
+          _IncomeSummaryCards(
+            grandTotal: grandTotal,
+            verifiedTotal: _verifiedTotal,
+            manualTotal: _manualTotal,
+            currencyFormat: currencyFormat,
+          ),
+          const SizedBox(height: 20),
+
+          // Manual Income section
+          Row(
+            children: [
+              Icon(Icons.edit_note, size: 20, color: Colors.grey[600]),
+              const SizedBox(width: 8),
+              Text(
+                'Manual Income Entries',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => _showAddManualIncomeDialog(context),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add Income'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_manualEntries.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.account_balance_wallet_outlined,
+                        size: 48, color: Colors.grey[300]),
+                    const SizedBox(height: 8),
+                    Text('No manual income entries yet',
+                        style: TextStyle(color: Colors.grey[500])),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...(_manualEntries.map((entry) => _ManualIncomeCard(
+                  entry: entry,
+                  currencyFormat: currencyFormat,
+                  onDeleted: _loadData,
+                ))),
+
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 12),
+
+          // Verified Payments section
+          Row(
+            children: [
+              Icon(Icons.verified_outlined, size: 20, color: Colors.grey[600]),
+              const SizedBox(width: 8),
+              Text(
+                'Invoice Income (Verified Payments)',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_verifiedPayments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.payments_outlined,
+                        size: 48, color: Colors.grey[300]),
+                    const SizedBox(height: 8),
+                    Text('No verified payments yet',
+                        style: TextStyle(color: Colors.grey[500])),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...(_verifiedPayments.map((payment) => _VerifiedPaymentCard(
+                  payment: payment,
+                  currencyFormat: currencyFormat,
+                ))),
+        ],
+      ),
+    );
+  }
+
+  void _showAddManualIncomeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _AddManualIncomeDialog(
+        onCreated: _loadData,
+      ),
+    );
+  }
+}
+
+class _IncomeSummaryCards extends StatelessWidget {
+  final double grandTotal;
+  final double verifiedTotal;
+  final double manualTotal;
+  final NumberFormat currencyFormat;
+
+  const _IncomeSummaryCards({
+    required this.grandTotal,
+    required this.verifiedTotal,
+    required this.manualTotal,
+    required this.currencyFormat,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SummaryCard(
+            label: 'Total Income',
+            amount: currencyFormat.format(grandTotal),
+            icon: Icons.trending_up,
+            color: const Color(0xff215e3f),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _SummaryCard(
+            label: 'From Invoices',
+            amount: currencyFormat.format(verifiedTotal),
+            icon: Icons.receipt_long,
+            color: Colors.blue.shade700,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _SummaryCard(
+            label: 'Manual Entries',
+            amount: currencyFormat.format(manualTotal),
+            icon: Icons.edit_note,
+            color: Colors.orange.shade700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  final String label;
+  final String amount;
+  final IconData icon;
+  final Color color;
+
+  const _SummaryCard({
+    required this.label,
+    required this.amount,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              amount,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ManualIncomeCard extends StatelessWidget {
+  final ManualIncome entry;
+  final NumberFormat currencyFormat;
+  final VoidCallback onDeleted;
+
+  const _ManualIncomeCard({
+    required this.entry,
+    required this.currencyFormat,
+    required this.onDeleted,
+  });
+
+  String _getCategoryLabel(IncomeCategory cat) {
+    switch (cat) {
+      case IncomeCategory.dues:
+        return 'DUES';
+      case IncomeCategory.water:
+        return 'WATER';
+      case IncomeCategory.amenity:
+        return 'AMENITY';
+      case IncomeCategory.insurance:
+        return 'INSURANCE';
+      case IncomeCategory.rental:
+        return 'RENTAL';
+      case IncomeCategory.fee:
+        return 'FEE';
+      case IncomeCategory.donation:
+        return 'DONATION';
+      case IncomeCategory.other:
+        return 'OTHER';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('MMM dd, yyyy');
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.account_balance_wallet,
+                  size: 20, color: Colors.orange.shade700),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          entry.description,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          _getCategoryLabel(entry.category),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        dateFormat.format(entry.incomeDate),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                      if (entry.source != null) ...[
+                        Text(' • ',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[400])),
+                        Text(
+                          entry.source!,
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  currencyFormat.format(entry.amount),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xff215e3f),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: () => _confirmDelete(context),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(Icons.delete_outline,
+                        size: 16, color: Colors.red[300]),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Income Entry'),
+        content: const Text(
+            'Are you sure you want to delete this income entry? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final repo = context.read<IncomeRepository>();
+        await repo.deleteManualIncome(entry.id);
+        onDeleted();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Income entry deleted'),
+              backgroundColor: Color(0xff215e3f),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+}
+
+class _VerifiedPaymentCard extends StatelessWidget {
+  final Payment payment;
+  final NumberFormat currencyFormat;
+
+  const _VerifiedPaymentCard({
+    required this.payment,
+    required this.currencyFormat,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('MMM dd, yyyy');
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xff215e3f).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.verified,
+                  size: 20, color: Color(0xff215e3f)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'INV-${payment.invoiceId.substring(0, 8).toUpperCase()}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xff215e3f).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          payment.method.replaceAll('_', ' ').toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xff215e3f),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        payment.verifiedAt != null
+                            ? 'Verified ${dateFormat.format(payment.verifiedAt!)}'
+                            : 'Posted ${dateFormat.format(payment.postedAt)}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              currencyFormat.format(payment.amount),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xff215e3f),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============ ADD MANUAL INCOME DIALOG ============
+
+class _AddManualIncomeDialog extends StatefulWidget {
+  final VoidCallback onCreated;
+
+  const _AddManualIncomeDialog({required this.onCreated});
+
+  @override
+  State<_AddManualIncomeDialog> createState() => _AddManualIncomeDialogState();
+}
+
+class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _descriptionController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _sourceController = TextEditingController();
+  final _notesController = TextEditingController();
+
+  IncomeCategory _selectedCategory = IncomeCategory.other;
+  DateTime _incomeDate = DateTime.now();
+  bool _isCreating = false;
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _amountController.dispose();
+    _sourceController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      titlePadding: EdgeInsets.zero,
+      title: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xff215e3f),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+        child: Row(
+          children: [
+            const Icon(Icons.add_card, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Add Manual Income',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      )),
+                  SizedBox(height: 2),
+                  Text('Record income not tied to an invoice',
+                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+      ),
+      content: SizedBox(
+        width: 480,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'e.g., Clubhouse rental fee',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+                Text('Category',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                    )),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: IncomeCategory.values.map((category) {
+                    final isSelected = _selectedCategory == category;
+                    IconData icon;
+                    String label;
+                    switch (category) {
+                      case IncomeCategory.dues:
+                        icon = Icons.home_outlined;
+                        label = 'Dues';
+                        break;
+                      case IncomeCategory.water:
+                        icon = Icons.water_drop_outlined;
+                        label = 'Water';
+                        break;
+                      case IncomeCategory.amenity:
+                        icon = Icons.pool_outlined;
+                        label = 'Amenity';
+                        break;
+                      case IncomeCategory.insurance:
+                        icon = Icons.shield_outlined;
+                        label = 'Insurance';
+                        break;
+                      case IncomeCategory.rental:
+                        icon = Icons.house_outlined;
+                        label = 'Rental';
+                        break;
+                      case IncomeCategory.fee:
+                        icon = Icons.monetization_on_outlined;
+                        label = 'Fee';
+                        break;
+                      case IncomeCategory.donation:
+                        icon = Icons.volunteer_activism_outlined;
+                        label = 'Donation';
+                        break;
+                      case IncomeCategory.other:
+                        icon = Icons.more_horiz;
+                        label = 'Other';
+                        break;
+                    }
+                    return InkWell(
+                      onTap: () => setState(() => _selectedCategory = category),
+                      borderRadius: BorderRadius.circular(10),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xff215e3f).withOpacity(0.1)
+                              : Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xff215e3f)
+                                : Colors.grey.shade200,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(icon,
+                                size: 16,
+                                color: isSelected
+                                    ? const Color(0xff215e3f)
+                                    : Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? const Color(0xff215e3f)
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _amountController,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount',
+                    prefixText: '₱ ',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) return 'Required';
+                    final amount = double.tryParse(value!);
+                    if (amount == null || amount <= 0) {
+                      return 'Enter a valid amount';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: _incomeDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) setState(() => _incomeDate = date);
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Income Date',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today, size: 18),
+                    ),
+                    child: Text(
+                      DateFormat('MMM dd, yyyy').format(_incomeDate),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _sourceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Source (Optional)',
+                    hintText: 'e.g., Unit 5A, External vendor',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (Optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        HOAppButton(
+          label: _isCreating ? 'Adding...' : 'Add Income',
+          onPressed: _isCreating ? null : _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isCreating = true);
+
+    try {
+      final appState = context.read<AppState>();
+      final repo = context.read<IncomeRepository>();
+
+      await repo.createManualIncome(
+        communityId: appState.activeCommunityId!,
+        category: _selectedCategory,
+        description: _descriptionController.text.trim(),
+        amount: double.parse(_amountController.text),
+        incomeDate: _incomeDate,
+        source: _sourceController.text.trim().isNotEmpty
+            ? _sourceController.text.trim()
+            : null,
+        notes: _notesController.text.trim().isNotEmpty
+            ? _notesController.text.trim()
+            : null,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Income entry added successfully'),
+            backgroundColor: Color(0xff215e3f),
+          ),
+        );
+        widget.onCreated();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCreating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 }

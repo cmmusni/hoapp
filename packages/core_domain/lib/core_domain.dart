@@ -14,6 +14,7 @@ export 'src/models/invoice.dart';
 export 'src/models/invoice_line_item.dart';
 export 'src/models/payment.dart';
 export 'src/models/expense.dart';
+export 'src/models/manual_income.dart';
 export 'src/models/pool_access.dart';
 export 'src/models/pool_swimmer.dart';
 export 'src/models/household_member.dart';

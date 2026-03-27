@@ -50,7 +50,20 @@ class AuthRepository {
     );
   }
 
-  Future<void> changePassword(String newPassword) async {
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    final email = currentUser?.email;
+    if (email == null) throw Exception('No authenticated user');
+
+    // Verify old password by re-authenticating
+    await _client.auth.signInWithPassword(
+      email: email,
+      password: oldPassword,
+    );
+
+    // Old password is correct – update to new password
     await _client.auth.updateUser(
       UserAttributes(password: newPassword),
     );

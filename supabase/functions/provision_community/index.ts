@@ -206,9 +206,11 @@ async function provisionCommunity(
     .from('audit_logs')
     .insert({
       community_id: community.id,
-      actor_id: processedBy,
+      actor_user_id: processedBy,
       action: 'provision_community',
-      details: {
+      entity: 'community',
+      entity_id: community.id,
+      meta: {
         beta_request_id: requestId,
         user_email: betaRequest.email,
         community_name: communityName,

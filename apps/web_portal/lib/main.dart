@@ -35,6 +35,7 @@ void main() async {
         Provider(create: (_) => AmenityRepository()),
         Provider(create: (_) => BillingRepository()),
         Provider(create: (_) => ExpenseRepository()),
+        Provider(create: (_) => IncomeRepository()),
         Provider(create: (_) => PoolAccessRepository()),
         Provider(create: (_) => HouseholdRepository()),
       ],

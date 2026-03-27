@@ -99,7 +99,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _showSubmitDialog(context),
-                      icon: const Icon(Icons.add, size: 18),
+                      icon: const Icon(Icons.add, size: 18, color: Colors.white),
                       label: const Text('Submit Feedback'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _brand,
@@ -133,11 +133,13 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     const SizedBox(width: 8),
                     // Category filter
                     Container(
+                      height: 34,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(20),
                       ),
+                      alignment: Alignment.center,
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _filterCategory,
