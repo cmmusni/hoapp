@@ -1597,8 +1597,10 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
       final registrations = await poolRepo.getRegistrations(communityId);
 
       // Filter out units that already have a registration
-      final registeredUnitIds =
-          registrations.where((r) => r.unitId != null).map((r) => r.unitId).toSet();
+      final registeredUnitIds = registrations
+          .where((r) => r.unitId != null)
+          .map((r) => r.unitId)
+          .toSet();
 
       if (mounted) {
         setState(() {
@@ -1716,8 +1718,8 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'Swimmers registered for Unit ${_selectedUnit!.unitNo}'),
+            content:
+                Text('Swimmers registered for Unit ${_selectedUnit!.unitNo}'),
           ),
         );
         widget.onRegistered();
@@ -2052,7 +2054,9 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                 ),
               ),
             // Actions
-            if (!_isLoadingUnits && _loadError == null && _availableUnits.isNotEmpty)
+            if (!_isLoadingUnits &&
+                _loadError == null &&
+                _availableUnits.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: SizedBox(

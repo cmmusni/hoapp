@@ -32,13 +32,15 @@ class _PortalShellState extends State<PortalShell> {
   int _pendingViolations = 0;
   int _openFeedback = 0;
   int _pendingBookings = 0;
+  int _newAnnouncements = 0;
 
   int get _totalNotifications =>
       _pendingPayments +
       _openTickets +
       _pendingViolations +
       _openFeedback +
-      _pendingBookings;
+      _pendingBookings +
+      _newAnnouncements;
 
   @override
   void initState() {
@@ -117,10 +119,29 @@ class _PortalShellState extends State<PortalShell> {
   Future<void> _loadBadgeCounts() async {
     final appState = context.read<AppState>();
     final communityId = appState.activeCommunityId;
-    if (communityId == null || !appState.isStaff) return;
+    if (communityId == null) return;
 
     final client = Supabase.instance.client;
+    final sevenDaysAgo =
+        DateTime.now().subtract(const Duration(days: 7)).toIso8601String();
+
     try {
+      // Announcements badge applies to all users
+      final announcementResult = await client
+          .from('announcements')
+          .select('id')
+          .eq('community_id', communityId)
+          .gte('publish_at', sevenDaysAgo)
+          .lte('publish_at', DateTime.now().toIso8601String())
+          .count(CountOption.exact);
+
+      if (mounted) {
+        setState(() => _newAnnouncements = announcementResult.count);
+      }
+
+      // Staff-only badges
+      if (!appState.isStaff) return;
+
       final results = await Future.wait([
         client
             .from('payments')
@@ -706,7 +727,8 @@ class _PortalShellState extends State<PortalShell> {
                         'Announcements',
                         Icons.announcement_outlined,
                         '/announcements',
-                        currentPath),
+                        currentPath,
+                        badge: _newAnnouncements),
                     _buildSidebarItem(context, 'Violations',
                         Icons.report_outlined, '/violations', currentPath,
                         badge: _pendingViolations),
@@ -959,7 +981,8 @@ class _PortalShellState extends State<PortalShell> {
               ),
             const Divider(height: 1),
             _buildMenuItem(context, 'Announcements', Icons.announcement,
-                '/${widget.communitySlug}/announcements', currentPath),
+                '/${widget.communitySlug}/announcements', currentPath,
+                badge: _newAnnouncements),
             _buildMenuItem(context, 'Violations', Icons.report,
                 '/${widget.communitySlug}/violations', currentPath,
                 badge: _pendingViolations),

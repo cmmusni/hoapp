@@ -393,7 +393,8 @@ GoRouter createRouter({String? lastCommunitySlug}) {
               }
               return null;
             },
-            builder: (context, state) => NotificationsPage(key: ValueKey(state.uri.toString())),
+            builder: (context, state) =>
+                NotificationsPage(key: ValueKey(state.uri.toString())),
           ),
           GoRoute(
             path: '/:community/qr-scanner',

@@ -103,6 +103,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
             .eq('status', 'pending')
             .order('created_at', ascending: false)
             .limit(50),
+        client
+            .from('announcements')
+            .select('id, title, created_at, publish_at')
+            .eq('community_id', communityId)
+            .gte('publish_at',
+                DateTime.now().subtract(const Duration(days: 7)).toIso8601String())
+            .lte('publish_at', DateTime.now().toIso8601String())
+            .order('publish_at', ascending: false)
+            .limit(50),
       ]);
 
       // Payments
@@ -189,6 +198,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
         ));
       }
 
+      // Announcements
+      for (final row in results[5] as List) {
+        items.add(_NotificationItem(
+          id: row['id'].toString(),
+          type: 'announcement',
+          title: 'New Announcement',
+          subtitle: row['title'] ?? 'No title',
+          status: 'new',
+          createdAt:
+              DateTime.tryParse(row['publish_at'] ?? row['created_at'] ?? '') ??
+                  DateTime.now(),
+          route: '/$slug/announcements',
+          icon: Icons.announcement,
+          color: Colors.green,
+        ));
+      }
+
       // Sort by most recent first
       items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -221,6 +247,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         return 'Feedback';
       case 'booking':
         return 'Bookings';
+      case 'announcement':
+        return 'Announcements';
       default:
         return type;
     }
@@ -244,7 +272,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
       'ticket',
       'violation',
       'feedback',
-      'booking'
+      'booking',
+      'announcement'
     ];
     final filtered = _filtered;
 
