@@ -33,6 +33,9 @@ class _PortalShellState extends State<PortalShell> {
   int _openFeedback = 0;
   int _pendingBookings = 0;
 
+  int get _totalNotifications =>
+      _pendingPayments + _openTickets + _pendingViolations + _openFeedback + _pendingBookings;
+
   @override
   void initState() {
     super.initState();
@@ -220,6 +223,8 @@ class _PortalShellState extends State<PortalShell> {
       pageTitle = 'QR Pass Scanner';
     } else if (currentPath.contains('/feedback')) {
       pageTitle = 'Feedback';
+    } else if (currentPath.contains('/notifications')) {
+      pageTitle = 'Notifications';
     } else {
       communityName = null; // Don't show community name twice on home
     }
@@ -372,6 +377,10 @@ class _PortalShellState extends State<PortalShell> {
           }
         } else if (value == 'replay_tour') {
           _replayTour();
+        } else if (value == 'notifications') {
+          if (context.mounted) {
+            context.go('/${widget.communitySlug}/notifications');
+          }
         } else if (value == 'platform_admin') {
           if (context.mounted) context.go('/admin');
         } else if (value == 'signout') {
@@ -446,6 +455,33 @@ class _PortalShellState extends State<PortalShell> {
               Icon(Icons.lock_outline, size: 18, color: Colors.blueGrey),
               SizedBox(width: 8),
               Text('Change Password'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'notifications',
+          child: Row(
+            children: [
+              const Icon(Icons.notifications_outlined, size: 18, color: Colors.blueGrey),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('Notifications')),
+              if (_totalNotifications > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    _totalNotifications > 99 ? '99+' : '$_totalNotifications',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -655,17 +691,21 @@ class _PortalShellState extends State<PortalShell> {
                         '/announcements',
                         currentPath),
                     _buildSidebarItem(context, 'Violations',
-                        Icons.report_outlined, '/violations', currentPath, badge: _pendingViolations),
+                        Icons.report_outlined, '/violations', currentPath,
+                        badge: _pendingViolations),
                     _buildSidebarItem(context, 'Tickets',
-                        Icons.support_outlined, '/tickets', currentPath, badge: _openTickets),
+                        Icons.support_outlined, '/tickets', currentPath,
+                        badge: _openTickets),
                     if (!isGuard &&
                         !isMaintenance &&
                         (hasUnit || isStaff) &&
                         isPro) ...[
                       _buildSidebarItem(context, 'Amenities',
-                          Icons.pool_outlined, '/amenities', currentPath, badge: _pendingBookings),
+                          Icons.pool_outlined, '/amenities', currentPath,
+                          badge: _pendingBookings),
                       _buildSidebarItem(context, 'Billing & Payments',
-                          Icons.payment_outlined, '/billing', currentPath, badge: _pendingPayments),
+                          Icons.payment_outlined, '/billing', currentPath,
+                          badge: _pendingPayments),
                     ],
                     if (isPro && (hasUnit || isStaff)) ...[
                       ...(!isGuard && !isMaintenance
@@ -696,7 +736,8 @@ class _PortalShellState extends State<PortalShell> {
                       _buildSidebarItem(context, 'QR Pass Scanner',
                           Icons.qr_code_scanner, '/qr-scanner', currentPath),
                     _buildSidebarItem(context, 'Feedback',
-                        Icons.feedback_outlined, '/feedback', currentPath, badge: _openFeedback),
+                        Icons.feedback_outlined, '/feedback', currentPath,
+                        badge: _openFeedback),
                     if (isStaff) ...[
                       const Padding(
                         padding:
@@ -732,7 +773,8 @@ class _PortalShellState extends State<PortalShell> {
   }
 
   Widget _buildSidebarItem(BuildContext context, String title, IconData icon,
-      String pathSuffix, String currentPath, {int badge = 0}) {
+      String pathSuffix, String currentPath,
+      {int badge = 0}) {
     final isActive = currentPath.contains(pathSuffix);
 
     return Padding(
@@ -764,7 +806,8 @@ class _PortalShellState extends State<PortalShell> {
                 ),
                 if (badge > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.redAccent,
                       borderRadius: BorderRadius.circular(10),
@@ -895,14 +938,18 @@ class _PortalShellState extends State<PortalShell> {
             _buildMenuItem(context, 'Announcements', Icons.announcement,
                 '/${widget.communitySlug}/announcements', currentPath),
             _buildMenuItem(context, 'Violations', Icons.report,
-                '/${widget.communitySlug}/violations', currentPath, badge: _pendingViolations),
+                '/${widget.communitySlug}/violations', currentPath,
+                badge: _pendingViolations),
             _buildMenuItem(context, 'Tickets', Icons.support,
-                '/${widget.communitySlug}/tickets', currentPath, badge: _openTickets),
+                '/${widget.communitySlug}/tickets', currentPath,
+                badge: _openTickets),
             if (!isGuard && !isMaintenance && isPro && hasUnit) ...[
               _buildMenuItem(context, 'Amenities', Icons.pool,
-                  '/${widget.communitySlug}/amenities', currentPath, badge: _pendingBookings),
+                  '/${widget.communitySlug}/amenities', currentPath,
+                  badge: _pendingBookings),
               _buildMenuItem(context, 'Billing & Payments', Icons.payment,
-                  '/${widget.communitySlug}/billing', currentPath, badge: _pendingPayments),
+                  '/${widget.communitySlug}/billing', currentPath,
+                  badge: _pendingPayments),
             ],
             if (isPro && hasUnit) ...[
               if (!isGuard && !isMaintenance)
@@ -923,7 +970,8 @@ class _PortalShellState extends State<PortalShell> {
               _buildMenuItem(context, 'QR Pass Scanner', Icons.qr_code_scanner,
                   '/${widget.communitySlug}/qr-scanner', currentPath),
             _buildMenuItem(context, 'Feedback', Icons.feedback,
-                '/${widget.communitySlug}/feedback', currentPath, badge: _openFeedback),
+                '/${widget.communitySlug}/feedback', currentPath,
+                badge: _openFeedback),
             if (isStaff) ...[
               const Divider(),
               _buildMenuItem(context, 'Households', Icons.family_restroom,
@@ -943,7 +991,8 @@ class _PortalShellState extends State<PortalShell> {
   }
 
   Widget _buildMenuItem(BuildContext context, String title, IconData icon,
-      String route, String currentPath, {int badge = 0}) {
+      String route, String currentPath,
+      {int badge = 0}) {
     final routeSegment = route.split('/').last;
     final pathSegments = currentPath.split('/');
     final isActive = pathSegments.contains(routeSegment);

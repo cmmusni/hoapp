@@ -23,6 +23,7 @@ import 'screens/portal/qr_scanner_page.dart';
 import 'screens/portal/platform_admin_shell.dart';
 import 'screens/portal/plan_gate.dart';
 import 'screens/portal/feedback_page.dart';
+import 'screens/portal/notifications_page.dart';
 import 'screens/features_page.dart';
 import 'screens/pricing_page.dart';
 import 'screens/support_page.dart';
@@ -364,6 +365,18 @@ GoRouter createRouter({String? lastCommunitySlug}) {
               return null;
             },
             builder: (context, state) => const FeedbackPage(),
+          ),
+          GoRoute(
+            path: '/:community/notifications',
+            redirect: (context, state) {
+              final session = Supabase.instance.client.auth.currentSession;
+              if (session == null) {
+                final community = state.pathParameters['community']!;
+                return '/$community/login';
+              }
+              return null;
+            },
+            builder: (context, state) => const NotificationsPage(),
           ),
           GoRoute(
             path: '/:community/qr-scanner',
