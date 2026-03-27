@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'beta_requests_page.dart';
 
 const _brand = Color(0xff215e3f);
@@ -18,6 +19,7 @@ class PlatformAdminShell extends StatefulWidget {
 class _PlatformAdminShellState extends State<PlatformAdminShell> {
   bool _loading = true;
   bool _isAllowed = false;
+  int _pendingBetaRequests = 0;
 
   @override
   void initState() {
@@ -33,7 +35,24 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
         _isAllowed = allowed;
         _loading = false;
       });
+      if (allowed) _loadBadgeCount();
     }
+  }
+
+  Future<void> _loadBadgeCount() async {
+    try {
+      final sb = Supabase.instance.client;
+      final res = await sb
+          .from('beta_access_requests')
+          .select('id')
+          .eq('status', 'pending')
+          .count(CountOption.exact);
+      if (mounted) {
+        setState(() {
+          _pendingBetaRequests = res.count ?? 0;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -141,6 +160,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
             icon: Icons.science_outlined,
             label: 'Beta Requests',
             selected: true,
+            badge: _pendingBetaRequests,
           ),
           const Spacer(),
           Padding(
@@ -189,6 +209,26 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
             leading: const Icon(Icons.science_outlined, color: _brand),
             title: const Text('Beta Requests',
                 style: TextStyle(fontWeight: FontWeight.w600)),
+            trailing: _pendingBetaRequests > 0
+                ? Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      _pendingBetaRequests > 99
+                          ? '99+'
+                          : '$_pendingBetaRequests',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                : null,
             tileColor: _brand.withOpacity(0.08),
             onTap: () => Navigator.pop(context),
           ),
@@ -208,6 +248,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
     required IconData icon,
     required String label,
     bool selected = false,
+    int badge = 0,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -228,6 +269,23 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
             fontSize: 14,
           ),
         ),
+        trailing: badge > 0
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  badge > 99 ? '99+' : '$badge',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+            : null,
       ),
     );
   }

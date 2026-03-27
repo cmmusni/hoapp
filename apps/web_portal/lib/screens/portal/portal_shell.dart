@@ -26,6 +26,13 @@ class _PortalShellState extends State<PortalShell> {
   bool _showTour = false;
   bool _hasUnit = false;
 
+  // Badge notification counts (staff)
+  int _pendingPayments = 0;
+  int _openTickets = 0;
+  int _pendingViolations = 0;
+  int _openFeedback = 0;
+  int _pendingBookings = 0;
+
   @override
   void initState() {
     super.initState();
@@ -86,7 +93,62 @@ class _PortalShellState extends State<PortalShell> {
       if (mounted) {
         setState(() => _isCommunityLoaded = true);
         _checkTour();
+        _loadBadgeCounts();
       }
+    }
+  }
+
+  Future<void> _loadBadgeCounts() async {
+    final appState = context.read<AppState>();
+    final communityId = appState.activeCommunityId;
+    if (communityId == null || !appState.isStaff) return;
+
+    final client = Supabase.instance.client;
+    try {
+      final results = await Future.wait([
+        client
+            .from('payments')
+            .select('id')
+            .eq('community_id', communityId)
+            .eq('status', 'submitted')
+            .count(CountOption.exact),
+        client
+            .from('tickets')
+            .select('id')
+            .eq('community_id', communityId)
+            .eq('status', 'open')
+            .count(CountOption.exact),
+        client
+            .from('violations')
+            .select('id')
+            .eq('community_id', communityId)
+            .neq('status', 'resolved')
+            .count(CountOption.exact),
+        client
+            .from('feedback')
+            .select('id')
+            .eq('community_id', communityId)
+            .eq('status', 'open')
+            .count(CountOption.exact),
+        client
+            .from('amenity_bookings')
+            .select('id')
+            .eq('community_id', communityId)
+            .eq('status', 'pending')
+            .count(CountOption.exact),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _pendingPayments = results[0].count;
+          _openTickets = results[1].count;
+          _pendingViolations = results[2].count;
+          _openFeedback = results[3].count;
+          _pendingBookings = results[4].count;
+        });
+      }
+    } catch (e) {
+      print('Error loading badge counts: $e');
     }
   }
 
@@ -593,17 +655,17 @@ class _PortalShellState extends State<PortalShell> {
                         '/announcements',
                         currentPath),
                     _buildSidebarItem(context, 'Violations',
-                        Icons.report_outlined, '/violations', currentPath),
+                        Icons.report_outlined, '/violations', currentPath, badge: _pendingViolations),
                     _buildSidebarItem(context, 'Tickets',
-                        Icons.support_outlined, '/tickets', currentPath),
+                        Icons.support_outlined, '/tickets', currentPath, badge: _openTickets),
                     if (!isGuard &&
                         !isMaintenance &&
                         (hasUnit || isStaff) &&
                         isPro) ...[
                       _buildSidebarItem(context, 'Amenities',
-                          Icons.pool_outlined, '/amenities', currentPath),
+                          Icons.pool_outlined, '/amenities', currentPath, badge: _pendingBookings),
                       _buildSidebarItem(context, 'Billing & Payments',
-                          Icons.payment_outlined, '/billing', currentPath),
+                          Icons.payment_outlined, '/billing', currentPath, badge: _pendingPayments),
                     ],
                     if (isPro && (hasUnit || isStaff)) ...[
                       ...(!isGuard && !isMaintenance
@@ -634,7 +696,7 @@ class _PortalShellState extends State<PortalShell> {
                       _buildSidebarItem(context, 'QR Pass Scanner',
                           Icons.qr_code_scanner, '/qr-scanner', currentPath),
                     _buildSidebarItem(context, 'Feedback',
-                        Icons.feedback_outlined, '/feedback', currentPath),
+                        Icons.feedback_outlined, '/feedback', currentPath, badge: _openFeedback),
                     if (isStaff) ...[
                       const Padding(
                         padding:
@@ -670,7 +732,7 @@ class _PortalShellState extends State<PortalShell> {
   }
 
   Widget _buildSidebarItem(BuildContext context, String title, IconData icon,
-      String pathSuffix, String currentPath) {
+      String pathSuffix, String currentPath, {int badge = 0}) {
     final isActive = currentPath.contains(pathSuffix);
 
     return Padding(
@@ -700,6 +762,22 @@ class _PortalShellState extends State<PortalShell> {
                     ),
                   ),
                 ),
+                if (badge > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      badge > 99 ? '99+' : '$badge',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -817,14 +895,14 @@ class _PortalShellState extends State<PortalShell> {
             _buildMenuItem(context, 'Announcements', Icons.announcement,
                 '/${widget.communitySlug}/announcements', currentPath),
             _buildMenuItem(context, 'Violations', Icons.report,
-                '/${widget.communitySlug}/violations', currentPath),
+                '/${widget.communitySlug}/violations', currentPath, badge: _pendingViolations),
             _buildMenuItem(context, 'Tickets', Icons.support,
-                '/${widget.communitySlug}/tickets', currentPath),
+                '/${widget.communitySlug}/tickets', currentPath, badge: _openTickets),
             if (!isGuard && !isMaintenance && isPro && hasUnit) ...[
               _buildMenuItem(context, 'Amenities', Icons.pool,
-                  '/${widget.communitySlug}/amenities', currentPath),
+                  '/${widget.communitySlug}/amenities', currentPath, badge: _pendingBookings),
               _buildMenuItem(context, 'Billing & Payments', Icons.payment,
-                  '/${widget.communitySlug}/billing', currentPath),
+                  '/${widget.communitySlug}/billing', currentPath, badge: _pendingPayments),
             ],
             if (isPro && hasUnit) ...[
               if (!isGuard && !isMaintenance)
@@ -845,7 +923,7 @@ class _PortalShellState extends State<PortalShell> {
               _buildMenuItem(context, 'QR Pass Scanner', Icons.qr_code_scanner,
                   '/${widget.communitySlug}/qr-scanner', currentPath),
             _buildMenuItem(context, 'Feedback', Icons.feedback,
-                '/${widget.communitySlug}/feedback', currentPath),
+                '/${widget.communitySlug}/feedback', currentPath, badge: _openFeedback),
             if (isStaff) ...[
               const Divider(),
               _buildMenuItem(context, 'Households', Icons.family_restroom,
@@ -865,7 +943,7 @@ class _PortalShellState extends State<PortalShell> {
   }
 
   Widget _buildMenuItem(BuildContext context, String title, IconData icon,
-      String route, String currentPath) {
+      String route, String currentPath, {int badge = 0}) {
     final routeSegment = route.split('/').last;
     final pathSegments = currentPath.split('/');
     final isActive = pathSegments.contains(routeSegment);
@@ -878,6 +956,23 @@ class _PortalShellState extends State<PortalShell> {
           color: isActive ? const Color(0xff215e3f) : null,
         ),
       ),
+      trailing: badge > 0
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.redAccent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                badge > 99 ? '99+' : '$badge',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : null,
       tileColor:
           isActive ? const Color(0xff215e3f).withOpacity(0.08) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
