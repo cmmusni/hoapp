@@ -192,11 +192,11 @@ class _ContactPageState extends State<ContactPage> {
                   color: Colors.white)),
           const SizedBox(height: 20),
           _contactItem(Icons.email_outlined, 'Email', 'support@hoapp.net'),
-          _contactItem(Icons.phone_outlined, 'Phone', '+63 910 928 2227'),
+          _contactItem(Icons.phone_outlined, 'Phone', '(02) 8521 5928'),
           _contactItem(Icons.location_on_outlined, 'Office',
-              'Elevé Homes, Caloocan City, Philippines'),
+              'Unit 407, Elevé Homes, Camarin, Brgy. 172, Caloocan City, Philippines'),
           _contactItem(
-              Icons.access_time_outlined, 'Hours', 'Mon–Fri, 9 AM – 6 PM'),
+              Icons.access_time_outlined, 'Hours', 'Mon–Fri, 10 AM – 7 PM'),
         ],
       ),
     );

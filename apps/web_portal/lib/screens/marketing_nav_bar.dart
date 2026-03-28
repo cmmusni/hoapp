@@ -570,45 +570,14 @@ class MarketingFooter extends StatelessWidget {
               horizontal: isMobile ? 20 : 40,
               vertical: 16,
             ),
-            child: isMobile
-                ? Column(
-                    children: [
-                      Text(
-                        '\u00a9 $year HOApp. All rights reserved.',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Developed by Clifford Mark Musni',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.4),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '\u00a9 $year HOApp. All rights reserved.',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        'Developed by Clifford Mark Musni',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.4),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
+            child: Text(
+              '\u00a9 $year HOApp. All rights reserved.',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),

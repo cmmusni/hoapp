@@ -82,7 +82,8 @@ class PricingPage extends StatelessWidget {
                                   const SizedBox(height: 24),
                                   _PricingCard(
                                     title: 'Professional',
-                                    price: '₱2,499',
+                                    price: '₱2,999',
+                                    originalPrice: '₱3,999',
                                     period: '/month',
                                     description:
                                         'For growing communities that need more.',
@@ -146,7 +147,8 @@ class PricingPage extends StatelessWidget {
                                   Expanded(
                                     child: _PricingCard(
                                       title: 'Professional',
-                                      price: '₱2,499',
+                                      price: '₱2,999',
+                                      originalPrice: '₱3,999',
                                       period: '/month',
                                       description:
                                           'For growing communities that need more.',
@@ -335,6 +337,7 @@ class PricingPage extends StatelessWidget {
 class _PricingCard extends StatelessWidget {
   final String title;
   final String price;
+  final String? originalPrice;
   final String period;
   final String description;
   final List<String> features;
@@ -345,6 +348,7 @@ class _PricingCard extends StatelessWidget {
   const _PricingCard({
     required this.title,
     required this.price,
+    this.originalPrice,
     required this.period,
     required this.description,
     required this.features,
@@ -401,6 +405,19 @@ class _PricingCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              if (originalPrice != null) ...[
+                Text(
+                  originalPrice!,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: highlighted ? Colors.white54 : const Color(0xFF9CA3AF),
+                    decoration: TextDecoration.lineThrough,
+                    decorationColor: highlighted ? Colors.white54 : const Color(0xFF9CA3AF),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
               Text(
                 price,
                 style: TextStyle(

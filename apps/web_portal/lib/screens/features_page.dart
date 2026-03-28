@@ -99,6 +99,13 @@ class FeaturesPage extends StatelessWidget {
                               isMobile: isMobile,
                             ),
                             _FeatureTile(
+                              icon: Icons.feedback_outlined,
+                              title: 'Feedback',
+                              description:
+                                  'Collect and manage resident feedback. Track open and resolved submissions to continuously improve community services.',
+                              isMobile: isMobile,
+                            ),
+                            _FeatureTile(
                               icon: Icons.event_seat_outlined,
                               title: 'Amenity Reservations',
                               description:
@@ -120,6 +127,34 @@ class FeaturesPage extends StatelessWidget {
                               isMobile: isMobile,
                             ),
                             _FeatureTile(
+                              icon: Icons.qr_code_scanner_outlined,
+                              title: 'QR Pass Scanner',
+                              description:
+                                  'Guards and staff can scan QR-coded passes at gates and entry points for instant validation and automated entry logging.',
+                              isMobile: isMobile,
+                            ),
+                            _FeatureTile(
+                              icon: Icons.account_balance_wallet_outlined,
+                              title: 'Expense Tracker',
+                              description:
+                                  'Track community expenses by category with filtering and real-time charts. Maintain full transparency over HOA spending.',
+                              isMobile: isMobile,
+                            ),
+                            _FeatureTile(
+                              icon: Icons.bar_chart_outlined,
+                              title: 'Financial Reports',
+                              description:
+                                  'View comprehensive income vs. expense analytics with interactive charts over configurable time periods.',
+                              isMobile: isMobile,
+                            ),
+                            _FeatureTile(
+                              icon: Icons.notifications_outlined,
+                              title: 'Notifications Hub',
+                              description:
+                                  'Aggregated view of all pending items — payments, tickets, violations, feedback, bookings, and announcements — in one place.',
+                              isMobile: isMobile,
+                            ),
+                            _FeatureTile(
                               icon: Icons.people_outlined,
                               title: 'User Management',
                               description:
@@ -134,10 +169,31 @@ class FeaturesPage extends StatelessWidget {
                               isMobile: isMobile,
                             ),
                             _FeatureTile(
-                              icon: Icons.phone_iphone_outlined,
-                              title: 'Mobile App Support',
+                              icon: Icons.smart_toy_outlined,
+                              title: 'AI Chatbot Assistant',
                               description:
-                                  'Comming soon! Access your community on the go with the HOApp mobile app for iOS and Android — check announcements, pay bills, and scan QR passes from your phone.',
+                                  'Get instant help with a built-in AI assistant that provides contextual guidance based on your current page and role.',
+                              isMobile: isMobile,
+                            ),
+                            _FeatureTile(
+                              icon: Icons.tour_outlined,
+                              title: 'Onboarding Tour',
+                              description:
+                                  'Interactive guided walkthrough for new users. Replay anytime from the menu to learn about all portal features.',
+                              isMobile: isMobile,
+                            ),
+                            _FeatureTile(
+                              icon: Icons.phone_iphone_outlined,
+                              title: 'Mobile App',
+                              description:
+                                  'Access your community on the go with the HOApp mobile app for iOS and Android — check announcements, pay bills, and scan QR passes from your phone.',
+                              isMobile: isMobile,
+                            ),
+                            _FeatureTile(
+                              icon: Icons.devices_outlined,
+                              title: 'Mobile Responsive',
+                              description:
+                                  'The entire web portal is fully responsive — optimized for desktops, tablets, and smartphones so you can manage your community from any device.',
                               isMobile: isMobile,
                             ),
                           ],
@@ -236,6 +292,7 @@ class _FeatureTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: isMobile ? double.infinity : 330,
+      height: 255,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.92),
         borderRadius: BorderRadius.circular(16),

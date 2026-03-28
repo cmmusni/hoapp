@@ -135,6 +135,77 @@ class LandingPage extends StatelessWidget {
 
                         const SizedBox(height: 60),
 
+                        // Trusted By section
+                        Text(
+                          'Trusted By',
+                          style: TextStyle(
+                            fontSize: isMobile ? 16 : 18,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF6B7280),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 24 : 40,
+                            vertical: isMobile ? 20 : 28,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color:
+                                      const Color(0xFF2E5C3F).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.apartment_rounded,
+                                  size: 32,
+                                  color: Color(0xFF2E5C3F),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Elevé Homes Camarin',
+                                    style: TextStyle(
+                                      fontSize: isMobile ? 18 : 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF1F2937),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Caloocan City, Philippines',
+                                    style: TextStyle(
+                                      fontSize: isMobile ? 13 : 14,
+                                      color: const Color(0xFF6B7280),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 60),
+
                         // Call to action
                         Text(
                           'Ready to unify your community? Choose an action:',

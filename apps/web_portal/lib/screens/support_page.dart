@@ -77,10 +77,10 @@ class SupportPage extends StatelessWidget {
                               isMobile: isMobile,
                             ),
                             _SupportCard(
-                              icon: Icons.chat_bubble_outline,
-                              title: 'Live Chat',
+                              icon: Icons.feedback_outlined,
+                              title: 'Feedback',
                               description:
-                                  'Chat with our support team in real-time during business hours (Mon–Fri, 9 AM – 6 PM).',
+                                  'Submit feedback, report bugs, or suggest improvements directly from the portal. Track your submissions in real-time.',
                               isMobile: isMobile,
                             ),
                             _SupportCard(
@@ -95,13 +95,6 @@ class SupportPage extends StatelessWidget {
                               title: 'Video Tutorials',
                               description:
                                   'Watch step-by-step video guides for onboarding, billing setup, and more.',
-                              isMobile: isMobile,
-                            ),
-                            _SupportCard(
-                              icon: Icons.bug_report_outlined,
-                              title: 'Report a Bug',
-                              description:
-                                  'Found an issue? Let us know and our engineering team will investigate it promptly.',
                               isMobile: isMobile,
                             ),
                           ],
@@ -146,7 +139,7 @@ class SupportPage extends StatelessWidget {
                               ),
                               _faqItem(
                                 'Can I use HOApp on my phone?',
-                                'Yes! HOApp has a native mobile app for iOS and Android with full community access.',
+                                'Yes! HOApp is mobile responsive and also has a native mobile app for iOS and Android with full community access.',
                               ),
                               _faqItem(
                                 'How do I upgrade my community plan?',
