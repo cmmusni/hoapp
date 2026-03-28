@@ -356,14 +356,36 @@ class _InviteUserSheetState extends State<_InviteUserSheet> {
             TextField(
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                  labelText: 'Email', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                  )),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<Role>(
               value: _role,
-              decoration: const InputDecoration(
-                  labelText: 'Role', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: 'Role',
+                  prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                  )),
               items: Role.values
                   .map((r) => DropdownMenuItem(
                       value: r, child: Text(_roleDisplayName(r))))
@@ -375,16 +397,23 @@ class _InviteUserSheetState extends State<_InviteUserSheet> {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _handleInvite,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: _brand, foregroundColor: Colors.white),
-                child: _isLoading
+                icon: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Send Invite'),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.send_rounded),
+                label: const Text('Send Invite',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: _brand,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12))),
               ),
             ),
           ],

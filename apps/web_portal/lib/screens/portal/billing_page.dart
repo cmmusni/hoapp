@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+const _brandColor = Color(0xff215e3f);
+
 class BillingPage extends StatefulWidget {
   const BillingPage({super.key});
 
@@ -529,9 +531,15 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
                   const SizedBox(height: 16),
                   Text('Error: ${snapshot.error}'),
                   const SizedBox(height: 16),
-                  HOAppButton(
-                    label: 'Retry',
+                  ElevatedButton.icon(
                     onPressed: _loadInvoices,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _brandColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ],
               ),
@@ -1158,12 +1166,18 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                   if (widget.invoice.status == InvoiceStatus.unpaid)
                     SizedBox(
                       width: 180,
-                      child: HOAppButton(
-                        label: 'Submit Payment',
+                      child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.of(context).pop();
                           _showPaymentSubmissionDialog(context);
                         },
+                        icon: const Icon(Icons.payment),
+                        label: const Text('Submit Payment', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _brandColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
                       ),
                     ),
                 ],
@@ -1629,7 +1643,15 @@ class _PaymentCardState extends State<_PaymentCard> {
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: 'Enter reason...',
-                  border: const OutlineInputBorder(),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                  ),
                   filled: true,
                   fillColor: Colors.grey.shade50,
                 ),
@@ -1769,10 +1791,19 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
             children: [
               TextFormField(
                 controller: _amountController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Amount Paid',
                   prefixText: '₱ ',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                  ),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
@@ -1837,9 +1868,21 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: _isSubmitting ? 'Submitting...' : 'Submit',
-          onPressed: _isSubmitting ? null : _submitPayment,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isSubmitting ? null : _submitPayment,
+            icon: _isSubmitting
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.send_rounded),
+            label: Text(_isSubmitting ? 'Submitting...' : 'Submit', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _brandColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );
@@ -2010,9 +2053,18 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
 
                     return DropdownButtonFormField<String>(
                       value: _selectedUnitId,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Unit',
-                        border: OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.apartment, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                        ),
                       ),
                       items: units.map((unit) {
                         return DropdownMenuItem(
@@ -2112,10 +2164,19 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Description (Optional)',
                     hintText: 'e.g., March 2026 Water Billing',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.description_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -2137,10 +2198,18 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                           if (date != null) setState(() => _periodStart = date);
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Period Start',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Icon(Icons.calendar_today, size: 18),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                            ),
+                            suffixIcon: const Icon(Icons.calendar_today, size: 18),
                           ),
                           child: Text(
                             _periodStart != null
@@ -2168,10 +2237,18 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                           if (date != null) setState(() => _periodEnd = date);
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Period End',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Icon(Icons.calendar_today, size: 18),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                            ),
+                            suffixIcon: const Icon(Icons.calendar_today, size: 18),
                           ),
                           child: Text(
                             _periodEnd != null
@@ -2189,10 +2266,19 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Amount',
                     prefixText: '₱ ',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -2218,10 +2304,18 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                     }
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Due Date',
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      ),
+                      suffixIcon: const Icon(Icons.calendar_today),
                     ),
                     child: Text(
                       DateFormat('MMM dd, yyyy').format(_dueDate),
@@ -2263,7 +2357,15 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                               controller: _lineItems[i].labelController,
                               decoration: InputDecoration(
                                 hintText: 'Item label',
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                                ),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 10),
@@ -2275,12 +2377,20 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                             flex: 2,
                             child: TextFormField(
                               controller: _lineItems[i].amountController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: '0.00',
                                 prefixText: '₱ ',
-                                border: OutlineInputBorder(),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                                ),
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
+                                contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 10),
                               ),
                               keyboardType: TextInputType.number,
@@ -2302,9 +2412,18 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _notesController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Notes (Optional)',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.notes_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   maxLines: 3,
                 ),
@@ -2314,9 +2433,21 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: _isCreating ? 'Creating...' : 'Create',
-          onPressed: _isCreating ? null : _createInvoice,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isCreating ? null : _createInvoice,
+            icon: _isCreating
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.receipt_long_rounded),
+            label: Text(_isCreating ? 'Creating...' : 'Create', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _brandColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );
@@ -3048,10 +3179,19 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
               children: [
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Description',
                     hintText: 'e.g., Clubhouse rental fee',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.description_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
@@ -3154,10 +3294,19 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Amount',
                     prefixText: '₱ ',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -3181,10 +3330,18 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                     if (date != null) setState(() => _incomeDate = date);
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Income Date',
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.calendar_today, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      ),
+                      suffixIcon: const Icon(Icons.calendar_today, size: 18),
                     ),
                     child: Text(
                       DateFormat('MMM dd, yyyy').format(_incomeDate),
@@ -3194,18 +3351,36 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _sourceController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Source (Optional)',
                     hintText: 'e.g., Unit 5A, External vendor',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.source_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _notesController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Notes (Optional)',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.notes_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   maxLines: 3,
                 ),
@@ -3219,9 +3394,21 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        HOAppButton(
-          label: _isCreating ? 'Adding...' : 'Add Income',
-          onPressed: _isCreating ? null : _submit,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isCreating ? null : _submit,
+            icon: _isCreating
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.add_circle_outline),
+            label: Text(_isCreating ? 'Adding...' : 'Add Income', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _brandColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );
@@ -3407,9 +3594,15 @@ class _RecurringBillingViewState extends State<_RecurringBillingView> {
                         const SizedBox(height: 16),
                         Text('Error: ${snapshot.error}'),
                         const SizedBox(height: 16),
-                        HOAppButton(
-                          label: 'Retry',
+                        ElevatedButton.icon(
                           onPressed: _loadRecurringBillings,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Retry', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _brandColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                         ),
                       ],
                     ),
@@ -3849,9 +4042,18 @@ class _CreateRecurringBillingDialogState
                       }
                       return DropdownButtonFormField<String>(
                         value: _selectedUnitId,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Unit',
-                          border: OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.apartment, size: 20),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                          ),
                         ),
                         items: units.map((unit) {
                           return DropdownMenuItem(
@@ -3985,20 +4187,38 @@ class _CreateRecurringBillingDialogState
                 // Description
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Description (Optional)',
                     hintText: 'e.g., Monthly HOA Dues',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.description_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 // Amount
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Amount',
                     prefixText: '₱ ',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -4015,10 +4235,18 @@ class _CreateRecurringBillingDialogState
                     Expanded(
                       child: TextFormField(
                         controller: _dayOfMonthController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Day of Month',
                           hintText: '1-28',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                          ),
                           helperText: 'Invoice generated on this day',
                           helperMaxLines: 2,
                         ),
@@ -4037,10 +4265,18 @@ class _CreateRecurringBillingDialogState
                     Expanded(
                       child: TextFormField(
                         controller: _dueDayOffsetController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Due Day Offset',
                           hintText: 'Days',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                          ),
                           helperText: 'Days after generation until due',
                           helperMaxLines: 2,
                         ),
@@ -4070,10 +4306,18 @@ class _CreateRecurringBillingDialogState
                     if (date != null) setState(() => _nextRunDate = date);
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'First Invoice Date',
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.calendar_today, size: 18),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      ),
+                      suffixIcon: const Icon(Icons.calendar_today, size: 18),
                       helperText: 'When the first invoice will be generated',
                     ),
                     child: Text(
@@ -4114,11 +4358,19 @@ class _CreateRecurringBillingDialogState
                             flex: 3,
                             child: TextFormField(
                               controller: _lineItems[i].labelController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Item label',
-                                border: OutlineInputBorder(),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                                ),
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
+                                contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 10),
                               ),
                             ),
@@ -4128,12 +4380,20 @@ class _CreateRecurringBillingDialogState
                             flex: 2,
                             child: TextFormField(
                               controller: _lineItems[i].amountController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: '0.00',
                                 prefixText: '₱ ',
-                                border: OutlineInputBorder(),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                                ),
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
+                                contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 10),
                               ),
                               keyboardType: TextInputType.number,
@@ -4154,9 +4414,18 @@ class _CreateRecurringBillingDialogState
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _notesController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Notes (Optional)',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.notes_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   maxLines: 2,
                 ),
@@ -4166,9 +4435,21 @@ class _CreateRecurringBillingDialogState
         ),
       ),
       actions: [
-        HOAppButton(
-          label: _isCreating ? 'Creating...' : 'Create',
-          onPressed: _isCreating ? null : _createRecurringBilling,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isCreating ? null : _createRecurringBilling,
+            icon: _isCreating
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.repeat_rounded),
+            label: Text(_isCreating ? 'Creating...' : 'Create', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _brandColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );

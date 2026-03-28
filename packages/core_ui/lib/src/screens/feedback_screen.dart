@@ -399,8 +399,19 @@ class _AdminActionsState extends State<_AdminActions> {
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: _status,
-          decoration: const InputDecoration(
-              labelText: 'Status', border: OutlineInputBorder()),
+          decoration: InputDecoration(
+              labelText: 'Status',
+              prefixIcon: const Icon(Icons.flag_outlined, size: 20),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: _brand, width: 1.5),
+              )),
           items: const [
             DropdownMenuItem(value: 'open', child: Text('Open')),
             DropdownMenuItem(value: 'in_review', child: Text('In Review')),
@@ -416,25 +427,40 @@ class _AdminActionsState extends State<_AdminActions> {
         TextField(
           controller: _notesCtrl,
           maxLines: 3,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Admin Notes',
-            border: OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.notes_outlined, size: 20),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _brand, width: 1.5),
+            ),
             alignLabelWithHint: true,
           ),
         ),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
-            child: ElevatedButton(
+            child: ElevatedButton.icon(
               onPressed: _saving ? null : _handleSave,
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: _brand, foregroundColor: Colors.white),
-              child: _saving
+              icon: _saving
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Save Changes'),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save_rounded),
+              label: const Text('Save Changes',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: _brand,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12))),
             ),
           ),
           const SizedBox(width: 12),
@@ -544,32 +570,60 @@ class _SubmitFeedbackSheetState extends State<_SubmitFeedbackSheet> {
             const SizedBox(height: 16),
             TextField(
               controller: _subjectCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Subject', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: 'Subject',
+                  prefixIcon: const Icon(Icons.subject_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                  )),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _descCtrl,
               maxLines: 4,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Description',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.description_outlined, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _brand, width: 1.5),
+                ),
                 alignLabelWithHint: true,
               ),
             ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _handleSubmit,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: _brand, foregroundColor: Colors.white),
-                child: _isLoading
+                icon: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Submit'),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.send_rounded),
+                label: const Text('Submit',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: _brand,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12))),
               ),
             ),
           ],

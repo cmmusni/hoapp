@@ -610,8 +610,19 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
             const SizedBox(height: 16),
             DropdownButtonFormField<ExpenseCategory>(
               value: _category,
-              decoration: const InputDecoration(
-                  labelText: 'Category', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: 'Category',
+                  prefixIcon: const Icon(Icons.category_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                  )),
               items: ExpenseCategory.values
                   .map((c) => DropdownMenuItem(
                       value: c,
@@ -625,17 +636,38 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
             const SizedBox(height: 12),
             TextField(
               controller: _descCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Description', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: 'Description',
+                  prefixIcon: const Icon(Icons.description_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                  )),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _amountCtrl,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Amount (₱)',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _brand, width: 1.5),
+                ),
                 prefixText: '₱ ',
               ),
             ),
@@ -656,16 +688,36 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
             ),
             TextField(
               controller: _vendorCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Vendor (optional)', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: 'Vendor (optional)',
+                  prefixIcon: const Icon(Icons.store_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                  )),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _notesCtrl,
               maxLines: 2,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Notes (optional)',
-                border: OutlineInputBorder(),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _brand, width: 1.5),
+                ),
                 alignLabelWithHint: true,
               ),
             ),
@@ -718,16 +770,25 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _handleSubmit,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: _brand, foregroundColor: Colors.white),
-                child: _isLoading
+                icon: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(_isEditing ? 'Update' : 'Add Expense'),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : Icon(_isEditing
+                        ? Icons.save_rounded
+                        : Icons.add_circle_outline),
+                label: Text(_isEditing ? 'Update' : 'Add Expense',
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: _brand,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12))),
               ),
             ),
           ],

@@ -709,10 +709,27 @@ class _ReportViolationDialogState extends State<_ReportViolationDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: 'Submit Report',
-          onPressed: _handleSubmit,
-          isLoading: _isLoading,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isLoading ? null : _handleSubmit,
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.report_outlined),
+            label: const Text('Submit Report',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );

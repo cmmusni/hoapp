@@ -176,9 +176,18 @@ class _ResidentViewState extends State<_ResidentView> {
                     const SizedBox(height: 16),
                     Text('Error: ${snapshot.error}'),
                     const SizedBox(height: 16),
-                    HOAppButton(
-                      label: 'Retry',
+                    ElevatedButton.icon(
                       onPressed: _loadData,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff215e3f),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ],
                 ),
@@ -425,7 +434,17 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                   value: _occupantType,
                   decoration: InputDecoration(
                     labelText: 'Occupant Type',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                     filled: widget.profileOccupantType != null,
                     fillColor: Colors.grey.shade100,
                   ),
@@ -451,7 +470,17 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       widget.profileName == null || widget.profileName!.isEmpty,
                   decoration: InputDecoration(
                     labelText: 'Owner / Tenant Name',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                     prefixIcon: const Icon(Icons.person),
                     filled: widget.profileName != null &&
                         widget.profileName!.isNotEmpty,
@@ -466,7 +495,17 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       widget.profilePhone!.isEmpty,
                   decoration: InputDecoration(
                     labelText: 'Phone Number',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                     prefixIcon: const Icon(Icons.phone),
                     filled: widget.profilePhone != null &&
                         widget.profilePhone!.isNotEmpty,
@@ -482,7 +521,17 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                       widget.profileEmail!.isEmpty,
                   decoration: InputDecoration(
                     labelText: 'Email Address',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                     prefixIcon: const Icon(Icons.email),
                     filled: widget.profileEmail != null &&
                         widget.profileEmail!.isNotEmpty,
@@ -529,20 +578,40 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _emergencyNameController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Contact Name',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person_outline),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
+                    prefixIcon: const Icon(Icons.person_outline),
                   ),
                   validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _emergencyPhoneController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Contact Phone',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone_outlined),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
+                    prefixIcon: const Icon(Icons.phone_outlined),
                   ),
                   keyboardType: TextInputType.phone,
                   validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
@@ -602,16 +671,35 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                 // ===== SUBMIT =====
                 SizedBox(
                   width: double.infinity,
-                  child: HOAppButton(
-                    label: _isEditing
-                        ? 'Update Registration'
-                        : 'Submit Registration',
-                    isLoading: _isSubmitting,
+                  child: ElevatedButton.icon(
                     onPressed: _isSubmitting ||
                             !_acknowledgeRules ||
                             !_acknowledgeWaiver
                         ? null
                         : _submitRegistration,
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : Icon(_isEditing
+                            ? Icons.save_rounded
+                            : Icons.send_rounded),
+                    label: Text(
+                      _isEditing
+                          ? 'Update Registration'
+                          : 'Submit Registration',
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff215e3f),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -798,13 +886,25 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                 return TextFormField(
                                   controller: controller,
                                   focusNode: focusNode,
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'Name',
-                                    border: OutlineInputBorder(),
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                          color: Colors.grey.shade300),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                          color: _brandColor, width: 1.5),
+                                    ),
                                     isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 12),
-                                    errorStyle: TextStyle(height: 0.5),
+                                    errorStyle: const TextStyle(height: 0.5),
                                   ),
                                   validator: (v) =>
                                       (v?.isEmpty ?? true) ? 'Required' : null,
@@ -1152,10 +1252,19 @@ class _RegistrationDetails extends StatelessWidget {
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  child: HOAppButton(
-                    label: 'Edit Registration',
-                    icon: Icons.edit,
+                  child: ElevatedButton.icon(
                     onPressed: () => _showEditForm(context),
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit Registration',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff215e3f),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
               ],
@@ -1514,9 +1623,18 @@ class _StaffViewState extends State<_StaffView> {
                     const SizedBox(height: 16),
                     Text('Error: ${snapshot.error}'),
                     const SizedBox(height: 16),
-                    HOAppButton(
-                      label: 'Retry',
+                    ElevatedButton.icon(
                       onPressed: _loadRegistrations,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff215e3f),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ],
                 ),
@@ -1542,9 +1660,18 @@ class _StaffViewState extends State<_StaffView> {
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 24),
-                    HOAppButton(
-                      label: 'Register Swimmers for a Unit',
+                    ElevatedButton.icon(
                       onPressed: _openStaffRegistration,
+                      icon: const Icon(Icons.pool),
+                      label: const Text('Register Swimmers for a Unit',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff215e3f),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ],
                 ),
@@ -1858,7 +1985,6 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Unit selector
-                            _sectionHeader('Select Unit', Icons.home_outlined),
                             const SizedBox(height: 12),
                             if (_availableUnits.isEmpty)
                               Container(
@@ -2400,13 +2526,25 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                 return TextFormField(
                                   controller: controller,
                                   focusNode: focusNode,
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'Name',
-                                    border: OutlineInputBorder(),
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                          color: Colors.grey.shade300),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                          color: _brandColor, width: 1.5),
+                                    ),
                                     isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 12),
-                                    errorStyle: TextStyle(height: 0.5),
+                                    errorStyle: const TextStyle(height: 0.5),
                                   ),
                                   validator: (v) =>
                                       (v?.isEmpty ?? true) ? 'Required' : null,
@@ -2919,10 +3057,24 @@ class _RegistrationDetailDialogState extends State<_RegistrationDetailDialog> {
                   // Approve button
                   if (!reg.approved)
                     Expanded(
-                      child: HOAppButton(
-                        label: 'Approve Registration',
-                        isLoading: _isApproving,
+                      child: ElevatedButton.icon(
                         onPressed: _isApproving ? null : _approveRegistration,
+                        icon: _isApproving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.check_circle_outline),
+                        label: const Text('Approve Registration',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff215e3f),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
                       ),
                     ),
                 ],

@@ -145,9 +145,18 @@ class _ExpensesPageState extends State<ExpensesPage> {
                           const SizedBox(height: 16),
                           Text('Error: ${snapshot.error}'),
                           const SizedBox(height: 16),
-                          HOAppButton(
-                            label: 'Retry',
+                          ElevatedButton.icon(
                             onPressed: _loadExpenses,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry',
+                                style: TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w600)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xff215e3f),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
                           ),
                         ],
                       ),
@@ -954,12 +963,19 @@ class _ExpenseDetailsDialogState extends State<_ExpenseDetailsDialog> {
                   const Spacer(),
                   SizedBox(
                     width: 140,
-                    child: HOAppButton(
-                      label: 'Edit',
+                    child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.of(context).pop();
                         _showEditDialog(context);
                       },
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text('Edit'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff215e3f),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ),
                 ],
@@ -1231,20 +1247,43 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Description',
                     hintText: 'e.g., Lobby cleaning supplies',
-                    border: OutlineInputBorder(),
+                    prefixIcon:
+                        const Icon(Icons.description_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                   validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Amount',
                     prefixText: '₱ ',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -1256,17 +1295,29 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _vendorController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Vendor / Payee (Optional)',
                     hintText: 'e.g., ABC Cleaning Services',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.store_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 InkWell(
+                  borderRadius: BorderRadius.circular(12),
                   onTap: () async {
                     final date = await showDatePicker(
                       context: context,
@@ -1279,10 +1330,15 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     }
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Expense Date',
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      suffixIcon: const Icon(Icons.calendar_today),
                     ),
                     child: Text(
                       DateFormat('MMM dd, yyyy').format(_expenseDate),
@@ -1340,12 +1396,23 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                           }
                         },
                       ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _notesController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Notes (Optional)',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.notes, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                   maxLines: 3,
                 ),
@@ -1355,11 +1422,35 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: _isSubmitting
-              ? (_isEditing ? 'Saving...' : 'Adding...')
-              : (_isEditing ? 'Save' : 'Add Expense'),
-          onPressed: _isSubmitting ? null : _submit,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isSubmitting ? null : _submit,
+            icon: _isSubmitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : Icon(
+                    _isEditing ? Icons.save_rounded : Icons.add_circle_outline),
+            label: Text(
+              _isSubmitting
+                  ? (_isEditing ? 'Saving...' : 'Adding...')
+                  : (_isEditing ? 'Save Changes' : 'Add Expense'),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor:
+                  const Color(0xff215e3f).withValues(alpha: 0.4),
+              disabledForegroundColor: Colors.white70,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );

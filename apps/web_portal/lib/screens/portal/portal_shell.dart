@@ -1372,10 +1372,20 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                     children: [
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Full Name',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person_outline),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: Color(0xff215e3f), width: 1.5),
+                          ),
+                          prefixIcon: const Icon(Icons.person_outline),
                         ),
                         validator: (v) =>
                             (v?.isEmpty ?? true) ? 'Required' : null,
@@ -1384,10 +1394,20 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _phoneController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Phone Number',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.phone_outlined),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: Color(0xff215e3f), width: 1.5),
+                          ),
+                          prefixIcon: const Icon(Icons.phone_outlined),
                         ),
                         keyboardType: TextInputType.phone,
                         textInputAction: TextInputAction.next,
@@ -1397,7 +1417,17 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                         controller: _emailController,
                         decoration: InputDecoration(
                           labelText: 'Email',
-                          border: const OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: Color(0xff215e3f), width: 1.5),
+                          ),
                           prefixIcon: const Icon(Icons.email_outlined),
                           filled: _authEmail != null && _authEmail!.isNotEmpty,
                           fillColor: Colors.grey.shade100,
@@ -1585,7 +1615,17 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                       obscureText: _obscureOld,
                       decoration: InputDecoration(
                         labelText: 'Current Password',
-                        border: const OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                              color: Color(0xff215e3f), width: 1.5),
+                        ),
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(_obscureOld
@@ -1607,7 +1647,17 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                       obscureText: _obscureNew,
                       decoration: InputDecoration(
                         labelText: 'New Password',
-                        border: const OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                              color: Color(0xff215e3f), width: 1.5),
+                        ),
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(_obscureNew
@@ -1630,7 +1680,17 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                       obscureText: _obscureConfirm,
                       decoration: InputDecoration(
                         labelText: 'Confirm Password',
-                        border: const OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                              color: Color(0xff215e3f), width: 1.5),
+                        ),
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(_obscureConfirm

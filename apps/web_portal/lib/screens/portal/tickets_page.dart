@@ -440,9 +440,19 @@ class _TicketDetailState extends State<_TicketDetail> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Type a message...',
-                        border: OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                              color: Color(0xff215e3f), width: 1.5),
+                        ),
                       ),
                       maxLines: null,
                       enabled: !_isSending,
@@ -662,10 +672,27 @@ class _CreateTicketDialogState extends State<_CreateTicketDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: 'Create Ticket',
-          onPressed: _handleCreate,
-          isLoading: _isLoading,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isLoading ? null : _handleCreate,
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.confirmation_num_outlined),
+            label: const Text('Create Ticket',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );

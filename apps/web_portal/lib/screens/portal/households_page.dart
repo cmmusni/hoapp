@@ -246,7 +246,18 @@ class _UnitListState extends State<_UnitList> {
             const SizedBox(height: 16),
             Text('Error: ${snapshot.error}'),
             const SizedBox(height: 16),
-            HOAppButton(label: 'Retry', onPressed: widget.onRefresh),
+            ElevatedButton.icon(
+              onPressed: widget.onRefresh,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff215e3f),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ],
         ),
       );
@@ -476,9 +487,18 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
                           const SizedBox(height: 16),
                           Text('Error: ${snapshot.error}'),
                           const SizedBox(height: 16),
-                          HOAppButton(
-                            label: 'Retry',
+                          ElevatedButton.icon(
                             onPressed: _loadMembers,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry',
+                                style: TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w600)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xff215e3f),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
                           ),
                         ],
                       ),
@@ -716,9 +736,18 @@ class _HouseholdDetailPageState extends State<_HouseholdDetailPage> {
                     const SizedBox(height: 16),
                     Text('Error: ${snapshot.error}'),
                     const SizedBox(height: 16),
-                    HOAppButton(
-                      label: 'Retry',
+                    ElevatedButton.icon(
                       onPressed: _loadMembers,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff215e3f),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ],
                 ),
@@ -1031,10 +1060,20 @@ class _InviteMemberDialogState extends State<_InviteMemberDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Email Address',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  ),
+                  prefixIcon: const Icon(Icons.email, size: 20),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 autofocus: true,
@@ -1069,9 +1108,28 @@ class _InviteMemberDialogState extends State<_InviteMemberDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: _isInviting ? 'Sending...' : 'Send Invite',
-          onPressed: _isInviting ? null : _sendInvite,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isInviting ? null : _sendInvite,
+            icon: _isInviting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.send_rounded),
+            label: Text(_isInviting ? 'Sending...' : 'Send Invite',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );
@@ -1192,10 +1250,21 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
           children: [
             TextFormField(
               controller: _unitNoController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Unit Number',
                 hintText: 'e.g., 101, A-201',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.apartment, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                ),
               ),
               validator: (value) {
                 if (value?.isEmpty ?? true) return 'Required';
@@ -1209,9 +1278,20 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _selectedUnitType,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Unit Type (Optional)',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.category_outlined, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                ),
               ),
               items: [
                 const DropdownMenuItem<String>(
@@ -1237,10 +1317,21 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _customTypeController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Custom Unit Type',
                   hintText: 'e.g., Penthouse, Loft',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.edit_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  ),
                 ),
                 autofocus: true,
                 validator: (value) {
@@ -1275,9 +1366,28 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: _isCreating ? 'Creating...' : 'Create',
-          onPressed: _isCreating ? null : _createUnit,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isCreating ? null : _createUnit,
+            icon: _isCreating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.add_home_outlined),
+            label: Text(_isCreating ? 'Creating...' : 'Create',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );
@@ -1491,7 +1601,18 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                   decoration: InputDecoration(
                     labelText: 'Name',
                     hintText: 'Type any name or search existing users',
-                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.person_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                     helperText:
                         'Enter any name. Search results appear for registered users (2+ chars).',
                     helperMaxLines: 2,
@@ -1599,9 +1720,20 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<MemberRole>(
                   value: _selectedRole,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Role',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                   items: MemberRole.values.map((role) {
                     return DropdownMenuItem(
@@ -1618,10 +1750,22 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _relationshipController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Relationship (Optional)',
                     hintText: 'e.g., Spouse, Parent, Child',
-                    border: OutlineInputBorder(),
+                    prefixIcon:
+                        const Icon(Icons.family_restroom_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                 ),
               ],
@@ -1630,9 +1774,28 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: _isAdding ? 'Adding...' : 'Add',
-          onPressed: _isAdding ? null : _addMember,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isAdding ? null : _addMember,
+            icon: _isAdding
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.person_add_outlined),
+            label: Text(_isAdding ? 'Adding...' : 'Add',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );
@@ -1752,9 +1915,20 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
           children: [
             DropdownButtonFormField<MemberRole>(
               value: _selectedRole,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Role',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                ),
               ),
               items: MemberRole.values.map((role) {
                 return DropdownMenuItem(
@@ -1771,19 +1945,50 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _relationshipController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Relationship (Optional)',
                 hintText: 'e.g., Spouse, Parent, Child',
-                border: OutlineInputBorder(),
+                prefixIcon:
+                    const Icon(Icons.family_restroom_outlined, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                ),
               ),
             ),
           ],
         ),
       ),
       actions: [
-        HOAppButton(
-          label: _isUpdating ? 'Updating...' : 'Update',
-          onPressed: _isUpdating ? null : _updateMember,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isUpdating ? null : _updateMember,
+            icon: _isUpdating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.save_rounded),
+            label: Text(_isUpdating ? 'Updating...' : 'Update',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );

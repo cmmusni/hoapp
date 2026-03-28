@@ -360,21 +360,45 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Add Unit Type'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Name', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: 'Name',
+                  prefixIcon: const Icon(Icons.label_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  )),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: descCtrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                   labelText: 'Description (optional)',
-                  border: OutlineInputBorder()),
+                  prefixIcon: const Icon(Icons.description_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  )),
             ),
           ],
         ),
@@ -382,7 +406,7 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Cancel')),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
               try {
@@ -405,7 +429,14 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
                 }
               }
             },
-            child: const Text('Create'),
+            icon: const Icon(Icons.add_circle_outline),
+            label: const Text('Create'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ],
       ),
@@ -418,21 +449,45 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Edit Unit Type'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Name', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                  labelText: 'Name',
+                  prefixIcon: const Icon(Icons.label_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  )),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: descCtrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                   labelText: 'Description (optional)',
-                  border: OutlineInputBorder()),
+                  prefixIcon: const Icon(Icons.description_outlined, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  )),
             ),
           ],
         ),
@@ -440,7 +495,7 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Cancel')),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
               try {
@@ -463,7 +518,14 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
                 }
               }
             },
-            child: const Text('Save'),
+            icon: const Icon(Icons.save_rounded),
+            label: const Text('Save'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ],
       ),

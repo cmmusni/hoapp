@@ -370,7 +370,16 @@ class _QrScannerPageState extends State<QrScannerPage> {
           decoration: InputDecoration(
             labelText: 'QR Code Token',
             hintText: 'Paste the QR code token here',
-            border: const OutlineInputBorder(),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xff215e3f), width: 1.5),
+            ),
             prefixIcon: const Icon(Icons.qr_code),
             suffixIcon: IconButton(
               icon: const Icon(Icons.clear),

@@ -405,10 +405,21 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
           child: const Text('Approve this booking request?'),
         ),
         actions: [
-          HOAppButton(
-            label: 'Approve',
-            icon: Icons.check,
-            onPressed: () => Navigator.pop(ctx, true),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Approve Booking',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff215e3f),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ),
         ],
       ),
@@ -484,7 +495,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -679,14 +690,22 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
         actions: isStaff
             ? null
             : [
-                HOAppButton(
-                  label: 'Request Booking',
-                  icon: Icons.event_available,
+                ElevatedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                     _showRequestBookingDialog([amenity],
                         preselectedAmenity: amenity);
                   },
+                  icon: const Icon(Icons.event_available),
+                  label: const Text('Request Booking',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff215e3f),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ],
       ),
@@ -830,9 +849,20 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                       if (amenities.length > 1) ...[
                         DropdownButtonFormField<Amenity>(
                           value: selectedAmenity,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Amenity',
-                            border: OutlineInputBorder(),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                  color: Color(0xff215e3f), width: 1.5),
+                            ),
                           ),
                           items: amenities.map((a) {
                             return DropdownMenuItem(
@@ -921,9 +951,20 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                       ] else ...[
                         DropdownButtonFormField<Unit>(
                           value: selectedUnit,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Unit',
-                            border: OutlineInputBorder(),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                  color: Color(0xff215e3f), width: 1.5),
+                            ),
                           ),
                           items: userUnits.map((u) {
                             return DropdownMenuItem(
@@ -955,10 +996,17 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                           }
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Booking Date',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Icon(Icons.calendar_today, size: 18),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
+                            ),
+                            suffixIcon:
+                                const Icon(Icons.calendar_today, size: 18),
                           ),
                           child: Text(
                             selectedDate != null
@@ -1067,9 +1115,19 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                       // Notes
                       TextField(
                         controller: notesController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Notes (Optional)',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: Color(0xff215e3f), width: 1.5),
+                          ),
                           hintText: 'Any special requests...',
                         ),
                         maxLines: 2,
@@ -1079,50 +1137,70 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                 ),
               ),
               actions: [
-                HOAppButton(
-                  label: isLoading ? 'Submitting...' : 'Submit Request',
-                  icon: Icons.send_rounded,
-                  onPressed: isLoading ||
-                          selectedAmenity == null ||
-                          selectedDate == null ||
-                          selectedUnit == null
-                      ? null
-                      : () async {
-                          setDialogState(() => isLoading = true);
-                          try {
-                            final repo = context.read<AmenityRepository>();
-                            final dateStr =
-                                DateFormat('yyyy-MM-dd').format(selectedDate!);
-                            await repo.bookAmenity(
-                              amenityId: selectedAmenity!.id,
-                              targetDate: dateStr,
-                              unitId: selectedUnit!.id,
-                              noVerify: true,
-                            );
-                            if (ctx.mounted) {
-                              Navigator.pop(ctx);
-                            }
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Booking request submitted! An invoice has been created for your unit with payment due 3 days before the booking date.',
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: isLoading ||
+                            selectedAmenity == null ||
+                            selectedDate == null ||
+                            selectedUnit == null
+                        ? null
+                        : () async {
+                            setDialogState(() => isLoading = true);
+                            try {
+                              final repo = context.read<AmenityRepository>();
+                              final dateStr = DateFormat('yyyy-MM-dd')
+                                  .format(selectedDate!);
+                              await repo.bookAmenity(
+                                amenityId: selectedAmenity!.id,
+                                targetDate: dateStr,
+                                unitId: selectedUnit!.id,
+                                noVerify: true,
+                              );
+                              if (ctx.mounted) {
+                                Navigator.pop(ctx);
+                              }
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Booking request submitted! An invoice has been created for your unit with payment due 3 days before the booking date.',
+                                    ),
+                                    duration: Duration(seconds: 4),
                                   ),
-                                  duration: Duration(seconds: 4),
-                                ),
-                              );
-                              _loadBookings();
+                                );
+                                _loadBookings();
+                              }
+                            } catch (e) {
+                              setDialogState(() => isLoading = false);
+                              if (ctx.mounted) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(content: Text('Error: $e')),
+                                );
+                              }
                             }
-                          } catch (e) {
-                            setDialogState(() => isLoading = false);
-                            if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
-                          }
-                        },
-                  isLoading: isLoading,
+                          },
+                    icon: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.send_rounded),
+                    label: Text(isLoading ? 'Submitting...' : 'Submit Request',
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff215e3f),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor:
+                          const Color(0xff215e3f).withValues(alpha: 0.4),
+                      disabledForegroundColor: Colors.white70,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
                 ),
               ],
             );
@@ -1178,38 +1256,82 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Name',
                     hintText: 'e.g., Pool + Function Room',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.business_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextField(
                   controller: priceController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Price (PHP)',
                     prefixText: '₱ ',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.payments_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                   keyboardType: TextInputType.number,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextField(
                   controller: openTimeController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Opening Time',
                     hintText: 'HH:MM',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.access_time, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextField(
                   controller: closeTimeController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Closing Time',
                     hintText: 'HH:MM',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.access_time_filled, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xff215e3f), width: 1.5),
+                    ),
                   ),
                 ),
               ],
@@ -1217,44 +1339,56 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
           ),
         ),
         actions: [
-          HOAppButton(
-            label: 'Create',
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                if (name.isEmpty) return;
 
-              final appState = context.read<AppState>();
-              final repo = context.read<AmenityRepository>();
+                final appState = context.read<AppState>();
+                final repo = context.read<AmenityRepository>();
 
-              try {
-                await repo.createAmenity(
-                  communityId: appState.activeCommunityId!,
-                  name: name,
-                  rules: {
-                    'price': int.tryParse(priceController.text) ?? 6000,
-                    'currency': 'PHP',
-                    'open': openTimeController.text.trim(),
-                    'close': closeTimeController.text.trim(),
-                    'allow_same_day': false,
-                    'max_days_ahead': 60,
-                  },
-                );
-
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Amenity created')),
+                try {
+                  await repo.createAmenity(
+                    communityId: appState.activeCommunityId!,
+                    name: name,
+                    rules: {
+                      'price': int.tryParse(priceController.text) ?? 6000,
+                      'currency': 'PHP',
+                      'open': openTimeController.text.trim(),
+                      'close': closeTimeController.text.trim(),
+                      'allow_same_day': false,
+                      'max_days_ahead': 60,
+                    },
                   );
-                  _loadAmenities();
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Amenity created')),
+                    );
+                    _loadAmenities();
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
                 }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
-                }
-              }
-            },
+              },
+              icon: const Icon(Icons.add_business),
+              label: const Text('Create Amenity',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff215e3f),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ),
         ],
       ),
