@@ -5,6 +5,7 @@ interface BookAmenityRequest {
   amenity_id: string
   target_date: string  // YYYY-MM-DD
   unit_id: string
+  no_verify?: boolean
 }
 
 interface BookAmenityResponse {
@@ -35,7 +36,7 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: 'Unauthorized' }, 401)
     }
 
-    const { amenity_id, target_date, unit_id }: BookAmenityRequest = await req.json()
+    const { amenity_id, target_date, unit_id, no_verify }: BookAmenityRequest = await req.json()
 
     if (!amenity_id || !target_date || !unit_id) {
       return jsonResponse({ ok: false, error: 'Missing required fields' }, 400)
@@ -84,28 +85,30 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: `Cannot book more than ${maxDaysAhead} days ahead` }, 400)
     }
 
-    // Check precondition: user must have pool access registration
-    const { data: poolAccess } = await supabaseAdmin
-      .from('pool_access_registrations')
-      .select('id')
-      .eq('community_id', amenity.community_id)
-      .eq('user_id', user.id)
-      .single()
+    if (!no_verify) {
+      // Check precondition: user must have pool access registration
+      const { data: poolAccess } = await supabaseAdmin
+        .from('pool_access_registrations')
+        .select('id')
+        .eq('community_id', amenity.community_id)
+        .eq('user_id', user.id)
+        .single()
 
-    if (!poolAccess) {
-      return jsonResponse({ ok: false, error: 'Pool access registration required before booking' }, 403)
-    }
+      if (!poolAccess) {
+        return jsonResponse({ ok: false, error: 'Pool access registration required before booking' }, 403)
+      }
 
-    // Check precondition: user must be in household of selected unit
-    const { data: householdMember } = await supabaseAdmin
-      .from('household_members')
-      .select('id')
-      .eq('unit_id', unit_id)
-      .eq('user_id', user.id)
-      .single()
+      // Check precondition: user must be in household of selected unit
+      const { data: householdMember } = await supabaseAdmin
+        .from('household_members')
+        .select('id')
+        .eq('unit_id', unit_id)
+        .eq('user_id', user.id)
+        .single()
 
-    if (!householdMember) {
-      return jsonResponse({ ok: false, error: 'You must be a member of the selected unit' }, 403)
+      if (!householdMember) {
+        return jsonResponse({ ok: false, error: 'You must be a member of the selected unit' }, 403)
+      }
     }
 
     // Build time range (full day: 08:00 - 22:00 in target timezone)

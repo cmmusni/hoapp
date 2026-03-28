@@ -372,22 +372,43 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Approve Booking'),
-        content: const Text(
-          'Approve this booking request?',
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xff215e3f),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+          child: Row(
+            children: [
+              const Icon(Icons.check_circle_outline,
+                  color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              const Text('Approve Booking',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  )),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70),
+                onPressed: () => Navigator.pop(ctx, false),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        ),
+        content: SizedBox(
+          width: 400,
+          child: const Text('Approve this booking request?'),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
+          HOAppButton(
+            label: 'Approve',
+            icon: Icons.check,
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Approve'),
           ),
         ],
       ),
@@ -420,20 +441,53 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Cancel Booking'),
-        content: const Text('Are you sure you want to cancel this booking?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('No'),
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          decoration: const BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+          padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+          child: Row(
+            children: [
+              const Icon(Icons.cancel_outlined, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              const Text('Cancel Booking',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  )),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70),
+                onPressed: () => Navigator.pop(ctx, false),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        ),
+        content: SizedBox(
+          width: 400,
+          child: const Text('Are you sure you want to cancel this booking?'),
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.cancel_outlined),
+              label: const Text('Cancel Booking'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
             ),
-            child: const Text('Cancel Booking'),
           ),
         ],
       ),
@@ -559,66 +613,80 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.info_outlined, color: Color(0xff215e3f), size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Text(amenity.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600))),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(context),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (amenity.description != null) ...[
-              Text(amenity.description!),
-              const SizedBox(height: 16),
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xff215e3f),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+          child: Row(
+            children: [
+              const Icon(Icons.pool_outlined, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: Text(amenity.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ))),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
             ],
-            if (amenity.price != null)
+          ),
+        ),
+        content: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (amenity.description != null) ...[
+                Text(amenity.description!,
+                    style: TextStyle(
+                        fontSize: 14, color: Colors.grey[700], height: 1.4)),
+                const SizedBox(height: 16),
+              ],
+              if (amenity.price != null)
+                _InfoRow(
+                  label: 'Price',
+                  value: '₱${amenity.price} ${amenity.currency ?? 'PHP'}',
+                ),
+              if (amenity.capacity != null)
+                _InfoRow(
+                    label: 'Capacity', value: '${amenity.capacity} people'),
+              if (amenity.openTime != null && amenity.closeTime != null)
+                _InfoRow(
+                  label: 'Hours',
+                  value: '${amenity.openTime} - ${amenity.closeTime}',
+                ),
               _InfoRow(
-                label: 'Price',
-                value: '₱${amenity.price} ${amenity.currency ?? 'PHP'}',
+                label: 'Same-day booking',
+                value: amenity.allowSameDay ? 'Allowed' : 'Not allowed',
               ),
-            if (amenity.capacity != null)
-              _InfoRow(label: 'Capacity', value: '${amenity.capacity} people'),
-            if (amenity.openTime != null && amenity.closeTime != null)
               _InfoRow(
-                label: 'Hours',
-                value: '${amenity.openTime} - ${amenity.closeTime}',
+                label: 'Advance booking',
+                value: 'Up to ${amenity.maxDaysAhead} days',
               ),
-            _InfoRow(
-              label: 'Same-day booking',
-              value: amenity.allowSameDay ? 'Allowed' : 'Not allowed',
-            ),
-            _InfoRow(
-              label: 'Advance booking',
-              value: 'Up to ${amenity.maxDaysAhead} days',
-            ),
-          ],
+            ],
+          ),
         ),
         actions: isStaff
             ? null
             : [
-                ElevatedButton.icon(
+                HOAppButton(
+                  label: 'Request Booking',
+                  icon: Icons.event_available,
                   onPressed: () {
                     Navigator.pop(context);
                     _showRequestBookingDialog([amenity],
                         preselectedAmenity: amenity);
                   },
-                  icon: const Icon(Icons.event_available, size: 18),
-                  label: const Text('Request Booking'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff215e3f),
-                    foregroundColor: Colors.white,
-                  ),
                 ),
               ],
       ),
@@ -1029,6 +1097,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                               amenityId: selectedAmenity!.id,
                               targetDate: dateStr,
                               unitId: selectedUnit!.id,
+                              noVerify: true,
                             );
                             if (ctx.mounted) {
                               Navigator.pop(ctx);
@@ -1073,63 +1142,83 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.add_business_outlined,
-                color: Color(0xff215e3f), size: 24),
-            const SizedBox(width: 12),
-            const Text('Create Amenity',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(context),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xff215e3f),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+          child: Row(
             children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'e.g., Pool + Function Room',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: priceController,
-                decoration: const InputDecoration(
-                  labelText: 'Price (PHP)',
-                  prefixText: '₱',
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: openTimeController,
-                decoration: const InputDecoration(
-                  labelText: 'Opening Time',
-                  hintText: 'HH:MM',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: closeTimeController,
-                decoration: const InputDecoration(
-                  labelText: 'Closing Time',
-                  hintText: 'HH:MM',
-                ),
+              const Icon(Icons.add_business_outlined,
+                  color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              const Text('Create Amenity',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  )),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
             ],
           ),
         ),
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    hintText: 'e.g., Pool + Function Room',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: priceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Price (PHP)',
+                    prefixText: '₱ ',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: openTimeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Opening Time',
+                    hintText: 'HH:MM',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: closeTimeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Closing Time',
+                    hintText: 'HH:MM',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         actions: [
-          ElevatedButton(
+          HOAppButton(
+            label: 'Create',
             onPressed: () async {
               final name = nameController.text.trim();
               if (name.isEmpty) return;
@@ -1166,7 +1255,6 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                 }
               }
             },
-            child: const Text('Create'),
           ),
         ],
       ),

@@ -301,10 +301,7 @@ GoRouter createRouter({String? lastCommunitySlug}) {
               }
               return null;
             },
-            builder: (context, state) => const PlanGate(
-              feature: 'Financial Reports',
-              child: ExpenseIncomeChartPage(),
-            ),
+            builder: (context, state) => const ExpenseIncomeChartPage(),
           ),
           GoRoute(
             path: '/:community/pool-access',

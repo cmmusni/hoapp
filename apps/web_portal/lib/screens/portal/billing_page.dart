@@ -163,8 +163,8 @@ class _BillingPageState extends State<BillingPage>
               tabs: [
                 _buildTabLabel('My Invoices', _myPendingCount),
                 _buildTabLabel('All Invoices', _allPendingCount),
+                _buildTabLabel('Recurring Invoices', _dueRecurringCount),
                 const Tab(text: 'Income'),
-                _buildTabLabel('Recurring', _dueRecurringCount),
               ],
             ),
           Expanded(
@@ -174,13 +174,13 @@ class _BillingPageState extends State<BillingPage>
                     children: [
                       const _InvoiceListView(showMyInvoices: true),
                       const _InvoiceListView(showMyInvoices: false),
-                      const _IncomeTrackerView(),
                       _RecurringBillingView(
                         onInvoicesGenerated: () {
                           _loadTabBadges();
                           _autoGenerateInvoices();
                         },
                       ),
+                      const _IncomeTrackerView(),
                     ],
                   )
                 : const _InvoiceListView(showMyInvoices: true),

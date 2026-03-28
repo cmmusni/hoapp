@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:html' as html;
 
+const _brandColor = Color(0xff215e3f);
+
 class AnnouncementsPage extends StatefulWidget {
   const AnnouncementsPage({super.key});
 
@@ -796,12 +798,28 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 4),
+                _sectionLabel('Announcement Details'),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _titleController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Title',
                     hintText: 'Enter announcement title',
+                    prefixIcon: const Icon(Icons.title, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -810,13 +828,24 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _bodyController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Message',
                     hintText: 'Enter announcement details',
                     alignLabelWithHint: true,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   maxLines: 5,
                   validator: (value) {
@@ -826,21 +855,41 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  value: _pinned,
-                  onChanged: (value) =>
-                      setState(() => _pinned = value ?? false),
-                  title: const Text('Pin to top'),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: _pinned
+                        ? _brandColor.withValues(alpha: 0.06)
+                        : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _pinned
+                          ? _brandColor.withValues(alpha: 0.2)
+                          : Colors.grey.shade200,
+                    ),
+                  ),
+                  child: CheckboxListTile(
+                    value: _pinned,
+                    onChanged: (value) =>
+                        setState(() => _pinned = value ?? false),
+                    title: const Text('Pin to top',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w500)),
+                    subtitle: Text('Pinned announcements appear first',
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[500])),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    activeColor: _brandColor,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Image (optional)',
-                      style: TextStyle(fontSize: 13, color: Colors.grey)),
-                ),
+                const SizedBox(height: 20),
+                _sectionLabel('Media'),
+                const SizedBox(height: 12),
+                Text('Image (optional)',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                 const SizedBox(height: 8),
                 if (_uploadedImageUrl != null) ...[
                   ClipRRect(
@@ -880,11 +929,8 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Document attachment (optional)',
-                      style: TextStyle(fontSize: 13, color: Colors.grey)),
-                ),
+                Text('Document attachment (optional)',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                 const SizedBox(height: 8),
                 _buildAttachmentSection(),
               ],
@@ -893,12 +939,60 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: 'Create',
-          onPressed: _handleCreate,
-          isLoading: _isLoading,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isLoading ? null : _handleCreate,
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.send_rounded),
+            label: Text(_isLoading ? 'Creating...' : 'Create Announcement',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _brandColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _brandColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _brandColor,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(text,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              )),
+        ],
+      ),
     );
   }
 
@@ -1041,12 +1135,28 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 4),
+                _sectionLabel('Announcement Details'),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _titleController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Title',
                     hintText: 'Enter announcement title',
+                    prefixIcon: const Icon(Icons.title, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -1055,13 +1165,24 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _bodyController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Message',
                     hintText: 'Enter announcement details',
                     alignLabelWithHint: true,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
+                    ),
                   ),
                   maxLines: 5,
                   validator: (value) {
@@ -1071,21 +1192,41 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  value: _pinned,
-                  onChanged: (value) =>
-                      setState(() => _pinned = value ?? false),
-                  title: const Text('Pin to top'),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: _pinned
+                        ? _brandColor.withValues(alpha: 0.06)
+                        : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _pinned
+                          ? _brandColor.withValues(alpha: 0.2)
+                          : Colors.grey.shade200,
+                    ),
+                  ),
+                  child: CheckboxListTile(
+                    value: _pinned,
+                    onChanged: (value) =>
+                        setState(() => _pinned = value ?? false),
+                    title: const Text('Pin to top',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w500)),
+                    subtitle: Text('Pinned announcements appear first',
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[500])),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    activeColor: _brandColor,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Image (optional)',
-                      style: TextStyle(fontSize: 13, color: Colors.grey)),
-                ),
+                const SizedBox(height: 20),
+                _sectionLabel('Media'),
+                const SizedBox(height: 12),
+                Text('Image (optional)',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                 const SizedBox(height: 8),
                 if (_uploadedImageUrl != null) ...[
                   ClipRRect(
@@ -1125,11 +1266,8 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Document attachment (optional)',
-                      style: TextStyle(fontSize: 13, color: Colors.grey)),
-                ),
+                Text('Document attachment (optional)',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                 const SizedBox(height: 8),
                 _buildAttachmentSection(),
               ],
@@ -1138,12 +1276,60 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
         ),
       ),
       actions: [
-        HOAppButton(
-          label: 'Save',
-          onPressed: _handleSave,
-          isLoading: _isLoading,
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isLoading ? null : _handleSave,
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.save_rounded),
+            label: Text(_isLoading ? 'Saving...' : 'Save Changes',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _brandColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _brandColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _brandColor,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(text,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              )),
+        ],
+      ),
     );
   }
 

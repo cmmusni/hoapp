@@ -4,7 +4,9 @@ import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../adaptive/adaptive_layout.dart';
+import '../widgets/file_upload_widget.dart';
 
 const _brand = Color(0xff215e3f);
 
@@ -44,10 +46,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-    if (!appState.isStaff) {
-      return const Center(
-          child: Text('Only staff can access expense tracking.'));
-    }
+    final isStaff = appState.isStaff;
 
     return Scaffold(
       body: Column(
@@ -138,11 +137,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateExpenseSheet(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Expense'),
-      ),
+      floatingActionButton: isStaff
+          ? FloatingActionButton.extended(
+              onPressed: () => _showCreateExpenseSheet(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Expense'),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
@@ -216,30 +217,114 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               _DetailRow(label: 'Vendor', value: expense.vendor!),
             if (expense.notes != null)
               _DetailRow(label: 'Notes', value: expense.notes!),
+            if (expense.receiptUrl != null) ...[
+              const SizedBox(height: 16),
+              const Text('Receipt / Proof',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () =>
+                    _showReceiptFullScreen(context, expense.receiptUrl!),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    expense.receiptUrl!,
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.broken_image,
+                            size: 48, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text('Tap image to view full size',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+            ],
             const SizedBox(height: 16),
-            Row(children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _showCreateExpenseSheet(context, existing: expense);
-                  },
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Edit'),
+            if (context.read<AppState>().isStaff)
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _showCreateExpenseSheet(context, existing: expense);
+                    },
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _deleteExpense(context, expense),
+                    icon: const Icon(Icons.delete),
+                    label: const Text('Delete'),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white),
+                  ),
+                ),
+              ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showReceiptFullScreen(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+              child: Row(
+                children: [
+                  const Text('Receipt / Proof',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+            ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 500, maxWidth: 600),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 200,
+                      color: Colors.grey[200],
+                      child: const Center(
+                          child: Icon(Icons.broken_image,
+                              size: 48, color: Colors.grey)),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _deleteExpense(context, expense),
-                  icon: const Icon(Icons.delete),
-                  label: const Text('Delete'),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white),
-                ),
-              ),
-            ]),
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -481,6 +566,7 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
   final _notesCtrl = TextEditingController();
   ExpenseCategory _category = ExpenseCategory.maintenance;
   DateTime _date = DateTime.now();
+  String? _receiptUrl;
   bool _isLoading = false;
 
   bool get _isEditing => widget.existingExpense != null;
@@ -496,6 +582,7 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
       _notesCtrl.text = e.notes ?? '';
       _category = e.category;
       _date = e.expenseDate;
+      _receiptUrl = e.receiptUrl;
     }
   }
 
@@ -583,6 +670,52 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
               ),
             ),
             const SizedBox(height: 16),
+            const Text('Receipt / Proof (optional)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            if (_receiptUrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Stack(
+                  children: [
+                    Image.network(
+                      _receiptUrl!,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 180,
+                        color: Colors.grey[200],
+                        child: const Center(
+                            child:
+                                Icon(Icons.broken_image, color: Colors.grey)),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: IconButton(
+                        onPressed: () => setState(() => _receiptUrl = null),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        style: IconButton.styleFrom(
+                            backgroundColor: Colors.black54),
+                        iconSize: 18,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ImageUploadWidget(
+                bucket: 'expense-receipts',
+                folder: Supabase.instance.client.auth.currentUser?.id,
+                onUploadComplete: (url) {
+                  if (url.isNotEmpty) {
+                    setState(() => _receiptUrl = url);
+                  }
+                },
+              ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -630,6 +763,7 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
           expenseDate: _date,
           vendor:
               _vendorCtrl.text.trim().isEmpty ? null : _vendorCtrl.text.trim(),
+          receiptUrl: _receiptUrl,
           notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
         );
       } else {
@@ -641,6 +775,7 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
           expenseDate: _date,
           vendor:
               _vendorCtrl.text.trim().isEmpty ? null : _vendorCtrl.text.trim(),
+          receiptUrl: _receiptUrl,
           notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
         );
       }

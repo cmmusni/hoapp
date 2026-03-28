@@ -111,7 +111,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
             title: Row(
               children: [
                 Image.asset(
-                  'assets/images/hoapp-icon-white.png',
+                  'assets/images/hoapp-icon.png',
                   height: 28,
                   errorBuilder: (_, __, ___) => const SizedBox(height: 28),
                 ),

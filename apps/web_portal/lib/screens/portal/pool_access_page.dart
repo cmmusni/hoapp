@@ -915,6 +915,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
 
   Widget _buildBirthdayPicker(_SwimmerEntry entry, DateFormat dateFormat) {
     return InkWell(
+      borderRadius: BorderRadius.circular(12),
       onTap: () async {
         final date = await showDatePicker(
           context: context,
@@ -928,12 +929,17 @@ class _RegistrationFormState extends State<_RegistrationForm> {
         }
       },
       child: InputDecorator(
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           labelText: 'Birthday',
-          border: OutlineInputBorder(),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
           isDense: true,
-          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          suffixIcon: Icon(Icons.calendar_today, size: 18),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          suffixIcon: const Icon(Icons.calendar_today, size: 18),
         ),
         child: Text(
           entry.birthdate != null ? dateFormat.format(entry.birthdate!) : '',
@@ -1852,8 +1858,8 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Unit selector
-                            _sectionHeader('Select Unit', Icons.home),
-                            const SizedBox(height: 8),
+                            _sectionHeader('Select Unit', Icons.home_outlined),
+                            const SizedBox(height: 12),
                             if (_availableUnits.isEmpty)
                               Container(
                                 padding: const EdgeInsets.all(16),
@@ -1880,10 +1886,21 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                             else ...[
                               DropdownButtonFormField<Unit>(
                                 value: _selectedUnit,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Unit',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.home_outlined),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: _brandColor, width: 1.5),
+                                  ),
+                                  prefixIcon: const Icon(Icons.home_outlined),
                                 ),
                                 items: _availableUnits.map((unit) {
                                   return DropdownMenuItem(
@@ -1927,13 +1944,24 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
 
                             // Personal info
                             _sectionHeader(
-                                'Registrant Information', Icons.person),
-                            const SizedBox(height: 8),
+                                'Registrant Information', Icons.person_outline),
+                            const SizedBox(height: 12),
                             DropdownButtonFormField<OccupantType>(
                               value: _occupantType,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Occupant Type',
-                                border: OutlineInputBorder(),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                      color: _brandColor, width: 1.5),
+                                ),
                               ),
                               items: OccupantType.values.map((type) {
                                 return DropdownMenuItem(
@@ -1951,10 +1979,21 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                             const SizedBox(height: 10),
                             TextFormField(
                               controller: _fullNameController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Owner / Tenant Name',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.person),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                      color: _brandColor, width: 1.5),
+                                ),
+                                prefixIcon: const Icon(Icons.person_outline),
                               ),
                               validator: (v) =>
                                   (v?.isEmpty ?? true) ? 'Required' : null,
@@ -1963,10 +2002,21 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                             if (isNarrow) ...[
                               TextFormField(
                                 controller: _phoneController,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Phone',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.phone),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: _brandColor, width: 1.5),
+                                  ),
+                                  prefixIcon: const Icon(Icons.phone_outlined),
                                 ),
                                 keyboardType: TextInputType.phone,
                                 validator: (v) =>
@@ -1975,10 +2025,21 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                               const SizedBox(height: 10),
                               TextFormField(
                                 controller: _emailController,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Email',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.email),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: _brandColor, width: 1.5),
+                                  ),
+                                  prefixIcon: const Icon(Icons.email_outlined),
                                 ),
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (v) {
@@ -1993,10 +2054,25 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _phoneController,
-                                      decoration: const InputDecoration(
+                                      decoration: InputDecoration(
                                         labelText: 'Phone',
-                                        border: OutlineInputBorder(),
-                                        prefixIcon: Icon(Icons.phone),
+                                        border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade300),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
+                                              color: _brandColor, width: 1.5),
+                                        ),
+                                        prefixIcon:
+                                            const Icon(Icons.phone_outlined),
                                       ),
                                       keyboardType: TextInputType.phone,
                                       validator: (v) => (v?.isEmpty ?? true)
@@ -2008,10 +2084,25 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _emailController,
-                                      decoration: const InputDecoration(
+                                      decoration: InputDecoration(
                                         labelText: 'Email',
-                                        border: OutlineInputBorder(),
-                                        prefixIcon: Icon(Icons.email),
+                                        border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade300),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
+                                              color: _brandColor, width: 1.5),
+                                        ),
+                                        prefixIcon:
+                                            const Icon(Icons.email_outlined),
                                       ),
                                       keyboardType: TextInputType.emailAddress,
                                       validator: (v) {
@@ -2028,19 +2119,29 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                             const SizedBox(height: 20),
 
                             // Swimmers
-                            _sectionHeader('Swimmers', Icons.pool),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_swimmers.length} of $_maxPax swimmers',
-                              style: TextStyle(
+                            _sectionHeader('Swimmers', Icons.pool_outlined),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
                                 color: _swimmers.length >= _maxPax
-                                    ? Colors.red
-                                    : Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
+                                    ? Colors.red.withValues(alpha: 0.08)
+                                    : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${_swimmers.length} of $_maxPax swimmers',
+                                style: TextStyle(
+                                  color: _swimmers.length >= _maxPax
+                                      ? Colors.red
+                                      : Colors.grey[600],
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             ..._buildSwimmerRows(),
                             const SizedBox(height: 8),
                             if (_swimmers.length < _maxPax)
@@ -2057,15 +2158,26 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
 
                             // Emergency contact
                             _sectionHeader(
-                                'Emergency Contact', Icons.emergency),
-                            const SizedBox(height: 8),
+                                'Emergency Contact', Icons.emergency_outlined),
+                            const SizedBox(height: 12),
                             if (isNarrow) ...[
                               TextFormField(
                                 controller: _emergencyNameController,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Contact Name',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.person_outline),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: _brandColor, width: 1.5),
+                                  ),
+                                  prefixIcon: const Icon(Icons.person_outline),
                                 ),
                                 validator: (v) =>
                                     (v?.isEmpty ?? true) ? 'Required' : null,
@@ -2073,10 +2185,21 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                               const SizedBox(height: 10),
                               TextFormField(
                                 controller: _emergencyPhoneController,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Contact Phone',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.phone_outlined),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: _brandColor, width: 1.5),
+                                  ),
+                                  prefixIcon: const Icon(Icons.phone_outlined),
                                 ),
                                 keyboardType: TextInputType.phone,
                                 validator: (v) =>
@@ -2088,10 +2211,25 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _emergencyNameController,
-                                      decoration: const InputDecoration(
+                                      decoration: InputDecoration(
                                         labelText: 'Contact Name',
-                                        border: OutlineInputBorder(),
-                                        prefixIcon: Icon(Icons.person_outline),
+                                        border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade300),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
+                                              color: _brandColor, width: 1.5),
+                                        ),
+                                        prefixIcon:
+                                            const Icon(Icons.person_outline),
                                       ),
                                       validator: (v) => (v?.isEmpty ?? true)
                                           ? 'Required'
@@ -2102,10 +2240,25 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _emergencyPhoneController,
-                                      decoration: const InputDecoration(
+                                      decoration: InputDecoration(
                                         labelText: 'Contact Phone',
-                                        border: OutlineInputBorder(),
-                                        prefixIcon: Icon(Icons.phone_outlined),
+                                        border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade300),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
+                                              color: _brandColor, width: 1.5),
+                                        ),
+                                        prefixIcon:
+                                            const Icon(Icons.phone_outlined),
                                       ),
                                       keyboardType: TextInputType.phone,
                                       validator: (v) => (v?.isEmpty ?? true)
@@ -2153,14 +2306,34 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                 _loadError == null &&
                 _availableUnits.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                 child: SizedBox(
                   width: double.infinity,
-                  child: HOAppButton(
-                    label: 'Register Swimmers',
-                    isLoading: _isSubmitting,
+                  height: 52,
+                  child: ElevatedButton.icon(
                     onPressed:
                         _isSubmitting || _selectedUnit == null ? null : _submit,
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.how_to_reg_rounded),
+                    label: Text(
+                      _isSubmitting ? 'Registering...' : 'Register Swimmers',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _brandColor,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor:
+                          _brandColor.withValues(alpha: 0.4),
+                      disabledForegroundColor: Colors.white70,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
               ),
@@ -2179,23 +2352,23 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
           final isNarrow = outerConstraints.maxWidth < 480;
           return Card(
             elevation: 0,
-            margin: const EdgeInsets.only(bottom: 8),
+            margin: const EdgeInsets.only(bottom: 10),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-              side: BorderSide(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade200),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 children: [
                   Row(
                     children: [
                       Container(
-                        width: 28,
-                        height: 28,
+                        width: 30,
+                        height: 30,
                         decoration: BoxDecoration(
-                          color: _brandColor.withOpacity(0.1),
-                          shape: BoxShape.circle,
+                          color: _brandColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -2344,6 +2517,7 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
 
   Widget _buildBirthdayPicker(_SwimmerEntry entry, DateFormat dateFormat) {
     return InkWell(
+      borderRadius: BorderRadius.circular(12),
       onTap: () async {
         final date = await showDatePicker(
           context: context,
@@ -2357,12 +2531,17 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
         }
       },
       child: InputDecorator(
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           labelText: 'Birthday',
-          border: OutlineInputBorder(),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
           isDense: true,
-          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          suffixIcon: Icon(Icons.calendar_today, size: 18),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          suffixIcon: const Icon(Icons.calendar_today, size: 18),
         ),
         child: Text(
           entry.birthdate != null ? dateFormat.format(entry.birthdate!) : '',
@@ -2376,18 +2555,34 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
   }
 
   Widget _sectionHeader(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, color: _brandColor, size: 18),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _brandColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: _brandColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: _brandColor, size: 16),
           ),
-        ),
-      ],
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

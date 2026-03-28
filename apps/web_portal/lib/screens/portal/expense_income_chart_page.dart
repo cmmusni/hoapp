@@ -34,23 +34,20 @@ class _ExpenseIncomeChartPageState extends State<ExpenseIncomeChartPage> {
     final communityId = appState.activeCommunityId;
     if (communityId == null) return;
 
-    final billingRepo = context.read<BillingRepository>();
     final expenseRepo = context.read<ExpenseRepository>();
     final incomeRepo = context.read<IncomeRepository>();
 
     try {
       // Fetch all data in parallel
       final results = await Future.wait([
-        billingRepo.getInvoices(communityId),
         expenseRepo.getExpenses(communityId),
         incomeRepo.getVerifiedPayments(communityId),
         incomeRepo.getManualIncome(communityId),
       ]);
 
-      final invoices = results[0] as List<Invoice>;
-      final expenses = results[1] as List<Expense>;
-      final verifiedPayments = results[2] as List<Payment>;
-      final manualIncome = results[3] as List<ManualIncome>;
+      final expenses = results[0] as List<Expense>;
+      final verifiedPayments = results[1] as List<Payment>;
+      final manualIncome = results[2] as List<ManualIncome>;
 
       final now = DateTime.now();
       final months = <_MonthlyComparison>[];
@@ -77,14 +74,6 @@ class _ExpenseIncomeChartPageState extends State<ExpenseIncomeChartPage> {
           if (!m.incomeDate.isBefore(month) &&
               !m.incomeDate.isAfter(monthEnd)) {
             income += m.amount;
-          }
-        }
-        // Also count paid invoices as income
-        for (final inv in invoices) {
-          if (inv.status == InvoiceStatus.paid &&
-              !inv.dueDate.isBefore(month) &&
-              !inv.dueDate.isAfter(monthEnd)) {
-            income += inv.amount;
           }
         }
 
@@ -124,16 +113,6 @@ class _ExpenseIncomeChartPageState extends State<ExpenseIncomeChartPage> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-
-    if (!appState.isStaff) {
-      return const Scaffold(
-        body: Center(
-          child: Text('Only staff can access financial reports.'),
-        ),
-      );
-    }
-
     if (_loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),

@@ -135,8 +135,6 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
               onPressed: () => _showCreateDialog(context),
               icon: const Icon(Icons.add),
               label: const Text('Request Pass'),
-              backgroundColor: _brand,
-              foregroundColor: Colors.white,
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
@@ -165,6 +163,9 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: _CreatePassSheet(passTypes: _passTypes, onCreated: _loadData),
@@ -177,6 +178,9 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => _PassDetailsSheet(
         pass: pass,
         isStaff: isStaff,
@@ -204,30 +208,88 @@ class _PassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusStr = pass.status.toString().split('.').last;
     final statusColor = _getStatusColor(statusStr);
+    final dateRange =
+        '${DateFormat('MMM d').format(pass.validFrom)} – ${DateFormat('MMM d').format(pass.validUntil)}';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withValues(alpha: 0.15),
-          child: Icon(Icons.qr_code, color: statusColor, size: 20),
-        ),
-        title: Text(pass.visitorName ?? 'Unknown Visitor'),
-        subtitle: Text(
-          '${pass.purpose ?? 'No purpose'} • ${statusStr.toUpperCase()}',
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-        trailing: Chip(
-          label: Text(statusStr.toUpperCase(),
-              style: const TextStyle(fontSize: 10)),
-          backgroundColor: statusColor.withValues(alpha: 0.15),
-          visualDensity: VisualDensity.compact,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.qr_code_2, color: statusColor, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pass.visitorName ?? 'Unknown Visitor',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 15),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      pass.purpose ?? 'No purpose',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today,
+                            size: 12, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Text(dateRange,
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.grey[500])),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _statusLabel(statusStr),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  static String _statusLabel(String status) => switch (status) {
+        'pending_review' => 'PENDING',
+        _ => status.toUpperCase(),
+      };
 
   static Color _getStatusColor(String status) => switch (status) {
         'approved' || 'active' => _brand,
@@ -256,152 +318,277 @@ class _PassDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusStr = pass.status.toString().split('.').last;
+    final statusColor = _PassCard._getStatusColor(statusStr);
+    final statusLabel = _PassCard._statusLabel(statusStr);
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.7,
+      initialChildSize: 0.75,
+      maxChildSize: 0.95,
       expand: false,
-      builder: (context, sc) => ListView(
-        controller: sc,
-        padding: const EdgeInsets.all(24),
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      builder: (context, sc) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: ListView(
+          controller: sc,
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          // QR placeholder
-          Center(
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
+
+            // Status pill
+            Center(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // QR placeholder
+            Center(
+              child: Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  color: _brand.withValues(alpha: 0.04),
+                  border: Border.all(
+                      color: _brand.withValues(alpha: 0.15), width: 1.5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.qr_code_2, size: 64, color: _brand),
+                    const SizedBox(height: 6),
+                    Text(
+                      pass.qrToken?.substring(0, 8) ?? 'N/A',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[500],
+                        fontFamily: 'monospace',
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Visitor name
+            Text(
+              pass.visitorName ?? 'Unknown Visitor',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            if (pass.purpose != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                pass.purpose!,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 24),
+
+            // Details card
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              padding: const EdgeInsets.all(16),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.qr_code_2, size: 60, color: _brand),
-                  const SizedBox(height: 4),
-                  Text(pass.qrToken?.substring(0, 8) ?? 'N/A',
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                  if (pass.visitorPhone != null)
+                    _DetailRow(
+                        icon: Icons.phone_outlined,
+                        label: 'Phone',
+                        value: pass.visitorPhone!),
+                  if (pass.companyName != null)
+                    _DetailRow(
+                        icon: Icons.business_outlined,
+                        label: 'Company',
+                        value: pass.companyName!),
+                  if (pass.plateNumber != null)
+                    _DetailRow(
+                        icon: Icons.directions_car_outlined,
+                        label: 'Plate #',
+                        value: pass.plateNumber!),
+                  _DetailRow(
+                    icon: Icons.login,
+                    label: 'Valid From',
+                    value: DateFormat('MMM d, yyyy  h:mm a')
+                        .format(pass.validFrom),
+                  ),
+                  _DetailRow(
+                    icon: Icons.logout,
+                    label: 'Valid Until',
+                    value: DateFormat('MMM d, yyyy  h:mm a')
+                        .format(pass.validUntil),
+                    showDivider: pass.notes != null,
+                  ),
+                  if (pass.notes != null)
+                    _DetailRow(
+                      icon: Icons.notes,
+                      label: 'Notes',
+                      value: pass.notes!,
+                      showDivider: false,
+                    ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(pass.visitorName ?? 'Unknown Visitor',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          _DetailRow(label: 'Status', value: statusStr.toUpperCase()),
-          _DetailRow(label: 'Purpose', value: pass.purpose ?? 'N/A'),
-          if (pass.visitorPhone != null)
-            _DetailRow(label: 'Phone', value: pass.visitorPhone!),
-          if (pass.companyName != null)
-            _DetailRow(label: 'Company', value: pass.companyName!),
-          if (pass.plateNumber != null)
-            _DetailRow(label: 'Plate #', value: pass.plateNumber!),
-          _DetailRow(
-              label: 'Valid From',
-              value: DateFormat('MMM d, yyyy HH:mm').format(pass.validFrom)),
-          _DetailRow(
-              label: 'Valid Until',
-              value: DateFormat('MMM d, yyyy HH:mm').format(pass.validUntil)),
-          if (pass.notes != null)
-            _DetailRow(label: 'Notes', value: pass.notes!),
-          const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
-          // Staff review actions
-          if (isStaff &&
-              (statusStr == 'submitted' || statusStr == 'pending_review')) ...[
-            Row(children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final repo = SecurityPassRepository();
-                    await repo.reviewPass(passId: pass.id, action: 'approve');
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                      onUpdated();
-                    }
-                  },
-                  icon: const Icon(Icons.check),
-                  label: const Text('Approve'),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: _brand, foregroundColor: Colors.white),
+            // Staff review actions
+            if (isStaff &&
+                (statusStr == 'submitted' ||
+                    statusStr == 'pending_review')) ...[
+              Row(children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final repo = SecurityPassRepository();
+                      await repo.reviewPass(passId: pass.id, action: 'approve');
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                        onUpdated();
+                      }
+                    },
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Approve'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _brand,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final repo = SecurityPassRepository();
+                      await repo.reviewPass(passId: pass.id, action: 'reject');
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                        onUpdated();
+                      }
+                    },
+                    icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+                    label: const Text('Reject',
+                        style: TextStyle(color: Colors.red)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ]),
+            ],
+
+            // Revoke if active
+            if (isStaff &&
+                (statusStr == 'active' || statusStr == 'approved')) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () async {
                     final repo = SecurityPassRepository();
-                    await repo.reviewPass(passId: pass.id, action: 'reject');
+                    await repo.revokePass(pass.id);
                     if (context.mounted) {
                       Navigator.of(context).pop();
                       onUpdated();
                     }
                   },
-                  icon: const Icon(Icons.close, color: Colors.red),
-                  label:
-                      const Text('Reject', style: TextStyle(color: Colors.red)),
+                  icon: const Icon(Icons.block, color: Colors.red),
+                  label: const Text('Revoke Pass',
+                      style: TextStyle(color: Colors.red)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
-            ]),
+            ],
           ],
-
-          // Revoke if active
-          if (isStaff &&
-              (statusStr == 'active' || statusStr == 'approved')) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final repo = SecurityPassRepository();
-                  await repo.revokePass(pass.id);
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                    onUpdated();
-                  }
-                },
-                icon: const Icon(Icons.block, color: Colors.red),
-                label: const Text('Revoke Pass',
-                    style: TextStyle(color: Colors.red)),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
 }
 
 class _DetailRow extends StatelessWidget {
+  final IconData? icon;
   final String label;
   final String value;
-  const _DetailRow({required this.label, required this.value});
+  final bool showDivider;
+  const _DetailRow({
+    this.icon,
+    required this.label,
+    required this.value,
+    this.showDivider = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-          width: 100,
-          child: Text(label,
-              style: TextStyle(
-                  color: Colors.grey[600], fontWeight: FontWeight.w500)),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (icon != null) ...[
+              Icon(icon, size: 18, color: Colors.grey[500]),
+              const SizedBox(width: 10),
+            ],
+            SizedBox(
+              width: 90,
+              child: Text(label,
+                  style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500)),
+            ),
+            Expanded(
+              child: Text(value,
+                  style: const TextStyle(fontSize: 14),
+                  textAlign: TextAlign.end),
+            ),
+          ]),
         ),
-        Expanded(child: Text(value)),
-      ]),
+        if (showDivider) Divider(height: 1, color: Colors.grey.shade200),
+      ],
     );
   }
 }
@@ -450,18 +637,72 @@ class _CreatePassSheetState extends State<_CreatePassSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Request Security Pass',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header with icon
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _brand.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child:
+                      const Icon(Icons.badge_outlined, color: _brand, size: 24),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Request Security Pass',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 2),
+                      Text('Fill in visitor details below',
+                          style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Pass type
             DropdownButtonFormField<PassType>(
               value: _selectedType,
-              decoration: const InputDecoration(
-                  labelText: 'Pass Type', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: 'Pass Type',
+                prefixIcon: const Icon(Icons.category_outlined, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _brand, width: 1.5),
+                ),
+              ),
               items: widget.passTypes
                   .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
                   .toList(),
@@ -469,79 +710,173 @@ class _CreatePassSheetState extends State<_CreatePassSheet> {
                 if (v != null) setState(() => _selectedType = v);
               },
             ),
-            const SizedBox(height: 12),
-            TextField(
+            const SizedBox(height: 14),
+
+            // Visitor info section
+            _sectionLabel('Visitor Information'),
+            const SizedBox(height: 10),
+            _styledField(
               controller: _visitorNameCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Visitor Name', border: OutlineInputBorder()),
+              label: 'Visitor Name',
+              icon: Icons.person_outline,
             ),
             const SizedBox(height: 12),
-            TextField(
+            _styledField(
               controller: _visitorPhoneCtrl,
+              label: 'Visitor Phone (optional)',
+              icon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                  labelText: 'Visitor Phone (optional)',
-                  border: OutlineInputBorder()),
             ),
             const SizedBox(height: 12),
-            TextField(
+            _styledField(
               controller: _purposeCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Purpose', border: OutlineInputBorder()),
+              label: 'Purpose of Visit',
+              icon: Icons.description_outlined,
             ),
             const SizedBox(height: 12),
-            TextField(
+            _styledField(
               controller: _companyCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Company (optional)',
-                  border: OutlineInputBorder()),
+              label: 'Company (optional)',
+              icon: Icons.business_outlined,
             ),
             const SizedBox(height: 12),
-            TextField(
+            _styledField(
               controller: _plateCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Plate Number (optional)',
-                  border: OutlineInputBorder()),
+              label: 'Plate Number (optional)',
+              icon: Icons.directions_car_outlined,
             ),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.access_time),
-              title: Text(
-                  'From: ${DateFormat('MMM d, HH:mm').format(_validFrom)}'),
-              onTap: () => _pickDateTime(true),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.access_time),
-              title: Text(
-                  'Until: ${DateFormat('MMM d, HH:mm').format(_validUntil)}'),
-              onTap: () => _pickDateTime(false),
-            ),
-            TextField(
-              controller: _notesCtrl,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
+            const SizedBox(height: 20),
+
+            // Schedule section
+            _sectionLabel('Schedule'),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _dateCard(
+                    label: 'FROM',
+                    dateTime: _validFrom,
+                    onTap: () => _pickDateTime(true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _dateCard(
+                    label: 'UNTIL',
+                    dateTime: _validUntil,
+                    onTap: () => _pickDateTime(false),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
+
+            _styledField(
+              controller: _notesCtrl,
+              label: 'Notes (optional)',
+              icon: Icons.notes,
+              maxLines: 2,
+            ),
+            const SizedBox(height: 24),
+
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              height: 52,
+              child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _handleCreate,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: _brand, foregroundColor: Colors.white),
-                child: _isLoading
+                icon: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Submit Request'),
+                    : const Icon(Icons.send_rounded),
+                label: Text(_isLoading ? 'Submitting...' : 'Submit Request',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _brand,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Colors.grey[700],
+        letterSpacing: 0.3,
+      ),
+    );
+  }
+
+  Widget _styledField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, size: 20),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _brand, width: 1.5),
+        ),
+        alignLabelWithHint: maxLines > 1,
+      ),
+    );
+  }
+
+  Widget _dateCard({
+    required String label,
+    required DateTime dateTime,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[500],
+                    letterSpacing: 1)),
+            const SizedBox(height: 6),
+            Text(DateFormat('MMM d, yyyy').format(dateTime),
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 2),
+            Text(DateFormat('h:mm a').format(dateTime),
+                style: TextStyle(fontSize: 13, color: Colors.grey[600])),
           ],
         ),
       ),

@@ -30,36 +30,34 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     final repo = context.read<HouseholdRepository>();
 
     try {
-      // Get user's unit via household membership
-      final myMemberships =
-          await repo.getMyHouseholds(appState.activeCommunityId!);
+      // Query household_members with joined unit data directly
+      final response = await Supabase.instance.client
+          .from('household_members')
+          .select('*, units(*)')
+          .eq('user_id', userId)
+          .eq('community_id', appState.activeCommunityId!);
 
-      if (myMemberships.isNotEmpty && mounted) {
-        final unitId = myMemberships.first.unitId;
+      final rows = response as List;
+      if (rows.isNotEmpty && mounted) {
+        final first = Map<String, dynamic>.from(rows.first);
+        final unitId = first['unit_id'] as String;
 
-        // Fetch actual unit details from database
-        final unitRow = await Supabase.instance.client
-            .from('units')
-            .select()
-            .eq('id', unitId)
-            .maybeSingle();
-
-        if (unitRow != null && mounted) {
-          setState(() {
-            _unit = Unit.fromJson(unitRow);
-            _membersFuture = repo.getHouseholdMembers(unitId);
-          });
-        } else if (mounted) {
-          setState(() {
-            _unit = Unit(
-              id: unitId,
-              communityId: appState.activeCommunityId!,
-              unitNo: unitId,
-              createdAt: DateTime.now(),
-            );
-            _membersFuture = repo.getHouseholdMembers(unitId);
-          });
+        // Extract the joined unit data
+        final unitData = first['units'];
+        if (unitData != null && unitData is Map) {
+          _unit = Unit.fromJson(Map<String, dynamic>.from(unitData));
+        } else {
+          _unit = Unit(
+            id: unitId,
+            communityId: appState.activeCommunityId!,
+            unitNo: 'Unknown',
+            createdAt: DateTime.now(),
+          );
         }
+
+        setState(() {
+          _membersFuture = repo.getHouseholdMembers(unitId);
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -112,7 +110,8 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.home, color: Colors.white70, size: 20),
+                          const Icon(Icons.home,
+                              color: Colors.white70, size: 20),
                           const SizedBox(width: 8),
                           Text(
                             'Unit ${_unit!.unitNo}',

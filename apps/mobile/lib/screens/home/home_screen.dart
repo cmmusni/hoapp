@@ -123,14 +123,12 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.account_balance_wallet_outlined,
         selectedIcon: Icons.account_balance_wallet,
         pageBuilder: () => const shared.ExpensesScreen(),
-        staffOnly: true,
       ),
       _NavItem(
         label: 'Income vs Expenses',
         icon: Icons.bar_chart_outlined,
         selectedIcon: Icons.bar_chart,
         pageBuilder: () => const ExpenseIncomeChartScreen(),
-        staffOnly: true,
       ),
       _NavItem(
         label: 'Registered Swimmers',
@@ -277,10 +275,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 24,
                     backgroundColor: Colors.white24,
-                    child: Icon(Icons.home, color: Colors.white, size: 24),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/hoapp-logo-full.png',
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(

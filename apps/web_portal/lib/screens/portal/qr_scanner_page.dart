@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 const _brandColor = Color(0xff215e3f);
+
+/// Modes for the scanner page: camera live scan or manual token entry.
+enum _ScanMode { camera, manual }
 
 class QrScannerPage extends StatefulWidget {
   const QrScannerPage({super.key});
@@ -15,27 +19,73 @@ class QrScannerPage extends StatefulWidget {
 class _QrScannerPageState extends State<QrScannerPage> {
   final _repo = SecurityPassRepository();
   final _tokenCtrl = TextEditingController();
-  String _scanType = 'entry';
+  MobileScannerController? _cameraController;
 
-  bool _scanning = false;
+  String _scanType = 'entry';
+  _ScanMode _mode = _ScanMode.camera;
+  bool _validating = false;
+  bool _cameraError = false;
   Map<String, dynamic>? _lastResult;
+
+  // Prevent duplicate scans while a validation is in progress
+  String? _lastScannedToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCamera();
+  }
+
+  void _initCamera() {
+    _cameraController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+      facing: CameraFacing.back,
+      formats: [BarcodeFormat.qrCode],
+    );
+    _cameraController!.start().catchError((_) {
+      if (mounted) {
+        setState(() {
+          _cameraError = true;
+          _mode = _ScanMode.manual;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _cameraController?.dispose();
     _tokenCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _scan() async {
+  // -- Handle a scanned barcode from the camera --
+  void _onDetect(BarcodeCapture capture) {
+    if (_validating) return; // already processing
+    final barcodes = capture.barcodes;
+    if (barcodes.isEmpty) return;
+    final code = barcodes.first.rawValue;
+    if (code == null || code.isEmpty) return;
+    if (code == _lastScannedToken) return; // skip duplicate
+    _lastScannedToken = code;
+    _validateToken(code);
+  }
+
+  // -- Validate from manual entry --
+  Future<void> _validateManual() async {
     final token = _tokenCtrl.text.trim();
     if (token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter or scan a QR code')));
+          const SnackBar(content: Text('Please enter a QR code token')));
       return;
     }
+    _validateToken(token);
+  }
 
+  // -- Core validation logic (shared by camera & manual) --
+  Future<void> _validateToken(String token) async {
     setState(() {
-      _scanning = true;
+      _validating = true;
       _lastResult = null;
     });
 
@@ -49,136 +99,312 @@ class _QrScannerPageState extends State<QrScannerPage> {
 
       if (mounted) {
         setState(() {
-          _scanning = false;
+          _validating = false;
           _lastResult = result;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _scanning = false);
+        setState(() => _validating = false);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
+  void _resetScan() {
+    setState(() {
+      _lastResult = null;
+      _lastScannedToken = null;
+      _tokenCtrl.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 500),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [_brandColor, Color(0xff2e8b57)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+        child: SingleChildScrollView(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 520),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                // Header
+                _buildHeader(),
+                const SizedBox(height: 20),
+
+                // Entry / Exit toggle
+                _buildScanTypeToggle(),
+                const SizedBox(height: 20),
+
+                // Mode toggle (Camera / Manual)
+                _buildModeToggle(),
+                const SizedBox(height: 20),
+
+                // Scanner area
+                if (_mode == _ScanMode.camera) _buildCameraScanner(),
+                if (_mode == _ScanMode.manual) _buildManualInput(),
+
+                const SizedBox(height: 20),
+
+                // Validating indicator
+                if (_validating)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2)),
+                        SizedBox(width: 12),
+                        Text('Validating pass…',
+                            style: TextStyle(fontSize: 14)),
+                      ],
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Column(
-                  children: [
-                    Icon(Icons.qr_code_scanner, size: 48, color: Colors.white),
-                    SizedBox(height: 12),
-                    Text('Security Pass Scanner',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold)),
-                    SizedBox(height: 4),
-                    Text('Scan a QR code to validate',
-                        style: TextStyle(color: Colors.white70, fontSize: 14)),
-                  ],
-                ),
-              ),
 
-              const SizedBox(height: 24),
-
-              const Text(
-                  'This feature is coming soon! In the meantime, you can paste a QR code token below to test the validation logic.',
-                  style: TextStyle(color: Colors.grey, fontSize: 14)),
-
-              const SizedBox(height: 24),
-
-              // Entry/Exit toggle
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(
-                      value: 'entry',
-                      label: Text('Entry'),
-                      icon: Icon(Icons.login_outlined)),
-                  ButtonSegment(
-                    value: 'exit',
-                    label: Text('Exit'),
-                    icon: Icon(Icons.logout_outlined),
+                // Result card
+                if (_lastResult != null) ...[
+                  _buildResultCard(),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      onPressed: _resetScan,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Scan Next Pass'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _brandColor,
+                        side: const BorderSide(color: _brandColor),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
                   ),
                 ],
-                selected: {_scanType},
-                onSelectionChanged: (v) => setState(() => _scanType = v.first),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Token input
-              TextField(
-                controller: _tokenCtrl,
-                decoration: InputDecoration(
-                  labelText: 'QR Code Token',
-                  hintText: 'Paste or scan QR code here',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.qr_code),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _tokenCtrl.clear();
-                      setState(() => _lastResult = null);
-                    },
-                  ),
-                ),
-                onSubmitted: (_) => _scan(),
-              ),
-              const SizedBox(height: 16),
-
-              // Scan button
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: _scanning ? null : _scan,
-                  icon: _scanning
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.verified_outlined,
-                          color: Colors.white),
-                  label: Text(_scanning ? 'Validating...' : 'Validate Pass'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _brandColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Result card
-              if (_lastResult != null) _buildResultCard(),
-            ],
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  // ─── Sub-widgets ───────────────────────────────────────────
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [_brandColor, Color(0xff2e8b57)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Column(
+        children: [
+          Icon(Icons.qr_code_scanner, size: 48, color: Colors.white),
+          SizedBox(height: 12),
+          Text('Security Pass Scanner',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold)),
+          SizedBox(height: 4),
+          Text('Scan or enter a QR code to validate',
+              style: TextStyle(color: Colors.white70, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScanTypeToggle() {
+    return SegmentedButton<String>(
+      segments: const [
+        ButtonSegment(
+            value: 'entry',
+            label: Text('Entry'),
+            icon: Icon(Icons.login_outlined)),
+        ButtonSegment(
+          value: 'exit',
+          label: Text('Exit'),
+          icon: Icon(Icons.logout_outlined),
+        ),
+      ],
+      selected: {_scanType},
+      onSelectionChanged: (v) => setState(() => _scanType = v.first),
+    );
+  }
+
+  Widget _buildModeToggle() {
+    return SegmentedButton<_ScanMode>(
+      segments: const [
+        ButtonSegment(
+            value: _ScanMode.camera,
+            label: Text('Camera'),
+            icon: Icon(Icons.camera_alt_outlined)),
+        ButtonSegment(
+            value: _ScanMode.manual,
+            label: Text('Manual Entry'),
+            icon: Icon(Icons.keyboard_outlined)),
+      ],
+      selected: {_mode},
+      onSelectionChanged: (v) {
+        setState(() => _mode = v.first);
+      },
+    );
+  }
+
+  Widget _buildCameraScanner() {
+    if (_cameraError) {
+      return Container(
+        width: double.infinity,
+        height: 300,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.videocam_off, size: 48, color: Colors.grey.shade400),
+            const SizedBox(height: 12),
+            const Text('Camera not available',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54)),
+            const SizedBox(height: 6),
+            Text(
+                'Grant camera permission in your browser\nor use Manual Entry mode.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () {
+                setState(() => _cameraError = false);
+                _cameraController?.dispose();
+                _initCamera();
+              },
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Retry Camera'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          height: 300,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border:
+                Border.all(color: _brandColor.withValues(alpha: 0.3), width: 2),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              MobileScanner(
+                controller: _cameraController!,
+                onDetect: _onDetect,
+              ),
+              // Scan overlay
+              Center(
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.7), width: 2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              // Status indicator
+              Positioned(
+                bottom: 12,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _validating ? 'Validating…' : 'Point camera at QR code',
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text('Position the QR code within the frame',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+      ],
+    );
+  }
+
+  Widget _buildManualInput() {
+    return Column(
+      children: [
+        TextField(
+          controller: _tokenCtrl,
+          decoration: InputDecoration(
+            labelText: 'QR Code Token',
+            hintText: 'Paste the QR code token here',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.qr_code),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                _tokenCtrl.clear();
+                setState(() => _lastResult = null);
+              },
+            ),
+          ),
+          onSubmitted: (_) => _validateManual(),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _validating ? null : _validateManual,
+            icon: _validating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.verified_outlined, color: Colors.white),
+            label: Text(_validating ? 'Validating…' : 'Validate Pass'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _brandColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -200,7 +426,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: fgColor.withOpacity(0.3)),
+        border: Border.all(color: fgColor.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [

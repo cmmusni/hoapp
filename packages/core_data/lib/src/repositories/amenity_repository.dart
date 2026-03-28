@@ -157,10 +157,12 @@ class AmenityRepository {
   }
 
   /// Book amenity via Edge Function (handles validation)
+  /// Set [noVerify] to true to skip pool access and household checks.
   Future<String> bookAmenity({
     required String amenityId,
     required String targetDate,
     required String unitId,
+    bool noVerify = false,
   }) async {
     final response = await _client.functions.invoke(
       'book_amenity',
@@ -168,6 +170,7 @@ class AmenityRepository {
         'amenity_id': amenityId,
         'target_date': targetDate,
         'unit_id': unitId,
+        if (noVerify) 'no_verify': true,
       },
     );
 

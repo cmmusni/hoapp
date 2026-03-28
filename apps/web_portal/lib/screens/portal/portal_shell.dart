@@ -791,15 +791,12 @@ class _PortalShellState extends State<PortalShell> {
                             _buildSidebarItem(context, 'Billing & Payments',
                                 Icons.payment_outlined, '/billing', currentPath,
                                 badge: _pendingPayments),
-                            if (isStaff) ...[
-                              _buildSidebarItem(
-                                  context,
-                                  'Expense Tracker',
-                                  Icons.account_balance_wallet_outlined,
-                                  '/expenses',
-                                  currentPath),
-                            ] else
-                              ...[],
+                            _buildSidebarItem(
+                                context,
+                                'Expense Tracker',
+                                Icons.account_balance_wallet_outlined,
+                                '/expenses',
+                                currentPath),
                             _buildSidebarItem(
                                 context,
                                 'Financial Reports',

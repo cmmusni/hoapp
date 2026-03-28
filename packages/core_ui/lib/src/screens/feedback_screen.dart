@@ -164,8 +164,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         onPressed: () => _showSubmitSheet(context),
         icon: const Icon(Icons.add),
         label: const Text('Submit Feedback'),
-        backgroundColor: _brand,
-        foregroundColor: Colors.white,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );

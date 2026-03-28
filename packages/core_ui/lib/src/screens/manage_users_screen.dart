@@ -5,6 +5,14 @@ import 'package:core_domain/core_domain.dart';
 
 const _brand = Color(0xff215e3f);
 
+String _roleDisplayName(Role role) => switch (role) {
+      Role.communityAdmin => 'Community Admin',
+      Role.hoaOfficer => 'HOA Officer',
+      Role.guard => 'Security Guard',
+      Role.maintenance => 'Maintenance',
+      Role.resident => 'Resident',
+    };
+
 /// Shared manage-users screen — adaptive for web and mobile.
 class ManageUsersScreen extends StatefulWidget {
   const ManageUsersScreen({super.key});
@@ -127,8 +135,6 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         onPressed: () => _showInviteDialog(),
         icon: const Icon(Icons.person_add),
         label: const Text('Invite User'),
-        backgroundColor: _brand,
-        foregroundColor: Colors.white,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
@@ -154,7 +160,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         content: DropdownButtonFormField<Role>(
           value: selectedRole,
           items: Role.values
-              .map((r) => DropdownMenuItem(value: r, child: Text(r.name)))
+              .map((r) =>
+                  DropdownMenuItem(value: r, child: Text(_roleDisplayName(r))))
               .toList(),
           onChanged: (v) {
             if (v != null) selectedRole = v;
@@ -266,7 +273,7 @@ class _RoleSection extends StatelessWidget {
           child: Row(children: [
             Icon(_roleIcon, size: 20, color: _roleColor),
             const SizedBox(width: 8),
-            Text('${role.name} (${roles.length})',
+            Text('${_roleDisplayName(role)} (${roles.length})',
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -288,7 +295,7 @@ class _RoleSection extends StatelessWidget {
                 ),
               ),
               title: Text(name),
-              subtitle: Text(r.role.name,
+              subtitle: Text(_roleDisplayName(r.role),
                   style: TextStyle(fontSize: 12, color: Colors.grey[600])),
               trailing: PopupMenuButton<String>(
                 onSelected: (action) {
@@ -358,7 +365,8 @@ class _InviteUserSheetState extends State<_InviteUserSheet> {
               decoration: const InputDecoration(
                   labelText: 'Role', border: OutlineInputBorder()),
               items: Role.values
-                  .map((r) => DropdownMenuItem(value: r, child: Text(r.name)))
+                  .map((r) => DropdownMenuItem(
+                      value: r, child: Text(_roleDisplayName(r))))
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _role = v);
