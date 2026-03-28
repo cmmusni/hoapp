@@ -46,7 +46,10 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
     if (communityId == null) return;
 
     try {
-      final bookings = await repo.getUserBookings(communityId);
+      final isStaff = appState.isStaff;
+      final bookings = isStaff
+          ? await repo.getAllBookings(communityId)
+          : await repo.getUserBookings(communityId);
       final byDate = <DateTime, List<AmenityBooking>>{};
       for (final b in bookings) {
         final date = b.bookingDate;
@@ -76,33 +79,6 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
     return Scaffold(
       body: Column(
         children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.shade200),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.construction_rounded,
-                    size: 20, color: Colors.amber.shade800),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'This feature is still under development. You may book the amenities from the admin office.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.amber.shade900,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
           Expanded(
             child: FutureBuilder<List<Amenity>>(
               future: _amenitiesFuture,
@@ -222,7 +198,25 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
               onPressed: () => _showCreateAmenityDialog(),
               child: const Icon(Icons.add),
             )
-          : null,
+          : FloatingActionButton.extended(
+              onPressed: () {
+                final amenities = _amenitiesFuture;
+                if (amenities != null) {
+                  amenities.then((list) {
+                    if (list.isNotEmpty) {
+                      _showRequestBookingDialog(list);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No amenities available')),
+                      );
+                    }
+                  });
+                }
+              },
+              icon: const Icon(Icons.event_available),
+              label: const Text('Request Booking'),
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
 
@@ -290,6 +284,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
     final dateStr = _selectedDay != null
         ? DateFormat('MMMM d, yyyy').format(_selectedDay!)
         : '';
+    final isStaff = context.read<AppState>().isStaff;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -310,13 +305,158 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     leading:
                         Icon(Icons.event, color: theme.colorScheme.primary),
                     title: Text(_formatBookingTime(b)),
-                    subtitle: Text(_bookingStatusLabel(b.status)),
-                    trailing: _bookingStatusChip(b.status, theme),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_bookingStatusLabel(b.status)),
+                        if (b.status == BookingStatus.confirmed)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              'Invoice has been created for this booking.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: const Color(0xff215e3f),
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _bookingStatusChip(b.status, theme),
+                        if (isStaff && b.status == BookingStatus.pending) ...[
+                          const SizedBox(width: 8),
+                          _buildApproveButton(b),
+                        ],
+                        if (b.status == BookingStatus.pending) ...[
+                          const SizedBox(width: 4),
+                          _buildCancelButton(b),
+                        ],
+                      ],
+                    ),
+                    isThreeLine: b.status == BookingStatus.confirmed,
                   ),
                 )),
         ],
       ),
     );
+  }
+
+  Widget _buildApproveButton(AmenityBooking booking) {
+    return IconButton(
+      icon: const Icon(Icons.check_circle_outline, color: Color(0xff215e3f)),
+      tooltip: 'Approve booking',
+      onPressed: () => _approveBooking(booking),
+      iconSize: 22,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+    );
+  }
+
+  Widget _buildCancelButton(AmenityBooking booking) {
+    return IconButton(
+      icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+      tooltip: 'Cancel booking',
+      onPressed: () => _cancelBooking(booking),
+      iconSize: 22,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+    );
+  }
+
+  Future<void> _approveBooking(AmenityBooking booking) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Approve Booking'),
+        content: const Text(
+          'Approve this booking request?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff215e3f),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Approve'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repo = context.read<AmenityRepository>();
+      await repo.approveBooking(booking.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Booking approved.'),
+          ),
+        );
+        _loadBookings();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error approving booking: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _cancelBooking(AmenityBooking booking) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Cancel Booking'),
+        content: const Text('Are you sure you want to cancel this booking?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Cancel Booking'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repo = context.read<AmenityRepository>();
+      await repo.cancelBooking(booking.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Booking cancelled')),
+        );
+        _loadBookings();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error cancelling booking: $e')),
+        );
+      }
+    }
   }
 
   String _formatBookingTime(AmenityBooking b) {
@@ -414,6 +554,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
   }
 
   void _showAmenityDetails(Amenity amenity) {
+    final isStaff = context.read<AppState>().isStaff;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -463,13 +604,468 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
             ),
           ],
         ),
+        actions: isStaff
+            ? null
+            : [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showRequestBookingDialog([amenity],
+                        preselectedAmenity: amenity);
+                  },
+                  icon: const Icon(Icons.event_available, size: 18),
+                  label: const Text('Request Booking'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff215e3f),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
       ),
+    );
+  }
+
+  void _showRequestBookingDialog(List<Amenity> amenities,
+      {Amenity? preselectedAmenity}) {
+    Amenity? selectedAmenity = preselectedAmenity ?? amenities.first;
+    DateTime? selectedDate = _selectedDay;
+    final notesController = TextEditingController();
+    bool isLoading = false;
+    List<Unit> userUnits = [];
+    Unit? selectedUnit;
+    bool loadingUnits = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            // Load user's units on first build
+            if (loadingUnits) {
+              loadingUnits = false;
+              final appState = context.read<AppState>();
+              final householdRepo = context.read<HouseholdRepository>();
+              final communityId = appState.activeCommunityId;
+              if (communityId != null) {
+                householdRepo.getMyHouseholds(communityId).then((members) {
+                  final units = <String, Unit>{};
+                  for (final m in members) {
+                    units.putIfAbsent(
+                      m.unitId,
+                      () => Unit(
+                        id: m.unitId,
+                        communityId: m.communityId,
+                        unitNo: m.unitId.substring(0, 8),
+                        createdAt: DateTime.now(),
+                      ),
+                    );
+                  }
+                  if (ctx.mounted) {
+                    setDialogState(() {
+                      userUnits = units.values.toList();
+                      if (userUnits.length == 1) {
+                        selectedUnit = userUnits.first;
+                      }
+                    });
+                  }
+                }).catchError((_) {
+                  if (ctx.mounted) {
+                    setDialogState(() => userUnits = []);
+                  }
+                });
+
+                householdRepo.getUnits(communityId).then((allUnits) {
+                  householdRepo.getMyHouseholds(communityId).then((members) {
+                    final myUnitIds = members.map((m) => m.unitId).toSet();
+                    final myUnits = allUnits
+                        .where((u) => myUnitIds.contains(u.id))
+                        .toList();
+                    if (ctx.mounted && myUnits.isNotEmpty) {
+                      setDialogState(() {
+                        userUnits = myUnits;
+                        if (userUnits.length == 1) {
+                          selectedUnit = userUnits.first;
+                        }
+                      });
+                    }
+                  });
+                }).catchError((_) {});
+              }
+            }
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              titlePadding: EdgeInsets.zero,
+              title: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xff215e3f),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+                child: Row(
+                  children: [
+                    const Icon(Icons.event_available,
+                        color: Colors.white, size: 24),
+                    const SizedBox(width: 12),
+                    const Text('Request Booking',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        )),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              content: SizedBox(
+                width: 500,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Info banner
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline,
+                                size: 18, color: Colors.blue.shade700),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'An invoice will be automatically created for your unit with a due date 3 days before the booking date. Booking must be made at least 3 days in advance.',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue.shade800,
+                                    height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Amenity selector
+                      if (amenities.length > 1) ...[
+                        DropdownButtonFormField<Amenity>(
+                          value: selectedAmenity,
+                          decoration: const InputDecoration(
+                            labelText: 'Amenity',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: amenities.map((a) {
+                            return DropdownMenuItem(
+                              value: a,
+                              child: Text(a.name),
+                            );
+                          }).toList(),
+                          onChanged: (a) =>
+                              setDialogState(() => selectedAmenity = a),
+                        ),
+                        const SizedBox(height: 16),
+                      ] else ...[
+                        Text('Amenity',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[700],
+                            )),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.pool,
+                                  size: 18, color: const Color(0xff215e3f)),
+                              const SizedBox(width: 10),
+                              Text(selectedAmenity?.name ?? '',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Unit selector
+                      if (userUnits.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        )
+                      else if (userUnits.length == 1) ...[
+                        Text('Unit',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[700],
+                            )),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.home_outlined,
+                                  size: 18, color: Colors.grey[600]),
+                              const SizedBox(width: 10),
+                              Text('Unit ${userUnits.first.unitNo}',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ] else ...[
+                        DropdownButtonFormField<Unit>(
+                          value: selectedUnit,
+                          decoration: const InputDecoration(
+                            labelText: 'Unit',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: userUnits.map((u) {
+                            return DropdownMenuItem(
+                              value: u,
+                              child: Text('Unit ${u.unitNo}'),
+                            );
+                          }).toList(),
+                          onChanged: (u) =>
+                              setDialogState(() => selectedUnit = u),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Date picker
+                      InkWell(
+                        onTap: () async {
+                          final now = DateTime.now();
+                          final maxDays = selectedAmenity?.maxDaysAhead ?? 60;
+                          // Minimum 3 days in advance required
+                          final minDate = now.add(const Duration(days: 3));
+                          final picked = await showDatePicker(
+                            context: ctx,
+                            initialDate: selectedDate ?? minDate,
+                            firstDate: minDate,
+                            lastDate: now.add(Duration(days: maxDays)),
+                          );
+                          if (picked != null) {
+                            setDialogState(() => selectedDate = picked);
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Booking Date',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.calendar_today, size: 18),
+                          ),
+                          child: Text(
+                            selectedDate != null
+                                ? DateFormat('MMMM d, yyyy')
+                                    .format(selectedDate!)
+                                : 'Select a date',
+                            style: TextStyle(
+                              color: selectedDate != null ? null : Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Booking details row
+                      Row(
+                        children: [
+                          // Operating hours
+                          if (selectedAmenity != null &&
+                              selectedAmenity!.openTime != null)
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border:
+                                      Border.all(color: Colors.grey.shade200),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.access_time,
+                                            size: 14, color: Colors.grey[600]),
+                                        const SizedBox(width: 6),
+                                        Text('Hours',
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey[600],
+                                                fontWeight: FontWeight.w500)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${selectedAmenity!.openTime} – ${selectedAmenity!.closeTime}',
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          // Price
+                          if (selectedAmenity != null &&
+                              selectedAmenity!.openTime != null &&
+                              selectedAmenity?.price != null)
+                            const SizedBox(width: 12),
+                          if (selectedAmenity?.price != null)
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xff215e3f)
+                                      .withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: const Color(0xff215e3f)
+                                          .withValues(alpha: 0.2)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.payments_outlined,
+                                            size: 14, color: Color(0xff215e3f)),
+                                        const SizedBox(width: 6),
+                                        Text('Rate',
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color: const Color(0xff215e3f)
+                                                    .withValues(alpha: 0.7),
+                                                fontWeight: FontWeight.w500)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '₱${selectedAmenity!.price} ${selectedAmenity!.currency ?? 'PHP'}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xff215e3f),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Notes
+                      TextField(
+                        controller: notesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes (Optional)',
+                          border: OutlineInputBorder(),
+                          hintText: 'Any special requests...',
+                        ),
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                HOAppButton(
+                  label: isLoading ? 'Submitting...' : 'Submit Request',
+                  icon: Icons.send_rounded,
+                  onPressed: isLoading ||
+                          selectedAmenity == null ||
+                          selectedDate == null ||
+                          selectedUnit == null
+                      ? null
+                      : () async {
+                          setDialogState(() => isLoading = true);
+                          try {
+                            final repo = context.read<AmenityRepository>();
+                            final dateStr =
+                                DateFormat('yyyy-MM-dd').format(selectedDate!);
+                            await repo.bookAmenity(
+                              amenityId: selectedAmenity!.id,
+                              targetDate: dateStr,
+                              unitId: selectedUnit!.id,
+                            );
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                            }
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Booking request submitted! An invoice has been created for your unit with payment due 3 days before the booking date.',
+                                  ),
+                                  duration: Duration(seconds: 4),
+                                ),
+                              );
+                              _loadBookings();
+                            }
+                          } catch (e) {
+                            setDialogState(() => isLoading = false);
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
+                          }
+                        },
+                  isLoading: isLoading,
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
   void _showCreateAmenityDialog() {
     final nameController = TextEditingController();
-    final priceController = TextEditingController(text: '8000');
+    final priceController = TextEditingController(text: '6000');
     final openTimeController = TextEditingController(text: '08:00');
     final closeTimeController = TextEditingController(text: '22:00');
 
@@ -546,7 +1142,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                   communityId: appState.activeCommunityId!,
                   name: name,
                   rules: {
-                    'price': int.tryParse(priceController.text) ?? 8000,
+                    'price': int.tryParse(priceController.text) ?? 6000,
                     'currency': 'PHP',
                     'open': openTimeController.text.trim(),
                     'close': closeTimeController.text.trim(),

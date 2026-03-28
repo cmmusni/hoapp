@@ -41,7 +41,7 @@ INSERT INTO amenities (id, community_id, name, rules) VALUES
       "unit": "day",
       "open": "08:00",
       "close": "22:00",
-      "price": 8000,
+      "price": 6000,
       "currency": "PHP",
       "allow_same_day": false,
       "max_days_ahead": 60

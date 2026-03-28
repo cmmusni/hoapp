@@ -194,6 +194,7 @@ class _BillingPageState extends State<BillingPage>
               label: const Text('Create Invoice'),
             )
           : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 

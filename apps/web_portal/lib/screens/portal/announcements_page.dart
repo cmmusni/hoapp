@@ -202,6 +202,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
               label: const Text('New Announcement'),
             )
           : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 

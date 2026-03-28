@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HouseholdScreen extends StatefulWidget {
   const HouseholdScreen({super.key});
@@ -35,15 +36,30 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
 
       if (myMemberships.isNotEmpty && mounted) {
         final unitId = myMemberships.first.unitId;
-        setState(() {
-          _unit = Unit(
-            id: unitId,
-            communityId: appState.activeCommunityId!,
-            unitNo: unitId,
-            createdAt: DateTime.now(),
-          );
-          _membersFuture = repo.getHouseholdMembers(unitId);
-        });
+
+        // Fetch actual unit details from database
+        final unitRow = await Supabase.instance.client
+            .from('units')
+            .select()
+            .eq('id', unitId)
+            .maybeSingle();
+
+        if (unitRow != null && mounted) {
+          setState(() {
+            _unit = Unit.fromJson(unitRow);
+            _membersFuture = repo.getHouseholdMembers(unitId);
+          });
+        } else if (mounted) {
+          setState(() {
+            _unit = Unit(
+              id: unitId,
+              communityId: appState.activeCommunityId!,
+              unitNo: unitId,
+              createdAt: DateTime.now(),
+            );
+            _membersFuture = repo.getHouseholdMembers(unitId);
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -94,13 +110,19 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _unit!.unitNo,
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.home, color: Colors.white70, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Unit ${_unit!.unitNo}',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       if (_unit!.unitType != null)

@@ -17,6 +17,12 @@ dependencies:
     path: ../../packages/core_data
   provider: ^6.1.1
   uni_links: ^0.5.1
+  intl: ^0.19.0
+  fl_chart: ^0.69.0
+  table_calendar: ^3.1.2
+  flutter_colorpicker: ^1.1.0
+  file_picker: ^6.2.1
+  supabase_flutter: ^2.5.3
 
 dev_dependencies:
   flutter_test:

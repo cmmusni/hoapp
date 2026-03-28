@@ -26,6 +26,7 @@ class _PortalShellState extends State<PortalShell> {
   bool _sidebarOpen = true;
   bool _showTour = false;
   bool _hasUnit = false;
+  int _lastBadgeVersion = 0;
 
   // Badge notification counts (staff)
   int _pendingPayments = 0;
@@ -54,6 +55,13 @@ class _PortalShellState extends State<PortalShell> {
     super.didUpdateWidget(oldWidget);
     // Refresh badge counts when the route (child) changes
     if (oldWidget.child != widget.child) {
+      _loadBadgeCounts();
+    }
+  }
+
+  void _checkBadgeRefresh(AppState appState) {
+    if (appState.badgeRefreshVersion != _lastBadgeVersion) {
+      _lastBadgeVersion = appState.badgeRefreshVersion;
       _loadBadgeCounts();
     }
   }
@@ -227,6 +235,7 @@ class _PortalShellState extends State<PortalShell> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    _checkBadgeRefresh(appState);
     final authRepo = context.watch<AuthRepository>();
     final user = authRepo.currentUser;
     print(
@@ -782,12 +791,15 @@ class _PortalShellState extends State<PortalShell> {
                             _buildSidebarItem(context, 'Billing & Payments',
                                 Icons.payment_outlined, '/billing', currentPath,
                                 badge: _pendingPayments),
-                            _buildSidebarItem(
-                                context,
-                                'Expense Tracker',
-                                Icons.account_balance_wallet_outlined,
-                                '/expenses',
-                                currentPath),
+                            if (isStaff) ...[
+                              _buildSidebarItem(
+                                  context,
+                                  'Expense Tracker',
+                                  Icons.account_balance_wallet_outlined,
+                                  '/expenses',
+                                  currentPath),
+                            ] else
+                              ...[],
                             _buildSidebarItem(
                                 context,
                                 'Financial Reports',

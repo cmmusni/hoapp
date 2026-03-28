@@ -83,4 +83,12 @@ class AppState extends ChangeNotifier {
     _isPlatformAdmin = value;
     notifyListeners();
   }
+
+  int _badgeRefreshVersion = 0;
+  int get badgeRefreshVersion => _badgeRefreshVersion;
+
+  void requestBadgeRefresh() {
+    _badgeRefreshVersion++;
+    notifyListeners();
+  }
 }

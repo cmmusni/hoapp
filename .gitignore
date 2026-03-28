@@ -79,3 +79,5 @@
 .DS_Store
 proxy.py
 .vercel/
+.vercel
+.env*.local

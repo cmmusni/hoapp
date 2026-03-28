@@ -29,22 +29,12 @@ class _PortalChatbotState extends State<PortalChatbot>
   final _scrollController = ScrollController();
   final List<_ChatMessage> _messages = [];
 
-  /// Routes whose pages render their own FloatingActionButton.
-  static const _pagesWithFab = {
-    '/announcements',
-    '/violations',
+  /// Routes where the chatbot should be hidden entirely.
+  static const _hiddenPages = {
     '/tickets',
-    '/amenities',
-    '/billing',
-    '/expenses',
-    '/households',
-    '/manage-users',
-    '/security-pass',
-    '/pool-access',
   };
 
-  bool get _pageHasFab =>
-      _pagesWithFab.any((p) => widget.currentPath.contains(p));
+  bool get _pageHasFab => false;
 
   @override
   void initState() {
@@ -132,6 +122,10 @@ class _PortalChatbotState extends State<PortalChatbot>
 
   @override
   Widget build(BuildContext context) {
+    if (_hiddenPages.any((p) => widget.currentPath.contains(p))) {
+      return const SizedBox.shrink();
+    }
+
     final fabBottom = _pageHasFab ? 80.0 : 16.0;
     final panelBottom = fabBottom + 10;
 

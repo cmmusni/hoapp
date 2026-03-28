@@ -52,4 +52,4 @@ CREATE POLICY "Staff can delete recurring billings"
 -- Trigger to auto-update updated_at
 CREATE TRIGGER set_recurring_billings_updated_at
   BEFORE UPDATE ON public.recurring_billings
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();

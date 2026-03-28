@@ -562,6 +562,7 @@ class _TicketDetailState extends State<_TicketDetail> {
         await repo.deleteTicket(widget.ticket.id);
 
         if (context.mounted) {
+          context.read<AppState>().requestBadgeRefresh();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Ticket deleted')),
           );

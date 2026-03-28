@@ -73,11 +73,13 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: 'Cannot book dates in the past' }, 400)
     }
 
-    if (!allowSameDay && bookingDate.getTime() === today.getTime()) {
-      return jsonResponse({ ok: false, error: 'Same-day booking not allowed' }, 400)
+    const daysAhead = Math.floor((bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+    // Minimum 3 days advance booking required
+    if (daysAhead < 3) {
+      return jsonResponse({ ok: false, error: 'Booking must be made at least 3 days in advance' }, 400)
     }
 
-    const daysAhead = Math.floor((bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     if (daysAhead > maxDaysAhead) {
       return jsonResponse({ ok: false, error: `Cannot book more than ${maxDaysAhead} days ahead` }, 400)
     }
@@ -110,7 +112,7 @@ serve(async (req) => {
     const startTime = `${target_date}T${openTime}:00+08:00`  // Assuming PH timezone UTC+8
     const endTime = `${target_date}T${closeTime}:00+08:00`
 
-    // Insert booking
+    // Insert booking as pending (requires staff approval)
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('amenity_bookings')
       .insert({
@@ -119,8 +121,8 @@ serve(async (req) => {
         user_id: user.id,
         unit_id,
         time_range: `[${startTime},${endTime})`,
-        status: 'confirmed',
-        notes: `Booking for ${target_date}`
+        status: 'pending',
+        notes: `Booking request for ${target_date}`
       })
       .select()
       .single()
@@ -132,6 +134,30 @@ serve(async (req) => {
       }
       console.error('Booking creation error:', bookingError)
       return jsonResponse({ ok: false, error: 'Failed to create booking' }, 500)
+    }
+
+    // Auto-create invoice for amenity booking
+    // Due date is 3 days before the booking date
+    const price = rules.price || 0
+    const currency = rules.currency || 'PHP'
+    if (price > 0) {
+      const dueDateMs = bookingDate.getTime() - (3 * 24 * 60 * 60 * 1000)
+      const dueDate = new Date(dueDateMs)
+      const dueDateStr = dueDate.toISOString().split('T')[0]
+
+      await supabaseAdmin
+        .from('invoices')
+        .insert({
+          community_id: amenity.community_id,
+          unit_id,
+          category: 'amenity',
+          amount: price,
+          currency,
+          due_date: dueDateStr,
+          status: 'unpaid',
+          source_id: booking.id,
+          description: `Amenity Booking: ${amenity.name} on ${target_date}`,
+        })
     }
 
     // Audit log

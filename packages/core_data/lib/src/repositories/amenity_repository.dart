@@ -13,10 +13,8 @@ class AmenityRepository {
     int? limit,
     int? offset,
   }) async {
-    var query = _client
-        .from('amenities')
-        .select()
-        .eq('community_id', communityId);
+    var query =
+        _client.from('amenities').select().eq('community_id', communityId);
 
     // Add search filter if provided (search by name)
     if (searchQuery != null && searchQuery.isNotEmpty) {
@@ -34,9 +32,7 @@ class AmenityRepository {
 
     final response = await finalQuery;
 
-    return (response as List)
-        .map((item) => Amenity.fromJson(item))
-        .toList();
+    return (response as List).map((item) => Amenity.fromJson(item)).toList();
   }
 
   /// Get total count of amenities for pagination
@@ -44,10 +40,8 @@ class AmenityRepository {
     String communityId, {
     String? searchQuery,
   }) async {
-    var query = _client
-        .from('amenities')
-        .select('id')
-        .eq('community_id', communityId);
+    var query =
+        _client.from('amenities').select('id').eq('community_id', communityId);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       query = query.ilike('name', '%$searchQuery%');
@@ -59,11 +53,8 @@ class AmenityRepository {
 
   /// Get single amenity
   Future<Amenity?> getAmenity(String id) async {
-    final response = await _client
-        .from('amenities')
-        .select()
-        .eq('id', id)
-        .maybeSingle();
+    final response =
+        await _client.from('amenities').select().eq('id', id).maybeSingle();
 
     if (response == null) return null;
     return Amenity.fromJson(response);
@@ -75,11 +66,15 @@ class AmenityRepository {
     required String name,
     Map<String, dynamic>? rules,
   }) async {
-    final response = await _client.from('amenities').insert({
-      'community_id': communityId,
-      'name': name,
-      'rules': rules ?? {},
-    }).select().single();
+    final response = await _client
+        .from('amenities')
+        .insert({
+          'community_id': communityId,
+          'name': name,
+          'rules': rules ?? {},
+        })
+        .select()
+        .single();
 
     return response['id'] as String;
   }
@@ -99,10 +94,8 @@ class AmenityRepository {
     int? limit,
     int? offset,
   }) async {
-    var query = _client
-        .from('amenity_bookings')
-        .select()
-        .eq('amenity_id', amenityId);
+    var query =
+        _client.from('amenity_bookings').select().eq('amenity_id', amenityId);
 
     // Filter by date range if provided
     // Note: For tstzrange filtering, you'd use overlaps with range
@@ -120,7 +113,7 @@ class AmenityRepository {
     } else if (limit != null) {
       finalQuery = finalQuery.limit(limit);
     }
-    
+
     final response = await finalQuery;
 
     return (response as List)
@@ -186,11 +179,33 @@ class AmenityRepository {
     return data['booking_id'] as String;
   }
 
+  /// Approve booking (staff only) - sets status to confirmed
+  Future<void> approveBooking(String bookingId) async {
+    await _client.from('amenity_bookings').update({
+      'status': 'confirmed',
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', bookingId);
+  }
+
   /// Cancel booking
   Future<void> cancelBooking(String bookingId) async {
     await _client.from('amenity_bookings').update({
       'status': 'cancelled',
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', bookingId);
+  }
+
+  /// Get all bookings for a community (staff only)
+  Future<List<AmenityBooking>> getAllBookings(String communityId) async {
+    final response = await _client
+        .from('amenity_bookings')
+        .select()
+        .eq('community_id', communityId)
+        .order('created_at', ascending: false);
+
+    return (response as List)
+        .map((item) => AmenityBooking.fromJson(item))
+        .toList();
   }
 
   /// Delete amenity (staff only)

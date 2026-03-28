@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_ui/core_ui.dart';
+import '../services/role_loader.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -46,6 +47,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
         if (community != null) {
           appState.setActiveCommunityData(community);
+          await RoleLoader.loadRoles(context);
           Navigator.of(context).pushReplacementNamed('/home');
           return;
         }
@@ -62,6 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
         final community = communities.first;
         await appState.setActiveCommunity(community.id, community.slug);
         appState.setActiveCommunityData(community);
+        await RoleLoader.loadRoles(context);
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
         // Show community picker
@@ -120,6 +123,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     community.slug,
                   );
                   appState.setActiveCommunityData(community);
+                  await RoleLoader.loadRoles(context);
                   Navigator.of(context).pop();
                   Navigator.of(context).pushReplacementNamed('/home');
                 },

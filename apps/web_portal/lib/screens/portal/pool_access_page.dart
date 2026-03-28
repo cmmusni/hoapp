@@ -746,172 +746,204 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     final dateFormat = DateFormat('MMM dd, yyyy');
     return List.generate(_swimmers.length, (index) {
       final entry = _swimmers[index];
-      return Card(
-        elevation: 0,
-        margin: const EdgeInsets.only(bottom: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: Colors.grey.shade300),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Number badge
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: _brandColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${index + 1}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _brandColor,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Name with unit member autocomplete
-              Expanded(
-                flex: 3,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return RawAutocomplete<String>(
-                      textEditingController: entry.nameController,
-                      focusNode: entry.focusNode,
-                      optionsBuilder: (textEditingValue) {
-                        final query = textEditingValue.text.toLowerCase();
-                        if (query.isEmpty) return const [];
-                        return widget.unitMemberNames.where(
-                          (name) => name.toLowerCase().contains(query),
-                        );
-                      },
-                      fieldViewBuilder:
-                          (context, controller, focusNode, onFieldSubmitted) {
-                        return TextFormField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          decoration: const InputDecoration(
-                            labelText: 'Name',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 12),
-                            errorStyle: TextStyle(height: 0.5),
+      return LayoutBuilder(
+        builder: (context, outerConstraints) {
+          final isNarrow = outerConstraints.maxWidth < 480;
+          return Card(
+            elevation: 0,
+            margin: const EdgeInsets.only(bottom: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: _brandColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${index + 1}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _brandColor,
                           ),
-                          validator: (v) =>
-                              (v?.isEmpty ?? true) ? 'Required' : null,
-                          onFieldSubmitted: (_) => onFieldSubmitted(),
-                        );
-                      },
-                      optionsViewBuilder: (context, onSelected, options) {
-                        return Align(
-                          alignment: Alignment.topLeft,
-                          child: Material(
-                            elevation: 4,
-                            borderRadius: BorderRadius.circular(8),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxHeight: 200,
-                                maxWidth: constraints.maxWidth,
-                              ),
-                              child: ListView.builder(
-                                padding: EdgeInsets.zero,
-                                shrinkWrap: true,
-                                itemCount: options.length,
-                                itemBuilder: (context, i) {
-                                  final option = options.elementAt(i);
-                                  return ListTile(
-                                    dense: true,
-                                    leading: const Icon(Icons.person_outline,
-                                        size: 18),
-                                    title: Text(option,
-                                        style: const TextStyle(fontSize: 14)),
-                                    onTap: () => onSelected(option),
-                                  );
-                                },
-                              ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return RawAutocomplete<String>(
+                              textEditingController: entry.nameController,
+                              focusNode: entry.focusNode,
+                              optionsBuilder: (textEditingValue) {
+                                final query =
+                                    textEditingValue.text.toLowerCase();
+                                if (query.isEmpty) return const [];
+                                return widget.unitMemberNames.where(
+                                  (name) => name.toLowerCase().contains(query),
+                                );
+                              },
+                              fieldViewBuilder: (context, controller, focusNode,
+                                  onFieldSubmitted) {
+                                return TextFormField(
+                                  controller: controller,
+                                  focusNode: focusNode,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Name',
+                                    border: OutlineInputBorder(),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 12),
+                                    errorStyle: TextStyle(height: 0.5),
+                                  ),
+                                  validator: (v) =>
+                                      (v?.isEmpty ?? true) ? 'Required' : null,
+                                  onFieldSubmitted: (_) => onFieldSubmitted(),
+                                );
+                              },
+                              optionsViewBuilder:
+                                  (context, onSelected, options) {
+                                return Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Material(
+                                    elevation: 4,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxHeight: 200,
+                                        maxWidth: constraints.maxWidth,
+                                      ),
+                                      child: ListView.builder(
+                                        padding: EdgeInsets.zero,
+                                        shrinkWrap: true,
+                                        itemCount: options.length,
+                                        itemBuilder: (context, i) {
+                                          final option = options.elementAt(i);
+                                          return ListTile(
+                                            dense: true,
+                                            leading: const Icon(
+                                                Icons.person_outline,
+                                                size: 18),
+                                            title: Text(option,
+                                                style: const TextStyle(
+                                                    fontSize: 14)),
+                                            onTap: () => onSelected(option),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      if (!isNarrow) ...[
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 160,
+                          child: _buildBirthdayPicker(entry, dateFormat),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 48,
+                          child: Text(
+                            entry.age != null ? 'Age ${entry.age}' : '',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Birthday
-              Expanded(
-                flex: 2,
-                child: InkWell(
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: entry.birthdate ??
-                          DateTime.now()
-                              .subtract(const Duration(days: 365 * 18)),
-                      firstDate: DateTime(1900),
-                      lastDate: DateTime.now(),
-                    );
-                    if (date != null) {
-                      setState(() => entry.birthdate = date);
-                    }
-                  },
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: 'Birthday',
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
-                      suffixIcon: const Icon(Icons.calendar_today, size: 18),
-                    ),
-                    child: Text(
-                      entry.birthdate != null
-                          ? dateFormat.format(entry.birthdate!)
-                          : '',
-                      style: TextStyle(
-                        color: entry.birthdate != null ? null : Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
+                        ),
+                      ],
+                      if (_swimmers.length > 1)
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline,
+                              color: Colors.red, size: 22),
+                          onPressed: () => _removeSwimmer(index),
+                          tooltip: 'Remove',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                    ],
                   ),
-                ),
+                  if (isNarrow) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const SizedBox(width: 44),
+                        Expanded(
+                          child: _buildBirthdayPicker(entry, dateFormat),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 48,
+                          child: Text(
+                            entry.age != null ? 'Age ${entry.age}' : '',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(width: 8),
-              // Age
-              SizedBox(
-                width: 48,
-                child: Text(
-                  entry.age != null ? 'Age ${entry.age}' : '',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              // Remove
-              if (_swimmers.length > 1)
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline,
-                      color: Colors.red, size: 22),
-                  onPressed: () => _removeSwimmer(index),
-                  tooltip: 'Remove',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       );
     });
+  }
+
+  Widget _buildBirthdayPicker(_SwimmerEntry entry, DateFormat dateFormat) {
+    return InkWell(
+      onTap: () async {
+        final date = await showDatePicker(
+          context: context,
+          initialDate: entry.birthdate ??
+              DateTime.now().subtract(const Duration(days: 365 * 18)),
+          firstDate: DateTime(1900),
+          lastDate: DateTime.now(),
+        );
+        if (date != null) {
+          setState(() => entry.birthdate = date);
+        }
+      },
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Birthday',
+          border: OutlineInputBorder(),
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          suffixIcon: Icon(Icons.calendar_today, size: 18),
+        ),
+        child: Text(
+          entry.birthdate != null ? dateFormat.format(entry.birthdate!) : '',
+          style: TextStyle(
+            color: entry.birthdate != null ? null : Colors.grey,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
   }
 
   // ---------- Submit ----------
@@ -1453,11 +1485,10 @@ class _StaffViewState extends State<_StaffView> {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openStaffRegistration,
-        backgroundColor: _brandColor,
-        foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add),
         label: const Text('Register Swimmers'),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: RefreshIndicator(
         onRefresh: () async => _loadRegistrations(),
         child: FutureBuilder<List<PoolAccessRegistration>>(
@@ -1810,125 +1841,127 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
               )
             else
               Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Unit selector
-                        _sectionHeader('Select Unit', Icons.home),
-                        const SizedBox(height: 8),
-                        if (_availableUnits.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: Colors.orange.withOpacity(0.3)),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.info_outline,
-                                    size: 20, color: Colors.orange),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'All units already have pool registrations.',
-                                    style: TextStyle(color: Colors.orange),
+                child: LayoutBuilder(
+                  builder: (context, dialogConstraints) {
+                    final isNarrow = dialogConstraints.maxWidth < 480;
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Unit selector
+                            _sectionHeader('Select Unit', Icons.home),
+                            const SizedBox(height: 8),
+                            if (_availableUnits.isEmpty)
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: Colors.orange.withOpacity(0.3)),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.info_outline,
+                                        size: 20, color: Colors.orange),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'All units already have pool registrations.',
+                                        style: TextStyle(color: Colors.orange),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else ...[
+                              DropdownButtonFormField<Unit>(
+                                value: _selectedUnit,
+                                decoration: const InputDecoration(
+                                  labelText: 'Unit',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.home_outlined),
+                                ),
+                                items: _availableUnits.map((unit) {
+                                  return DropdownMenuItem(
+                                    value: unit,
+                                    child: Text(
+                                        'Unit ${unit.unitNo}${unit.unitType != null ? ' (${unit.unitType})' : ''}'),
+                                  );
+                                }).toList(),
+                                onChanged: _onUnitSelected,
+                                validator: (v) =>
+                                    v == null ? 'Please select a unit' : null,
+                              ),
+                              if (_selectedUnit != null) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: _brandColor.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.pool,
+                                          size: 16, color: _brandColor),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Max $_maxPax swimmers allowed',
+                                        style: const TextStyle(
+                                          color: _brandColor,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
-                            ),
-                          )
-                        else ...[
-                          DropdownButtonFormField<Unit>(
-                            value: _selectedUnit,
-                            decoration: const InputDecoration(
-                              labelText: 'Unit',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.home_outlined),
-                            ),
-                            items: _availableUnits.map((unit) {
-                              return DropdownMenuItem(
-                                value: unit,
-                                child: Text(
-                                    'Unit ${unit.unitNo}${unit.unitType != null ? ' (${unit.unitType})' : ''}'),
-                              );
-                            }).toList(),
-                            onChanged: _onUnitSelected,
-                            validator: (v) =>
-                                v == null ? 'Please select a unit' : null,
-                          ),
-                          if (_selectedUnit != null) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: _brandColor.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.pool,
-                                      size: 16, color: _brandColor),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Max $_maxPax swimmers allowed',
-                                    style: const TextStyle(
-                                      color: _brandColor,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                        const SizedBox(height: 20),
+                            ],
+                            const SizedBox(height: 20),
 
-                        // Personal info
-                        _sectionHeader('Registrant Information', Icons.person),
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<OccupantType>(
-                          value: _occupantType,
-                          decoration: const InputDecoration(
-                            labelText: 'Occupant Type',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: OccupantType.values.map((type) {
-                            return DropdownMenuItem(
-                              value: type,
-                              child: Text(type.name[0].toUpperCase() +
-                                  type.name.substring(1)),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => _occupantType = value);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: _fullNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Owner / Tenant Name',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.person),
-                          ),
-                          validator: (v) =>
-                              (v?.isEmpty ?? true) ? 'Required' : null,
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
+                            // Personal info
+                            _sectionHeader(
+                                'Registrant Information', Icons.person),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<OccupantType>(
+                              value: _occupantType,
+                              decoration: const InputDecoration(
+                                labelText: 'Occupant Type',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: OccupantType.values.map((type) {
+                                return DropdownMenuItem(
+                                  value: type,
+                                  child: Text(type.name[0].toUpperCase() +
+                                      type.name.substring(1)),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() => _occupantType = value);
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            TextFormField(
+                              controller: _fullNameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Owner / Tenant Name',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.person),
+                              ),
+                              validator: (v) =>
+                                  (v?.isEmpty ?? true) ? 'Required' : null,
+                            ),
+                            const SizedBox(height: 10),
+                            if (isNarrow) ...[
+                              TextFormField(
                                 controller: _phoneController,
                                 decoration: const InputDecoration(
                                   labelText: 'Phone',
@@ -1939,10 +1972,8 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                 validator: (v) =>
                                     (v?.isEmpty ?? true) ? 'Required' : null,
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextFormField(
+                              const SizedBox(height: 10),
+                              TextFormField(
                                 controller: _emailController,
                                 decoration: const InputDecoration(
                                   labelText: 'Email',
@@ -1956,46 +1987,80 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   return null;
                                 },
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
+                            ] else
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _phoneController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Phone',
+                                        border: OutlineInputBorder(),
+                                        prefixIcon: Icon(Icons.phone),
+                                      ),
+                                      keyboardType: TextInputType.phone,
+                                      validator: (v) => (v?.isEmpty ?? true)
+                                          ? 'Required'
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _emailController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Email',
+                                        border: OutlineInputBorder(),
+                                        prefixIcon: Icon(Icons.email),
+                                      ),
+                                      keyboardType: TextInputType.emailAddress,
+                                      validator: (v) {
+                                        if (v?.isEmpty ?? true)
+                                          return 'Required';
+                                        if (!v!.contains('@'))
+                                          return 'Invalid email';
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            const SizedBox(height: 20),
 
-                        // Swimmers
-                        _sectionHeader('Swimmers', Icons.pool),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_swimmers.length} of $_maxPax swimmers',
-                          style: TextStyle(
-                            color: _swimmers.length >= _maxPax
-                                ? Colors.red
-                                : Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ..._buildSwimmerRows(),
-                        const SizedBox(height: 8),
-                        if (_swimmers.length < _maxPax)
-                          OutlinedButton.icon(
-                            onPressed: _addSwimmer,
-                            icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Add Swimmer'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _brandColor,
-                              side: const BorderSide(color: _brandColor),
+                            // Swimmers
+                            _sectionHeader('Swimmers', Icons.pool),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_swimmers.length} of $_maxPax swimmers',
+                              style: TextStyle(
+                                color: _swimmers.length >= _maxPax
+                                    ? Colors.red
+                                    : Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
                             ),
-                          ),
-                        const SizedBox(height: 20),
+                            const SizedBox(height: 8),
+                            ..._buildSwimmerRows(),
+                            const SizedBox(height: 8),
+                            if (_swimmers.length < _maxPax)
+                              OutlinedButton.icon(
+                                onPressed: _addSwimmer,
+                                icon: const Icon(Icons.add, size: 18),
+                                label: const Text('Add Swimmer'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: _brandColor,
+                                  side: const BorderSide(color: _brandColor),
+                                ),
+                              ),
+                            const SizedBox(height: 20),
 
-                        // Emergency contact
-                        _sectionHeader('Emergency Contact', Icons.emergency),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
+                            // Emergency contact
+                            _sectionHeader(
+                                'Emergency Contact', Icons.emergency),
+                            const SizedBox(height: 8),
+                            if (isNarrow) ...[
+                              TextFormField(
                                 controller: _emergencyNameController,
                                 decoration: const InputDecoration(
                                   labelText: 'Contact Name',
@@ -2005,10 +2070,8 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                 validator: (v) =>
                                     (v?.isEmpty ?? true) ? 'Required' : null,
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextFormField(
+                              const SizedBox(height: 10),
+                              TextFormField(
                                 controller: _emergencyPhoneController,
                                 decoration: const InputDecoration(
                                   labelText: 'Contact Phone',
@@ -2019,38 +2082,70 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                 validator: (v) =>
                                     (v?.isEmpty ?? true) ? 'Required' : null,
                               ),
+                            ] else
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _emergencyNameController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Contact Name',
+                                        border: OutlineInputBorder(),
+                                        prefixIcon: Icon(Icons.person_outline),
+                                      ),
+                                      validator: (v) => (v?.isEmpty ?? true)
+                                          ? 'Required'
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _emergencyPhoneController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Contact Phone',
+                                        border: OutlineInputBorder(),
+                                        prefixIcon: Icon(Icons.phone_outlined),
+                                      ),
+                                      keyboardType: TextInputType.phone,
+                                      validator: (v) => (v?.isEmpty ?? true)
+                                          ? 'Required'
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            const SizedBox(height: 12),
+
+                            // Info banner
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: Colors.blue.withOpacity(0.2)),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 20, color: Colors.blue),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'This registration will be automatically approved since it is created by staff.',
+                                      style: TextStyle(
+                                          fontSize: 13, color: Colors.blue),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-
-                        // Info banner
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(8),
-                            border:
-                                Border.all(color: Colors.blue.withOpacity(0.2)),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.info_outline,
-                                  size: 20, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'This registration will be automatically approved since it is created by staff.',
-                                  style: TextStyle(
-                                      fontSize: 13, color: Colors.blue),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
             // Actions
@@ -2079,168 +2174,205 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
     final dateFormat = DateFormat('MMM dd, yyyy');
     return List.generate(_swimmers.length, (index) {
       final entry = _swimmers[index];
-      return Card(
-        elevation: 0,
-        margin: const EdgeInsets.only(bottom: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: Colors.grey.shade300),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: _brandColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${index + 1}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _brandColor,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 3,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return RawAutocomplete<String>(
-                      textEditingController: entry.nameController,
-                      focusNode: entry.focusNode,
-                      optionsBuilder: (textEditingValue) {
-                        final query = textEditingValue.text.toLowerCase();
-                        if (query.isEmpty) return const [];
-                        return _unitMemberNames.where(
-                          (name) => name.toLowerCase().contains(query),
-                        );
-                      },
-                      fieldViewBuilder:
-                          (context, controller, focusNode, onFieldSubmitted) {
-                        return TextFormField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          decoration: const InputDecoration(
-                            labelText: 'Name',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 12),
-                            errorStyle: TextStyle(height: 0.5),
+      return LayoutBuilder(
+        builder: (context, outerConstraints) {
+          final isNarrow = outerConstraints.maxWidth < 480;
+          return Card(
+            elevation: 0,
+            margin: const EdgeInsets.only(bottom: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: _brandColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${index + 1}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _brandColor,
+                            fontSize: 13,
                           ),
-                          validator: (v) =>
-                              (v?.isEmpty ?? true) ? 'Required' : null,
-                          onFieldSubmitted: (_) => onFieldSubmitted(),
-                        );
-                      },
-                      optionsViewBuilder: (context, onSelected, options) {
-                        return Align(
-                          alignment: Alignment.topLeft,
-                          child: Material(
-                            elevation: 4,
-                            borderRadius: BorderRadius.circular(8),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxHeight: 200,
-                                maxWidth: constraints.maxWidth,
-                              ),
-                              child: ListView.builder(
-                                padding: EdgeInsets.zero,
-                                shrinkWrap: true,
-                                itemCount: options.length,
-                                itemBuilder: (context, i) {
-                                  final option = options.elementAt(i);
-                                  return ListTile(
-                                    dense: true,
-                                    leading: const Icon(Icons.person_outline,
-                                        size: 18),
-                                    title: Text(option,
-                                        style: const TextStyle(fontSize: 14)),
-                                    onTap: () => onSelected(option),
-                                  );
-                                },
-                              ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return RawAutocomplete<String>(
+                              textEditingController: entry.nameController,
+                              focusNode: entry.focusNode,
+                              optionsBuilder: (textEditingValue) {
+                                final query =
+                                    textEditingValue.text.toLowerCase();
+                                if (query.isEmpty) return const [];
+                                return _unitMemberNames.where(
+                                  (name) => name.toLowerCase().contains(query),
+                                );
+                              },
+                              fieldViewBuilder: (context, controller, focusNode,
+                                  onFieldSubmitted) {
+                                return TextFormField(
+                                  controller: controller,
+                                  focusNode: focusNode,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Name',
+                                    border: OutlineInputBorder(),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 12),
+                                    errorStyle: TextStyle(height: 0.5),
+                                  ),
+                                  validator: (v) =>
+                                      (v?.isEmpty ?? true) ? 'Required' : null,
+                                  onFieldSubmitted: (_) => onFieldSubmitted(),
+                                );
+                              },
+                              optionsViewBuilder:
+                                  (context, onSelected, options) {
+                                return Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Material(
+                                    elevation: 4,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxHeight: 200,
+                                        maxWidth: constraints.maxWidth,
+                                      ),
+                                      child: ListView.builder(
+                                        padding: EdgeInsets.zero,
+                                        shrinkWrap: true,
+                                        itemCount: options.length,
+                                        itemBuilder: (context, i) {
+                                          final option = options.elementAt(i);
+                                          return ListTile(
+                                            dense: true,
+                                            leading: const Icon(
+                                                Icons.person_outline,
+                                                size: 18),
+                                            title: Text(option,
+                                                style: const TextStyle(
+                                                    fontSize: 14)),
+                                            onTap: () => onSelected(option),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      if (!isNarrow) ...[
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 150,
+                          child: _buildBirthdayPicker(entry, dateFormat),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 44,
+                          child: Text(
+                            entry.age != null ? 'Age ${entry.age}' : '',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: InkWell(
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: entry.birthdate ??
-                          DateTime.now()
-                              .subtract(const Duration(days: 365 * 18)),
-                      firstDate: DateTime(1900),
-                      lastDate: DateTime.now(),
-                    );
-                    if (date != null) {
-                      setState(() => entry.birthdate = date);
-                    }
-                  },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Birthday',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                      suffixIcon: Icon(Icons.calendar_today, size: 18),
-                    ),
-                    child: Text(
-                      entry.birthdate != null
-                          ? dateFormat.format(entry.birthdate!)
-                          : '',
-                      style: TextStyle(
-                        color: entry.birthdate != null ? null : Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
+                        ),
+                      ],
+                      if (_swimmers.length > 1)
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline,
+                              color: Colors.red, size: 20),
+                          onPressed: () => _removeSwimmer(index),
+                          tooltip: 'Remove',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                    ],
                   ),
-                ),
+                  if (isNarrow) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const SizedBox(width: 38),
+                        Expanded(
+                          child: _buildBirthdayPicker(entry, dateFormat),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 44,
+                          child: Text(
+                            entry.age != null ? 'Age ${entry.age}' : '',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 44,
-                child: Text(
-                  entry.age != null ? 'Age ${entry.age}' : '',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (_swimmers.length > 1)
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline,
-                      color: Colors.red, size: 20),
-                  onPressed: () => _removeSwimmer(index),
-                  tooltip: 'Remove',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       );
     });
+  }
+
+  Widget _buildBirthdayPicker(_SwimmerEntry entry, DateFormat dateFormat) {
+    return InkWell(
+      onTap: () async {
+        final date = await showDatePicker(
+          context: context,
+          initialDate: entry.birthdate ??
+              DateTime.now().subtract(const Duration(days: 365 * 18)),
+          firstDate: DateTime(1900),
+          lastDate: DateTime.now(),
+        );
+        if (date != null) {
+          setState(() => entry.birthdate = date);
+        }
+      },
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Birthday',
+          border: OutlineInputBorder(),
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          suffixIcon: Icon(Icons.calendar_today, size: 18),
+        ),
+        child: Text(
+          entry.birthdate != null ? dateFormat.format(entry.birthdate!) : '',
+          style: TextStyle(
+            color: entry.birthdate != null ? null : Colors.grey,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _sectionHeader(String title, IconData icon) {

@@ -155,6 +155,7 @@ class _ViolationsPageState extends State<ViolationsPage> {
         icon: const Icon(Icons.add),
         label: const Text('Report Violation'),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -396,6 +397,7 @@ class _ViolationCard extends StatelessWidget {
       await repo.updateViolation(id: violation.id, status: status);
       onUpdated();
       if (context.mounted) {
+        context.read<AppState>().requestBadgeRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Status updated')),
         );
@@ -440,6 +442,7 @@ class _ViolationCard extends StatelessWidget {
       await repo.deleteViolation(violation.id);
       onUpdated();
       if (context.mounted) {
+        context.read<AppState>().requestBadgeRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Violation deleted')),
         );
@@ -740,6 +743,7 @@ class _ReportViolationDialogState extends State<_ReportViolationDialog> {
       );
 
       if (mounted) {
+        context.read<AppState>().requestBadgeRefresh();
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Violation reported')),
