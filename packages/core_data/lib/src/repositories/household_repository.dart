@@ -16,6 +16,28 @@ class HouseholdRepository {
     return (response as List).map((item) => Unit.fromJson(item)).toList();
   }
 
+  /// Get total member count across all units in a community
+  Future<int> getTotalMemberCount(String communityId) async {
+    final response = await _client
+        .from('household_members')
+        .select('id')
+        .eq('community_id', communityId);
+
+    return (response as List).length;
+  }
+
+  /// Get total member count for specific unit IDs
+  Future<int> getMemberCountForUnits(List<String> unitIds) async {
+    if (unitIds.isEmpty) return 0;
+
+    final response = await _client
+        .from('household_members')
+        .select('id')
+        .inFilter('unit_id', unitIds);
+
+    return (response as List).length;
+  }
+
   /// Get members of a unit
   Future<List<HouseholdMember>> getHouseholdMembers(String unitId) async {
     final response = await _client
@@ -78,6 +100,22 @@ class HouseholdRepository {
 
     return (response as List)
         .map((item) => HouseholdMember.fromJson(item))
+        .toList();
+  }
+
+  /// Get only the units the current user belongs to
+  Future<List<Unit>> getMyUnits(String communityId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    final response = await _client
+        .from('household_members')
+        .select('units!inner(*)')
+        .eq('user_id', userId)
+        .eq('community_id', communityId);
+
+    return (response as List)
+        .map((item) => Unit.fromJson(item['units'] as Map<String, dynamic>))
         .toList();
   }
 

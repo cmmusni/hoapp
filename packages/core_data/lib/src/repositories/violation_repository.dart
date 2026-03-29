@@ -102,6 +102,9 @@ class ViolationRepository {
     required String id,
     ViolationStatus? status,
     String? staffNotes,
+    String? title,
+    String? body,
+    List<String>? attachmentUrls,
   }) async {
     final updates = <String, dynamic>{};
 
@@ -110,6 +113,15 @@ class ViolationRepository {
     }
     if (staffNotes != null) {
       updates['staff_notes'] = staffNotes;
+    }
+    if (title != null) {
+      updates['title'] = title;
+    }
+    if (body != null) {
+      updates['body'] = body;
+    }
+    if (attachmentUrls != null) {
+      updates['attachments'] = attachmentUrls;
     }
 
     if (updates.isEmpty) return;

@@ -25,7 +25,6 @@ class _PortalShellState extends State<PortalShell> {
   bool _isCommunityLoaded = false;
   bool _sidebarOpen = true;
   bool _showTour = false;
-  bool _hasUnit = false;
   int _lastBadgeVersion = 0;
 
   // Badge notification counts (staff)
@@ -93,15 +92,13 @@ class _PortalShellState extends State<PortalShell> {
               appState.setPlatformAdmin(isPlatformAdmin);
 
               // Check if user has a unit assigned
-              final memberRow = await Supabase.instance.client
+              final memberRows = await Supabase.instance.client
                   .from('household_members')
                   .select('unit_id')
                   .eq('user_id', userId)
                   .eq('community_id', community.id)
-                  .maybeSingle();
-              if (mounted) {
-                setState(() => _hasUnit = memberRow != null);
-              }
+                  .limit(1);
+              appState.setHasUnit((memberRows as List).isNotEmpty);
             } catch (e) {
               print('Error loading user roles: $e');
             }
@@ -239,7 +236,7 @@ class _PortalShellState extends State<PortalShell> {
     final authRepo = context.watch<AuthRepository>();
     final user = authRepo.currentUser;
     print(
-        'PortalShell build: user=${user?.email}, community=${appState.activeCommunity?.name} role=${appState.activeRole?.role}, hasUnit=$_hasUnit');
+        'PortalShell build: user=${user?.email}, community=${appState.activeCommunity?.name} role=${appState.activeRole?.role}, hasUnit=${appState.hasUnit}');
     final isStaff = appState.isStaff;
     final isAdmin = appState.isAdmin;
     final isGuard = appState.activeRole?.role == Role.guard;
@@ -656,7 +653,7 @@ class _PortalShellState extends State<PortalShell> {
       bool isResident,
       bool isPro,
       String currentPath) {
-    final hasUnit = _hasUnit || isStaff || isGuard;
+    final hasUnit = appState.hasUnit || isStaff || isGuard;
     final email = user?.email ?? '';
     final roleBadge = appState.activeRole != null && hasUnit
         ? _formatRole(appState.activeRole!.role)
@@ -775,35 +772,26 @@ class _PortalShellState extends State<PortalShell> {
                               '/announcements',
                               currentPath,
                               badge: _newAnnouncements),
-                          _buildSidebarItem(context, 'Violations',
-                              Icons.report_outlined, '/violations', currentPath,
-                              badge: _pendingViolations),
+                          if (isResident && hasUnit) ...[
+                            _buildSidebarItem(
+                                context,
+                                'My Household',
+                                Icons.family_restroom_outlined,
+                                '/households',
+                                currentPath),
+                          ],
+                          _buildSidebarItem(context, 'Billing & Payments',
+                              Icons.payment_outlined, '/billing', currentPath,
+                              badge: _pendingPayments),
                           _buildSidebarItem(context, 'Tickets',
                               Icons.support_outlined, '/tickets', currentPath,
                               badge: _openTickets),
-                          if (!isGuard &&
-                              !isMaintenance &&
-                              (hasUnit || isStaff) &&
-                              isPro) ...[
-                            _buildSidebarItem(context, 'Amenities',
-                                Icons.pool_outlined, '/amenities', currentPath,
-                                badge: _pendingBookings),
-                            _buildSidebarItem(context, 'Billing & Payments',
-                                Icons.payment_outlined, '/billing', currentPath,
-                                badge: _pendingPayments),
-                            _buildSidebarItem(
-                                context,
-                                'Expense Tracker',
-                                Icons.account_balance_wallet_outlined,
-                                '/expenses',
-                                currentPath),
-                            _buildSidebarItem(
-                                context,
-                                'Financial Reports',
-                                Icons.analytics_outlined,
-                                '/financial-reports',
-                                currentPath),
-                          ],
+                          _buildSidebarItem(context, 'Violations',
+                              Icons.report_outlined, '/violations', currentPath,
+                              badge: _pendingViolations),
+                          _buildSidebarItem(context, 'Amenities',
+                              Icons.pool_outlined, '/amenities', currentPath,
+                              badge: _pendingBookings),
                           if (isPro && (hasUnit || isStaff)) ...[
                             ...(!isGuard && !isMaintenance
                                 ? [
@@ -840,6 +828,23 @@ class _PortalShellState extends State<PortalShell> {
                                 Icons.qr_code_scanner,
                                 '/qr-scanner',
                                 currentPath),
+                          if (!isGuard &&
+                              !isMaintenance &&
+                              (hasUnit || isStaff) &&
+                              isPro) ...[
+                            _buildSidebarItem(
+                                context,
+                                'Community Expenses',
+                                Icons.account_balance_wallet_outlined,
+                                '/expenses',
+                                currentPath),
+                            _buildSidebarItem(
+                                context,
+                                'Financial Reports',
+                                Icons.analytics_outlined,
+                                '/financial-reports',
+                                currentPath),
+                          ],
                           if (isStaff) ...[
                             const Padding(
                               padding: EdgeInsets.symmetric(
@@ -955,7 +960,7 @@ class _PortalShellState extends State<PortalShell> {
       bool isResident,
       bool isPro,
       String currentPath) {
-    final hasUnit = _hasUnit || isStaff || isGuard;
+    final hasUnit = appState.hasUnit || isStaff || isGuard;
     return Drawer(
       backgroundColor: Colors.white,
       child: ListTileTheme(
@@ -1061,29 +1066,23 @@ class _PortalShellState extends State<PortalShell> {
               _buildMenuItem(context, 'Announcements', Icons.announcement,
                   '/${widget.communitySlug}/announcements', currentPath,
                   badge: _newAnnouncements),
-              _buildMenuItem(context, 'Violations', Icons.report,
-                  '/${widget.communitySlug}/violations', currentPath,
-                  badge: _pendingViolations),
+              if (isResident && hasUnit) ...[
+                _buildMenuItem(context, 'My Household', Icons.family_restroom,
+                    '/${widget.communitySlug}/households', currentPath),
+              ],
+              _buildMenuItem(context, 'Billing & Payments', Icons.payment,
+                  '/${widget.communitySlug}/billing', currentPath,
+                  badge: _pendingPayments),
               _buildMenuItem(context, 'Tickets', Icons.support,
                   '/${widget.communitySlug}/tickets', currentPath,
                   badge: _openTickets),
-              if (!isGuard && !isMaintenance && isPro && hasUnit) ...[
-                _buildMenuItem(context, 'Amenities', Icons.pool,
-                    '/${widget.communitySlug}/amenities', currentPath,
-                    badge: _pendingBookings),
-                _buildMenuItem(context, 'Billing & Payments', Icons.payment,
-                    '/${widget.communitySlug}/billing', currentPath,
-                    badge: _pendingPayments),
-                _buildMenuItem(
-                    context,
-                    'Expense Tracker',
-                    Icons.account_balance_wallet,
-                    '/${widget.communitySlug}/expenses',
-                    currentPath),
-                _buildMenuItem(context, 'Financial Reports', Icons.analytics,
-                    '/${widget.communitySlug}/financial-reports', currentPath),
-              ],
-              if (isPro && hasUnit) ...[
+              _buildMenuItem(context, 'Violations', Icons.report,
+                  '/${widget.communitySlug}/violations', currentPath,
+                  badge: _pendingViolations),
+              _buildMenuItem(context, 'Amenities', Icons.pool,
+                  '/${widget.communitySlug}/amenities', currentPath,
+                  badge: _pendingBookings),
+              if (isPro && (hasUnit || isStaff)) ...[
                 if (!isGuard && !isMaintenance)
                   _buildMenuItem(context, 'Pool Access', Icons.accessibility,
                       '/${widget.communitySlug}/pool-access', currentPath),
@@ -1095,7 +1094,7 @@ class _PortalShellState extends State<PortalShell> {
                       '/${widget.communitySlug}/registered-swimmers',
                       currentPath),
               ],
-              if (isPro && hasUnit)
+              if (isPro && (hasUnit || isStaff))
                 _buildMenuItem(context, 'Security Pass', Icons.badge,
                     '/${widget.communitySlug}/security-pass', currentPath),
               if ((isGuard || isMaintenance) && isPro)
@@ -1105,6 +1104,19 @@ class _PortalShellState extends State<PortalShell> {
                     Icons.qr_code_scanner,
                     '/${widget.communitySlug}/qr-scanner',
                     currentPath),
+              if (!isGuard &&
+                  !isMaintenance &&
+                  (hasUnit || isStaff) &&
+                  isPro) ...[
+                _buildMenuItem(
+                    context,
+                    'Community Expenses',
+                    Icons.account_balance_wallet,
+                    '/${widget.communitySlug}/expenses',
+                    currentPath),
+                _buildMenuItem(context, 'Financial Reports', Icons.analytics,
+                    '/${widget.communitySlug}/financial-reports', currentPath),
+              ],
               if (isStaff) ...[
                 const Divider(),
                 _buildMenuItem(context, 'Households', Icons.family_restroom,

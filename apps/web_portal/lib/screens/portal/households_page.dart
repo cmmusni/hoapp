@@ -15,6 +15,7 @@ class HouseholdsPage extends StatefulWidget {
 
 class _HouseholdsPageState extends State<HouseholdsPage> {
   Future<List<Unit>>? _unitsFuture;
+  Future<int>? _memberCountFuture;
   Unit? _selectedUnit;
 
   @override
@@ -28,8 +29,16 @@ class _HouseholdsPageState extends State<HouseholdsPage> {
     final repo = context.read<HouseholdRepository>();
 
     if (appState.activeCommunityId != null) {
+      final communityId = appState.activeCommunityId!;
+      final unitsFuture = appState.isStaff
+          ? repo.getUnits(communityId)
+          : repo.getMyUnits(communityId);
       setState(() {
-        _unitsFuture = repo.getUnits(appState.activeCommunityId!);
+        _unitsFuture = unitsFuture;
+        _memberCountFuture = appState.isStaff
+            ? repo.getTotalMemberCount(communityId)
+            : unitsFuture.then((units) =>
+                repo.getMemberCountForUnits(units.map((u) => u.id).toList()));
       });
     }
   }
@@ -48,6 +57,7 @@ class _HouseholdsPageState extends State<HouseholdsPage> {
                 width: 300,
                 child: _UnitList(
                   unitsFuture: _unitsFuture,
+                  memberCountFuture: _memberCountFuture,
                   selectedUnit: _selectedUnit,
                   onUnitSelected: (unit) {
                     setState(() => _selectedUnit = unit);
@@ -81,6 +91,7 @@ class _HouseholdsPageState extends State<HouseholdsPage> {
 
         return _UnitList(
           unitsFuture: _unitsFuture,
+          memberCountFuture: _memberCountFuture,
           selectedUnit: _selectedUnit,
           onUnitSelected: (unit) {
             setState(() => _selectedUnit = unit);
@@ -96,12 +107,14 @@ class _HouseholdsPageState extends State<HouseholdsPage> {
 
 class _UnitList extends StatefulWidget {
   final Future<List<Unit>>? unitsFuture;
+  final Future<int>? memberCountFuture;
   final Unit? selectedUnit;
   final Function(Unit) onUnitSelected;
   final VoidCallback onRefresh;
 
   const _UnitList({
     required this.unitsFuture,
+    this.memberCountFuture,
     required this.selectedUnit,
     required this.onUnitSelected,
     required this.onRefresh,
@@ -182,7 +195,7 @@ class _UnitListState extends State<_UnitList> {
                   ],
                 ),
               ),
-              // Unit count badge
+              // Unit & member count badges
               if (units.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -203,6 +216,30 @@ class _UnitListState extends State<_UnitList> {
                             color: theme.colorScheme.onPrimaryContainer,
                           ),
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      FutureBuilder<int>(
+                        future: widget.memberCountFuture,
+                        builder: (context, memberSnap) {
+                          final count = memberSnap.data;
+                          if (count == null) return const SizedBox.shrink();
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '$count members',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSecondaryContainer,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -1897,7 +1934,7 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
         children: [
           const Icon(Icons.edit_outlined, color: Color(0xff215e3f), size: 24),
           const SizedBox(width: 12),
-          const Text('Edit Member Role',
+          const Text('Edit Role',
               style: TextStyle(fontWeight: FontWeight.w600)),
           const Spacer(),
           IconButton(
@@ -1978,7 +2015,7 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
                     height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.save_rounded),
+                : const Icon(Icons.save_rounded, color: Colors.white),
             label: Text(_isUpdating ? 'Updating...' : 'Update',
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),

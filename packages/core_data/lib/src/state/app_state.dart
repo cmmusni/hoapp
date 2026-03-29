@@ -12,12 +12,14 @@ class AppState extends ChangeNotifier {
   Community? _activeCommunity;
   List<UserRole>? _userRoles;
   bool _isPlatformAdmin = false;
+  bool _hasUnit = false;
 
   String? get activeCommunityId => _activeCommunityId;
   String? get activeCommunitySlug => _activeCommunitySlug;
   Community? get activeCommunity => _activeCommunity;
   List<UserRole>? get userRoles => _userRoles;
   bool get isPlatformAdmin => _isPlatformAdmin;
+  bool get hasUnit => _hasUnit;
 
   UserRole? get activeRole {
     if (_activeCommunityId == null || _userRoles == null) return null;
@@ -32,6 +34,9 @@ class AppState extends ChangeNotifier {
 
   bool get isStaff => activeRole?.isStaff ?? false;
   bool get isAdmin => activeRole?.isAdmin ?? false;
+  bool get isResident => activeRole?.role == Role.resident;
+  bool get isGuard => activeRole?.role == Role.guard;
+  bool get isMaintenance => activeRole?.role == Role.maintenance;
 
   /// Plan-based feature access
   bool get isProfessional => _activeCommunity?.isProfessional ?? false;
@@ -61,6 +66,7 @@ class AppState extends ChangeNotifier {
     _activeCommunitySlug = null;
     _activeCommunity = null;
     _userRoles = null;
+    _hasUnit = false;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyActiveCommunityId);
@@ -81,6 +87,11 @@ class AppState extends ChangeNotifier {
 
   void setPlatformAdmin(bool value) {
     _isPlatformAdmin = value;
+    notifyListeners();
+  }
+
+  void setHasUnit(bool value) {
+    _hasUnit = value;
     notifyListeners();
   }
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
+import 'package:core_ui/core_ui.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ViolationsTab extends StatefulWidget {
   const ViolationsTab({super.key});
@@ -32,8 +34,7 @@ class _ViolationsTabState extends State<ViolationsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final isStaff = appState.isStaff;
+    context.watch<AppState>();
 
     return Scaffold(
       body: Column(
@@ -85,20 +86,14 @@ class _ViolationsTabState extends State<ViolationsTab> {
                 }).toList();
 
                 if (violations.isEmpty) {
-                  return Center(
+                  return const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.check_circle_outline,
+                        Icon(Icons.check_circle_outline,
                             size: 64, color: Color(0xff215e3f)),
-                        const SizedBox(height: 16),
-                        const Text('No violations found'),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () => _showReportDialog(),
-                          icon: const Icon(Icons.report),
-                          label: const Text('Report a Violation'),
-                        ),
+                        SizedBox(height: 16),
+                        Text('No violations found'),
                       ],
                     ),
                   );
@@ -137,9 +132,7 @@ class _ViolationsTabState extends State<ViolationsTab> {
                             backgroundColor: _getStatusColor(violation.status)
                                 .withOpacity(0.2),
                           ),
-                          onTap: isStaff
-                              ? () => _showViolationDetails(violation)
-                              : null,
+                          onTap: () => _showViolationDetails(violation),
                         ),
                       );
                     },
@@ -184,6 +177,9 @@ class _ViolationsTabState extends State<ViolationsTab> {
 
   void _showViolationDetails(Violation violation) {
     final isStaff = context.read<AppState>().isStaff;
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final isOwnReport =
+        currentUserId != null && violation.reporterUserId == currentUserId;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -250,18 +246,21 @@ class _ViolationsTabState extends State<ViolationsTab> {
                   itemBuilder: (context, index) {
                     final url = violation.attachments![index]?.toString() ?? '';
                     if (url.isEmpty) return const SizedBox.shrink();
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        url,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                    return GestureDetector(
+                      onTap: () => _showZoomableImage(context, url),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          url,
                           width: 100,
                           height: 100,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.broken_image),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 100,
+                            height: 100,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.broken_image),
+                          ),
                         ),
                       ),
                     );
@@ -284,6 +283,25 @@ class _ViolationsTabState extends State<ViolationsTab> {
               const SizedBox(height: 8),
               Text(violation.staffNotes!,
                   style: const TextStyle(fontSize: 15, height: 1.4)),
+            ],
+
+            // Edit own violation
+            if (isOwnReport &&
+                violation.status == ViolationStatus.newStatus) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    _editViolation(violation);
+                  },
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Edit Report'),
+                ),
+              ),
             ],
 
             // Staff actions
@@ -431,6 +449,50 @@ class _ViolationsTabState extends State<ViolationsTab> {
     if (statusStr.contains('dismissed')) return 'DISMISSED';
     return 'UNKNOWN';
   }
+
+  void _editViolation(Violation violation) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _EditViolationScreen(
+          violation: violation,
+          onUpdated: _loadViolations,
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+  }
+
+  void _showZoomableImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 5.0,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Center(
+                  child:
+                      Icon(Icons.broken_image, size: 64, color: Colors.white70),
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              style: IconButton.styleFrom(backgroundColor: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ReportViolationScreen extends StatefulWidget {
@@ -447,6 +509,7 @@ class _ReportViolationScreenState extends State<_ReportViolationScreen> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
   bool _isLoading = false;
+  final List<String> _uploadedImageUrls = [];
 
   @override
   void dispose() {
@@ -473,15 +536,15 @@ class _ReportViolationScreenState extends State<_ReportViolationScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.1),
+                color: Colors.green.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber),
+                border: Border.all(color: Colors.green),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  Icon(Icons.privacy_tip, color: Colors.amber[700]),
-                  const SizedBox(width: 12),
-                  const Expanded(
+                  Icon(Icons.privacy_tip, color: Colors.green),
+                  SizedBox(width: 12),
+                  Expanded(
                     child: Text(
                       'Your identity will remain anonymous to other residents',
                       style: TextStyle(fontSize: 13),
@@ -522,6 +585,72 @@ class _ReportViolationScreenState extends State<_ReportViolationScreen> {
                 return null;
               },
             ),
+            const SizedBox(height: 16),
+            Text('Photos (optional)',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700])),
+            const SizedBox(height: 8),
+            if (_uploadedImageUrls.isNotEmpty) ...[
+              SizedBox(
+                height: 100,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _uploadedImageUrls.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            _uploadedImageUrls[index],
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 100,
+                              height: 100,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.broken_image),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: () => setState(
+                                () => _uploadedImageUrls.removeAt(index)),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(Icons.close,
+                                  size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (_uploadedImageUrls.length < 5)
+              ImageUploadWidget(
+                bucket: 'violation-photos',
+                folder: context.read<AppState>().activeCommunityId,
+                onUploadComplete: (url) {
+                  if (url.isNotEmpty) {
+                    setState(() => _uploadedImageUrls.add(url));
+                  }
+                },
+              ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isLoading ? null : _handleSubmit,
@@ -552,6 +681,8 @@ class _ReportViolationScreenState extends State<_ReportViolationScreen> {
         communityId: appState.activeCommunityId!,
         title: _titleController.text.trim(),
         body: _bodyController.text.trim(),
+        attachmentUrls:
+            _uploadedImageUrls.isNotEmpty ? _uploadedImageUrls : null,
       );
 
       if (mounted) {
@@ -560,6 +691,206 @@ class _ReportViolationScreenState extends State<_ReportViolationScreen> {
           const SnackBar(content: Text('Violation reported successfully')),
         );
         widget.onReported();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+}
+
+class _EditViolationScreen extends StatefulWidget {
+  final Violation violation;
+  final VoidCallback onUpdated;
+
+  const _EditViolationScreen({
+    required this.violation,
+    required this.onUpdated,
+  });
+
+  @override
+  State<_EditViolationScreen> createState() => _EditViolationScreenState();
+}
+
+class _EditViolationScreenState extends State<_EditViolationScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleController;
+  late final TextEditingController _bodyController;
+  late final List<String> _uploadedImageUrls;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.violation.title);
+    _bodyController = TextEditingController(text: widget.violation.body);
+    _uploadedImageUrls = (widget.violation.attachments ?? [])
+        .where((item) => item != null && item.toString().isNotEmpty)
+        .map((item) => item.toString())
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit Violation'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            TextFormField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Title',
+                hintText: 'Brief description',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter a title';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _bodyController,
+              decoration: const InputDecoration(
+                labelText: 'Details',
+                hintText: 'Provide detailed information',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+              maxLines: 6,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please provide details';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Text('Photos (optional)',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700])),
+            const SizedBox(height: 8),
+            if (_uploadedImageUrls.isNotEmpty) ...[
+              SizedBox(
+                height: 100,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _uploadedImageUrls.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            _uploadedImageUrls[index],
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 100,
+                              height: 100,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.broken_image),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: () => setState(
+                                () => _uploadedImageUrls.removeAt(index)),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(Icons.close,
+                                  size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (_uploadedImageUrls.length < 5)
+              ImageUploadWidget(
+                bucket: 'violation-photos',
+                folder: context.read<AppState>().activeCommunityId,
+                onUploadComplete: (url) {
+                  if (url.isNotEmpty) {
+                    setState(() => _uploadedImageUrls.add(url));
+                  }
+                },
+              ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _handleSave,
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save Changes'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repo = context.read<ViolationRepository>();
+
+      await repo.updateViolation(
+        id: widget.violation.id,
+        title: _titleController.text.trim(),
+        body: _bodyController.text.trim(),
+        attachmentUrls: _uploadedImageUrls,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Violation updated')),
+        );
+        widget.onUpdated();
       }
     } catch (e) {
       if (mounted) {

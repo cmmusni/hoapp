@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
+import 'package:core_domain/core_domain.dart';
 import 'package:core_ui/core_ui.dart' as shared;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../household/household_screen.dart';
@@ -63,11 +64,19 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIcon: Icons.announcement,
         pageBuilder: () => const AnnouncementsTab(),
       ),
+      if (context.read<AppState>().isResident) ...[
+        _NavItem(
+          label: 'My Household',
+          icon: Icons.family_restroom_outlined,
+          selectedIcon: Icons.family_restroom,
+          pageBuilder: () => const HouseholdScreen(),
+        ),
+      ],
       _NavItem(
-        label: 'Violations',
-        icon: Icons.report_outlined,
-        selectedIcon: Icons.report,
-        pageBuilder: () => const ViolationsTab(),
+        label: 'Billing & Payments',
+        icon: Icons.payment_outlined,
+        selectedIcon: Icons.payment,
+        pageBuilder: () => const BillingScreen(),
       ),
       _NavItem(
         label: 'Tickets',
@@ -76,22 +85,16 @@ class _HomeScreenState extends State<HomeScreen> {
         pageBuilder: () => const TicketsTab(),
       ),
       _NavItem(
+        label: 'Violations',
+        icon: Icons.report_outlined,
+        selectedIcon: Icons.report,
+        pageBuilder: () => const ViolationsTab(),
+      ),
+      _NavItem(
         label: 'Amenities',
         icon: Icons.pool_outlined,
         selectedIcon: Icons.pool,
         pageBuilder: () => const AmenitiesScreen(),
-      ),
-      _NavItem(
-        label: 'Billing',
-        icon: Icons.payment_outlined,
-        selectedIcon: Icons.payment,
-        pageBuilder: () => const BillingScreen(),
-      ),
-      _NavItem(
-        label: 'Household',
-        icon: Icons.family_restroom_outlined,
-        selectedIcon: Icons.family_restroom,
-        pageBuilder: () => const HouseholdScreen(),
       ),
       _NavItem(
         label: 'Pool Access',
@@ -100,56 +103,56 @@ class _HomeScreenState extends State<HomeScreen> {
         pageBuilder: () => const PoolAccessScreen(),
       ),
       _NavItem(
+        label: 'Registered Swimmers',
+        icon: Icons.pool_outlined,
+        selectedIcon: Icons.pool,
+        pageBuilder: () => const RegisteredSwimmersScreen(),
+      ),
+      _NavItem(
         label: 'Security Pass',
         icon: Icons.qr_code_2_outlined,
         selectedIcon: Icons.qr_code_2,
         pageBuilder: () => const shared.SecurityPassScreen(),
       ),
       _NavItem(
-        label: 'Notifications',
-        icon: Icons.notifications_outlined,
-        selectedIcon: Icons.notifications,
-        pageBuilder: () => const shared.NotificationsScreen(),
-      ),
-      _NavItem(
-        label: 'Feedback',
-        icon: Icons.feedback_outlined,
-        selectedIcon: Icons.feedback,
-        pageBuilder: () => const shared.FeedbackScreen(),
-      ),
-      // Staff-only items
-      _NavItem(
-        label: 'Expenses',
+        label: 'Community Expenses',
         icon: Icons.account_balance_wallet_outlined,
         selectedIcon: Icons.account_balance_wallet,
         pageBuilder: () => const shared.ExpensesScreen(),
       ),
       _NavItem(
-        label: 'Income vs Expenses',
+        label: 'Financial Reports',
         icon: Icons.bar_chart_outlined,
         selectedIcon: Icons.bar_chart,
         pageBuilder: () => const ExpenseIncomeChartScreen(),
       ),
+      // Admin-only items
       _NavItem(
-        label: 'Registered Swimmers',
-        icon: Icons.pool_outlined,
-        selectedIcon: Icons.pool,
-        pageBuilder: () => const RegisteredSwimmersScreen(),
+        label: 'Households',
+        icon: Icons.family_restroom_outlined,
+        selectedIcon: Icons.family_restroom,
+        pageBuilder: () => const HouseholdScreen(),
         staffOnly: true,
       ),
-      // Admin-only items
       _NavItem(
         label: 'Manage Users',
         icon: Icons.people_outline,
         selectedIcon: Icons.people,
         pageBuilder: () => const shared.ManageUsersScreen(),
-        adminOnly: true,
+        staffOnly: true,
       ),
       _NavItem(
         label: 'Settings',
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,
         pageBuilder: () => const shared.SettingsScreen(),
+        adminOnly: true,
+      ),
+      _NavItem(
+        label: 'Feedback',
+        icon: Icons.feedback_outlined,
+        selectedIcon: Icons.feedback,
+        pageBuilder: () => const shared.FeedbackScreen(),
       ),
     ];
   }
@@ -265,59 +268,73 @@ class _HomeScreenState extends State<HomeScreen> {
     return Drawer(
       child: Column(
         children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: _brand),
-            margin: EdgeInsets.zero,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          Container(
+            width: double.infinity,
+            color: Colors.white,
+            padding: const EdgeInsets.only(top: 48, bottom: 16),
+            child: Center(
+              child: appState.activeCommunity?.logoUrl != null
+                  ? Image.network(
+                      appState.activeCommunity!.logoUrl!,
+                      height: 140,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'assets/images/hoapp-logo-with-bg.png',
+                        height: 140,
+                        fit: BoxFit.contain,
+                      ),
+                    )
+                  : Image.asset(
+                      'assets/images/hoapp-logo-with-bg.png',
+                      height: 140,
+                      fit: BoxFit.contain,
+                    ),
+            ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: SizedBox(
               width: double.infinity,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.white24,
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/hoapp-logo-full.png',
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
+                  Text(
+                    Supabase.instance.client.auth.currentUser?.email ?? '',
+                    style: const TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _brand.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _getRoleLabel(appState),
+                      style: TextStyle(
+                        color: _brand,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     appState.activeCommunity?.name ?? 'HOApp',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    Supabase.instance.client.auth.currentUser?.email ?? '',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
+                      color: Colors.grey[600],
                       fontSize: 13,
                     ),
                     overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _getRoleLabel(appState),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
-                    ),
                   ),
                 ],
               ),
             ),
           ),
+          const Divider(height: 1),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -458,6 +475,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (role == null) return 'Member';
     if (role.isAdmin) return 'Admin';
     if (role.isStaff) return 'Staff';
+    if (role.role == Role.guard) return 'Security Guard';
+    if (role.role == Role.maintenance) return 'Maintenance';
     return 'Resident';
   }
 

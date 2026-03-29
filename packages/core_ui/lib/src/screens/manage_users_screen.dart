@@ -144,6 +144,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: _InviteUserSheet(onInvited: _loadRoles),
@@ -153,12 +156,56 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
   void _showEditRoleDialog(UserRole role) {
     Role? selectedRole = role.role;
+    final userName = _userProfiles[role.userId]?.fullName ?? 'this user';
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Change Role'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _brand.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child:
+                  const Icon(Icons.swap_horiz_rounded, color: _brand, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Change Role',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text('Update role for $userName',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+                ],
+              ),
+            ),
+          ],
+        ),
         content: DropdownButtonFormField<Role>(
           value: selectedRole,
+          decoration: InputDecoration(
+            labelText: 'Role',
+            prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _brand, width: 1.5),
+            ),
+          ),
           items: Role.values
               .map((r) =>
                   DropdownMenuItem(value: r, child: Text(_roleDisplayName(r))))
@@ -168,10 +215,18 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           },
         ),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
-          ElevatedButton(
+          OutlinedButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              side: BorderSide(color: Colors.grey.shade300),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.black87)),
+          ),
+          ElevatedButton.icon(
             onPressed: () async {
               try {
                 final repo = context.read<CommunityRepository>();
@@ -187,7 +242,17 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 }
               }
             },
-            child: const Text('Save'),
+            icon:
+                const Icon(Icons.check_rounded, size: 18, color: Colors.white),
+            label: const Text('Save Changes',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _brand,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
           ),
         ],
       ),
@@ -195,20 +260,71 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
   }
 
   Future<void> _handleDeleteUser(UserRole role) async {
+    final userName = _userProfiles[role.userId]?.fullName ?? 'this user';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove User?'),
-        content: const Text(
-            'This will remove the user from the community. This cannot be undone.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.person_remove_rounded,
+                  color: Colors.red.shade600, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Remove User',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text(userName,
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'This will permanently remove $userName from the community. '
+          'This action cannot be undone.',
+          style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
+        ),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Remove')),
+          OutlinedButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              side: BorderSide(color: Colors.grey.shade300),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.black87)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            label: const Text('Remove',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+          ),
         ],
       ),
     );
@@ -345,14 +461,48 @@ class _InviteUserSheetState extends State<_InviteUserSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Invite User',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _brand.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.person_add_rounded,
+                      color: _brand, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Invite User',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w700)),
+                    Text('Send an invite to join your community',
+                        style:
+                            TextStyle(fontSize: 13, color: Colors.grey[500])),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
             TextField(
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
