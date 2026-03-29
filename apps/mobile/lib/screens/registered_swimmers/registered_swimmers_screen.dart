@@ -204,11 +204,30 @@ class _RegisteredSwimmersScreenState extends State<RegisteredSwimmersScreen> {
                         onRefresh: _load,
                         child: _filtered.isEmpty
                             ? ListView(
-                                children: const [
-                                  SizedBox(height: 120),
+                                children: [
+                                  const SizedBox(height: 80),
+                                  Icon(Icons.pool,
+                                      size: 64, color: Colors.grey[400]),
+                                  const SizedBox(height: 16),
                                   Center(
-                                      child: Text(
-                                          'No swimmers match your search')),
+                                    child: Text(
+                                      _searchController.text.isNotEmpty ||
+                                              _statusFilter != 'all'
+                                          ? 'No swimmers match your filters'
+                                          : 'No registered swimmers yet',
+                                      style: const TextStyle(fontSize: 18),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Center(
+                                    child: Text(
+                                      'Swimmers will appear here once residents register for pool access',
+                                      style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 14),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
                                 ],
                               )
                             : ListView.builder(

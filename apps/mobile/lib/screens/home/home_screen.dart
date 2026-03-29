@@ -10,6 +10,7 @@ import '../billing/billing_screen.dart';
 import '../amenities/amenities_screen.dart';
 import '../expenses/expense_income_chart_screen.dart';
 import '../registered_swimmers/registered_swimmers_screen.dart';
+import '../qr_scanner/qr_scanner_screen.dart';
 import 'tabs/announcements_tab.dart';
 import 'tabs/violations_tab.dart';
 import 'tabs/tickets_tab.dart';
@@ -24,6 +25,8 @@ class _NavItem {
   final Widget Function() pageBuilder;
   final bool staffOnly;
   final bool adminOnly;
+  final bool guardOnly;
+  final bool maintenanceOnly;
 
   const _NavItem({
     required this.label,
@@ -32,6 +35,8 @@ class _NavItem {
     required this.pageBuilder,
     this.staffOnly = false,
     this.adminOnly = false,
+    this.guardOnly = false,
+    this.maintenanceOnly = false,
   });
 }
 
@@ -63,6 +68,12 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.announcement_outlined,
         selectedIcon: Icons.announcement,
         pageBuilder: () => const AnnouncementsTab(),
+      ),
+      _NavItem(
+        label: 'Notifications',
+        icon: Icons.notifications_outlined,
+        selectedIcon: Icons.notifications,
+        pageBuilder: () => const shared.NotificationsScreen(),
       ),
       if (context.read<AppState>().isResident) ...[
         _NavItem(
@@ -115,6 +126,13 @@ class _HomeScreenState extends State<HomeScreen> {
         pageBuilder: () => const shared.SecurityPassScreen(),
       ),
       _NavItem(
+        label: 'QR Scanner',
+        icon: Icons.qr_code_scanner_outlined,
+        selectedIcon: Icons.qr_code_scanner,
+        pageBuilder: () => const QrScannerScreen(),
+        guardOnly: true,
+      ),
+      _NavItem(
         label: 'Community Expenses',
         icon: Icons.account_balance_wallet_outlined,
         selectedIcon: Icons.account_balance_wallet,
@@ -160,10 +178,14 @@ class _HomeScreenState extends State<HomeScreen> {
   List<_NavItem> _getVisibleItems(AppState appState) {
     final isStaff = appState.isStaff;
     final isAdmin = appState.isAdmin;
+    final isGuard = appState.isGuard;
+    final isMaintenance = appState.isMaintenance;
 
     return _buildNavItems().where((item) {
       if (item.adminOnly && !isAdmin) return false;
       if (item.staffOnly && !isStaff) return false;
+      if (item.guardOnly && !isGuard) return false;
+      if (item.maintenanceOnly && !isMaintenance) return false;
       return true;
     }).toList();
   }

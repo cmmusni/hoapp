@@ -86,7 +86,27 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline,
+                              size: 48, color: Colors.red),
+                          const SizedBox(height: 16),
+                          Text('Error: ${snapshot.error}'),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _loadExpenses,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _brand,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
                   }
                   final expenses = snapshot.data ?? [];
                   if (expenses.isEmpty) {
@@ -99,6 +119,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                           const SizedBox(height: 16),
                           const Text('No expenses recorded yet',
                               style: TextStyle(fontSize: 18)),
+                          const SizedBox(height: 8),
+                          if (appState.isStaff)
+                            Text(
+                              'Tap the + button to add your first expense',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
                         ],
                       ),
                     );
@@ -181,100 +207,192 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   void _showExpenseDetails(BuildContext context, Expense expense) {
+    final isStaff = context.read<AppState>().isStaff;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      clipBehavior: Clip.antiAlias,
       builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
         expand: false,
-        builder: (context, sc) => ListView(
-          controller: sc,
-          padding: const EdgeInsets.all(24),
+        builder: (context, sc) => Column(
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(expense.description,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _DetailRow(
-                label: 'Category', value: _categoryLabel(expense.category)),
-            _DetailRow(
-                label: 'Amount', value: _currencyFormat.format(expense.amount)),
-            _DetailRow(
-                label: 'Date',
-                value: DateFormat('MMM d, yyyy').format(expense.expenseDate)),
-            if (expense.vendor != null)
-              _DetailRow(label: 'Vendor', value: expense.vendor!),
-            if (expense.notes != null)
-              _DetailRow(label: 'Notes', value: expense.notes!),
-            if (expense.receiptUrl != null) ...[
-              const SizedBox(height: 16),
-              const Text('Receipt / Proof',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () =>
-                    _showReceiptFullScreen(context, expense.receiptUrl!),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    expense.receiptUrl!,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 200,
+            // Green header
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(color: _brand),
+              padding: const EdgeInsets.fromLTRB(24, 16, 16, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.broken_image,
-                            size: 48, color: Colors.grey),
+                        color: Colors.white38,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                ),
+                  Text(
+                    _categoryLabel(expense.category).toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _currencyFormat.format(expense.amount),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('MMM d, yyyy').format(expense.expenseDate),
+                    style: const TextStyle(color: Colors.white60, fontSize: 13),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text('Tap image to view full size',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-            ],
-            const SizedBox(height: 16),
-            if (context.read<AppState>().isStaff)
-              Row(children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _showCreateExpenseSheet(context, existing: expense);
-                    },
-                    icon: const Icon(Icons.edit),
-                    label: const Text('Edit'),
+            ),
+            // Scrollable content
+            Expanded(
+              child: ListView(
+                controller: sc,
+                padding: const EdgeInsets.all(24),
+                children: [
+                  Text(expense.description,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w600)),
+                  if (expense.vendor != null) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(Icons.store_outlined,
+                            size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        Text('Vendor: ${expense.vendor}',
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ],
+                  if (expense.notes != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.note_outlined,
+                              size: 16, color: Colors.amber[700]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(expense.notes!,
+                                style: TextStyle(
+                                    fontSize: 13, color: Colors.amber[900])),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (expense.receiptUrl != null) ...[
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(Icons.receipt_long,
+                            size: 18, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        Text('Receipt / Proof',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800],
+                            )),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () =>
+                          _showReceiptFullScreen(context, expense.receiptUrl!),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          expense.receiptUrl!,
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.broken_image,
+                                  size: 48, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Tap image to view full size',
+                        style:
+                            TextStyle(fontSize: 11, color: Colors.grey[500])),
+                  ],
+                  const SizedBox(height: 12),
+                  Text(
+                    'Added ${DateFormat('MMM d, yyyy').format(expense.createdAt)}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _deleteExpense(context, expense),
-                    icon: const Icon(Icons.delete),
-                    label: const Text('Delete'),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white),
-                  ),
-                ),
-              ]),
+                  if (isStaff) ...[
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _showCreateExpenseSheet(context, existing: expense);
+                          },
+                          icon: const Icon(Icons.edit, size: 18),
+                          label: const Text('Edit'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _deleteExpense(context, expense),
+                          icon: const Icon(Icons.delete, size: 18),
+                          label: const Text('Delete'),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white),
+                        ),
+                      ),
+                    ]),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -355,6 +473,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         if (mounted) {
           Navigator.of(context).pop();
           _loadExpenses();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Expense deleted successfully'),
+              backgroundColor: _brand,
+            ),
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -366,29 +490,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 }
 
-// ─── Support Widgets ─────────────────────────────────────────────────────────
-
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _DetailRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-          width: 100,
-          child: Text(label,
-              style: TextStyle(
-                  color: Colors.grey[600], fontWeight: FontWeight.w500)),
-        ),
-        Expanded(child: Text(value)),
-      ]),
-    );
-  }
-}
+// ─── Expense Card ────────────────────────────────────────────────────────────
 
 class _ExpenseCard extends StatelessWidget {
   final Expense expense;
@@ -413,9 +515,25 @@ class _ExpenseCard extends StatelessWidget {
         ),
         title: Text(expense.description,
             maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Text(
-          '${expense.category.name.toUpperCase()} • ${DateFormat('MMM d').format(expense.expenseDate)}',
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  '${expense.category.name.toUpperCase()} • ${DateFormat('MMM d').format(expense.expenseDate)}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                if (expense.receiptUrl != null) ...[
+                  const SizedBox(width: 6),
+                  Icon(Icons.receipt_long, size: 13, color: Colors.grey[400]),
+                ],
+              ],
+            ),
+            if (expense.vendor != null)
+              Text(expense.vendor!,
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+          ],
         ),
         trailing: Text(currencyFormat.format(expense.amount),
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
@@ -427,7 +545,12 @@ class _ExpenseCard extends StatelessWidget {
         ExpenseCategory.maintenance => Icons.build,
         ExpenseCategory.utilities => Icons.electrical_services,
         ExpenseCategory.supplies => Icons.inventory,
-        _ => Icons.category,
+        ExpenseCategory.services => Icons.miscellaneous_services,
+        ExpenseCategory.repairs => Icons.handyman,
+        ExpenseCategory.salaries => Icons.people,
+        ExpenseCategory.insurance => Icons.shield,
+        ExpenseCategory.taxes => Icons.account_balance,
+        ExpenseCategory.other => Icons.category,
       };
 }
 
@@ -489,54 +612,122 @@ class _ExpenseTrendChartState extends State<_ExpenseTrendChart> {
       return const SizedBox(
           height: 150, child: Center(child: CircularProgressIndicator()));
     }
+    if (_data!.every((d) => d.total == 0)) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text('No expense data to display',
+            style: TextStyle(color: Colors.grey[500])),
+      );
+    }
     final maxY =
-        _data!.fold<double>(0, (m, d) => d.total > m ? d.total : m) * 1.2;
+        _data!.fold<double>(0, (m, d) => d.total > m ? d.total : m) * 1.3;
+    final ceilY = maxY > 0 ? maxY : 5000.0;
 
     return Container(
-      height: 180,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: LineChart(
-        LineChartData(
-          maxY: maxY > 0 ? maxY : 1000,
-          gridData: const FlGridData(show: false),
-          titlesData: FlTitlesData(
-            leftTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, _) {
-                  final i = value.toInt();
-                  if (i >= 0 && i < _data!.length) {
-                    return Text(_data![i].label,
-                        style: const TextStyle(fontSize: 11));
-                  }
-                  return const Text('');
-                },
+      height: 200,
+      padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration:
+                    const BoxDecoration(color: _brand, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 4),
+              const Text('Expenses', style: TextStyle(fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                maxY: ceilY,
+                minY: 0,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: ceilY / 4,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: Colors.grey.withOpacity(0.2),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 50,
+                      interval: ceilY / 4,
+                      getTitlesWidget: (value, meta) => Text(
+                        '₱${NumberFormat.compact().format(value)}',
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                    ),
+                  ),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, _) {
+                        final i = value.toInt();
+                        if (i >= 0 && i < _data!.length) {
+                          return Text(_data![i].label,
+                              style: const TextStyle(fontSize: 11));
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: _data!
+                        .asMap()
+                        .entries
+                        .map((e) => FlSpot(e.key.toDouble(), e.value.total))
+                        .toList(),
+                    isCurved: true,
+                    color: _brand,
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                        radius: 3,
+                        color: _brand,
+                        strokeColor: Colors.white,
+                        strokeWidth: 1.5,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                        show: true, color: _brand.withValues(alpha: 0.1)),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (spots) => spots.map((s) {
+                      return LineTooltipItem(
+                        '₱${NumberFormat('#,##0').format(s.y)}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
             ),
           ),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: _data!
-                  .asMap()
-                  .entries
-                  .map((e) => FlSpot(e.key.toDouble(), e.value.total))
-                  .toList(),
-              isCurved: true,
-              color: _brand,
-              barWidth: 3,
-              dotData: const FlDotData(show: true),
-              belowBarData:
-                  BarAreaData(show: true, color: _brand.withValues(alpha: 0.1)),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -843,6 +1034,14 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
       if (mounted) {
         Navigator.of(context).pop();
         widget.onCreated();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isEditing
+                ? 'Expense updated successfully'
+                : 'Expense added successfully'),
+            backgroundColor: _brand,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

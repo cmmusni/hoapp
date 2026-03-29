@@ -23,10 +23,12 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
   bool _isLoading = true;
   bool _isSending = false;
   RealtimeChannel? _realtimeChannel;
+  late TicketStatus _currentStatus;
 
   @override
   void initState() {
     super.initState();
+    _currentStatus = widget.ticket.status;
     _loadMessages();
     _subscribeToMessages();
   }
@@ -116,9 +118,80 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
     }
   }
 
+  Future<void> _closeTicket() async {
+    try {
+      final repo = context.read<TicketRepository>();
+      await repo.updateTicketStatus(widget.ticket.id, TicketStatus.closed);
+
+      if (mounted) {
+        setState(() => _currentStatus = TicketStatus.closed);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ticket closed')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteTicket() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+            SizedBox(width: 12),
+            Text('Delete Ticket'),
+          ],
+        ),
+        content: const Text(
+            'Are you sure you want to delete this ticket? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final repo = context.read<TicketRepository>();
+        await repo.deleteTicket(widget.ticket.id);
+
+        if (mounted) {
+          context.read<AppState>().requestBadgeRefresh();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ticket deleted')),
+          );
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = context.read<AuthRepository>().currentUser?.id;
+    final appState = context.watch<AppState>();
+    final isStaff = appState.isStaff;
 
     return Scaffold(
       appBar: AppBar(
@@ -127,11 +200,25 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
           children: [
             Text(widget.ticket.type.name.toUpperCase()),
             Text(
-              _getStatusLabel(widget.ticket.status),
+              _getStatusLabel(_currentStatus),
               style: const TextStyle(fontSize: 12),
             ),
           ],
         ),
+        actions: [
+          if (_currentStatus == TicketStatus.open)
+            IconButton(
+              onPressed: _closeTicket,
+              icon: const Icon(Icons.check_circle_outline),
+              tooltip: 'Close Ticket',
+            ),
+          if (isStaff)
+            IconButton(
+              onPressed: _deleteTicket,
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: 'Delete Ticket',
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -139,12 +226,12 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            color: _getStatusColor(widget.ticket.status).withOpacity(0.1),
+            color: _getStatusColor(_currentStatus).withOpacity(0.1),
             child: Row(
               children: [
                 Icon(
-                  _getStatusIcon(widget.ticket.status),
-                  color: _getStatusColor(widget.ticket.status),
+                  _getStatusIcon(_currentStatus),
+                  color: _getStatusColor(_currentStatus),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -236,57 +323,58 @@ class _TicketChatScreenState extends State<TicketChatScreen> {
           ),
 
           // Message input
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: 'Type a message...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
+          if (_currentStatus == TicketStatus.open)
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: InputDecoration(
+                        hintText: 'Type a message...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
+                      maxLines: null,
+                      textCapitalization: TextCapitalization.sentences,
                     ),
-                    maxLines: null,
-                    textCapitalization: TextCapitalization.sentences,
                   ),
-                ),
-                const SizedBox(width: 8),
-                CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: IconButton(
-                    icon: _isSending
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.send, color: Colors.white),
-                    onPressed: _isSending ? null : _sendMessage,
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: IconButton(
+                      icon: _isSending
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.send, color: Colors.white),
+                      onPressed: _isSending ? null : _sendMessage,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

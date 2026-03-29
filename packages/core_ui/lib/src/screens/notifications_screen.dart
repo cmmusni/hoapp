@@ -43,9 +43,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             .limit(20),
         client
             .from('violations')
-            .select('id, description, status, created_at')
+            .select('id, title, status, created_at')
             .eq('community_id', communityId)
-            .eq('unit_id', appState.activeRole?.unitId ?? '')
+            .eq('reporter_user_id', userId)
             .order('created_at', ascending: false)
             .limit(10),
         client
@@ -95,7 +95,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         items.add(_NotificationItem(
           id: v['id'],
           type: 'violation',
-          title: 'Violation: ${v['description'] ?? 'N/A'}',
+          title: 'Violation: ${v['title'] ?? 'N/A'}',
           subtitle: 'Status: ${v['status']}',
           createdAt: DateTime.parse(v['created_at']),
           icon: Icons.report,

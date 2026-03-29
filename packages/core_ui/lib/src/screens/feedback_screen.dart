@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:intl/intl.dart';
 import '../adaptive/adaptive_layout.dart';
+import '../widgets/file_upload_widget.dart';
 
 const _brand = Color(0xff215e3f);
 
@@ -214,6 +215,7 @@ class _FeedbackCard extends StatelessWidget {
     final status = item['status'] as String? ?? 'open';
     final subject = item['subject'] as String? ?? 'No subject';
     final description = item['description'] as String? ?? '';
+    final imageUrl = item['image_url'] as String?;
     final createdAt = item['created_at'] != null
         ? DateTime.tryParse(item['created_at'])
         : null;
@@ -257,6 +259,15 @@ class _FeedbackCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: Colors.grey[600], fontSize: 13)),
               ],
+              if (imageUrl != null && imageUrl.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Row(children: [
+                  Icon(Icons.image_outlined, size: 14, color: Colors.blue.shade400),
+                  const SizedBox(width: 4),
+                  Text('Image attached',
+                      style: TextStyle(fontSize: 12, color: Colors.blue.shade400)),
+                ]),
+              ],
               if (createdAt != null) ...[
                 const SizedBox(height: 8),
                 Text(DateFormat('MMM d, yyyy').format(createdAt),
@@ -272,6 +283,7 @@ class _FeedbackCard extends StatelessWidget {
   void _showDetails(BuildContext context) {
     final adminNotes = item['admin_notes'] as String?;
     final description = item['description'] as String? ?? '';
+    final imageUrl = item['image_url'] as String?;
 
     showModalBottomSheet(
       context: context,
@@ -299,6 +311,25 @@ class _FeedbackCard extends StatelessWidget {
                     const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Text(description, style: const TextStyle(height: 1.5)),
+            if (imageUrl != null && imageUrl.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text('Attached Image',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) => Container(
+                    height: 120,
+                    color: Colors.grey[200],
+                    child: const Center(child: Icon(Icons.broken_image)),
+                  ),
+                ),
+              ),
+            ],
             if (adminNotes != null && adminNotes.isNotEmpty) ...[
               const SizedBox(height: 20),
               Container(
@@ -538,6 +569,7 @@ class _SubmitFeedbackSheetState extends State<_SubmitFeedbackSheet> {
   final _subjectCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   String _category = 'general';
+  String? _uploadedImageUrl;
   bool _isLoading = false;
 
   @override
@@ -605,6 +637,19 @@ class _SubmitFeedbackSheetState extends State<_SubmitFeedbackSheet> {
               ),
             ),
             const SizedBox(height: 16),
+            const Text('Attach Image (optional)',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const SizedBox(height: 8),
+            ImageUploadWidget(
+              bucket: 'feedback-images',
+              folder: context.read<AppState>().activeCommunityId,
+              onUploadComplete: (url) {
+                if (url.isNotEmpty) {
+                  setState(() => _uploadedImageUrl = url);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -657,6 +702,7 @@ class _SubmitFeedbackSheetState extends State<_SubmitFeedbackSheet> {
         category: _category,
         subject: _subjectCtrl.text.trim(),
         description: _descCtrl.text.trim(),
+        imageUrl: _uploadedImageUrl,
       );
       if (mounted) {
         Navigator.of(context).pop();
