@@ -148,6 +148,7 @@ class _ViolationsTabState extends State<ViolationsTab> {
         icon: const Icon(Icons.report),
         label: const Text('Report'),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 

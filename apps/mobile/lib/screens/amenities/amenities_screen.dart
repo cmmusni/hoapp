@@ -79,161 +79,165 @@ class _AmenitiesScreenState extends State<AmenitiesScreen> {
     final isStaff = appState.isStaff;
 
     return Scaffold(
-      body: FutureBuilder<List<Amenity>>(
-        future: _amenitiesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        body: FutureBuilder<List<Amenity>>(
+          future: _amenitiesFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Error: ${snapshot.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                      onPressed: _loadAmenities, child: const Text('Retry')),
-                ],
-              ),
-            );
-          }
-
-          final amenities = snapshot.data ?? [];
-
-          if (amenities.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.pool_outlined, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  const Text('No amenities yet',
-                      style: TextStyle(fontSize: 18)),
-                  if (isStaff) ...[
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        size: 48, color: Colors.red),
                     const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () => _showCreateAmenitySheet(),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Amenity'),
-                    ),
+                    Text('Error: ${snapshot.error}'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                        onPressed: _loadAmenities, child: const Text('Retry')),
                   ],
+                ),
+              );
+            }
+
+            final amenities = snapshot.data ?? [];
+
+            if (amenities.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.pool_outlined,
+                        size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    const Text('No amenities yet',
+                        style: TextStyle(fontSize: 18)),
+                    if (isStaff) ...[
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => _showCreateAmenitySheet(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Amenity'),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async => _loadAmenities(),
+              child: ListView(
+                children: [
+                  // Calendar
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: TableCalendar(
+                      firstDay:
+                          DateTime.now().subtract(const Duration(days: 365)),
+                      lastDay: DateTime.now().add(const Duration(days: 365)),
+                      focusedDay: _focusedDay,
+                      calendarFormat: _calendarFormat,
+                      selectedDayPredicate: (day) =>
+                          isSameDay(_selectedDay, day),
+                      eventLoader: _getBookingsForDay,
+                      onDaySelected: (selected, focused) {
+                        setState(() {
+                          _selectedDay = selected;
+                          _focusedDay = focused;
+                        });
+                      },
+                      onFormatChanged: (format) {
+                        setState(() => _calendarFormat = format);
+                      },
+                      calendarStyle: CalendarStyle(
+                        markerDecoration: BoxDecoration(
+                          color: _brand,
+                          shape: BoxShape.circle,
+                        ),
+                        selectedDecoration: const BoxDecoration(
+                          color: _brand,
+                          shape: BoxShape.circle,
+                        ),
+                        todayDecoration: BoxDecoration(
+                          color: _brand.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Selected day bookings
+                  if (_selectedDay != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'Bookings for ${DateFormat('MMM d, yyyy').format(_selectedDay!)}',
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    ..._getBookingsForDay(_selectedDay!).map(
+                      (booking) => _BookingTile(
+                        booking: booking,
+                        isStaff: isStaff,
+                        onApprove: () => _approveBooking(booking),
+                        onCancel: () => _cancelBooking(booking),
+                      ),
+                    ),
+                    if (_getBookingsForDay(_selectedDay!).isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text('No bookings on this day',
+                            style: TextStyle(color: Colors.grey[500])),
+                      ),
+                    const Divider(),
+                  ],
+
+                  // Amenity list
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Text('Available Amenities',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                  ),
+                  ...amenities.map((a) => _AmenityTile(
+                        amenity: a,
+                        onTap: () => _showAmenityDetails(a),
+                      )),
+                  const SizedBox(height: 80),
                 ],
               ),
             );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async => _loadAmenities(),
-            child: ListView(
-              children: [
-                // Calendar
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: TableCalendar(
-                    firstDay:
-                        DateTime.now().subtract(const Duration(days: 365)),
-                    lastDay: DateTime.now().add(const Duration(days: 365)),
-                    focusedDay: _focusedDay,
-                    calendarFormat: _calendarFormat,
-                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                    eventLoader: _getBookingsForDay,
-                    onDaySelected: (selected, focused) {
-                      setState(() {
-                        _selectedDay = selected;
-                        _focusedDay = focused;
-                      });
-                    },
-                    onFormatChanged: (format) {
-                      setState(() => _calendarFormat = format);
-                    },
-                    calendarStyle: CalendarStyle(
-                      markerDecoration: BoxDecoration(
-                        color: _brand,
-                        shape: BoxShape.circle,
-                      ),
-                      selectedDecoration: const BoxDecoration(
-                        color: _brand,
-                        shape: BoxShape.circle,
-                      ),
-                      todayDecoration: BoxDecoration(
-                        color: _brand.withOpacity(0.3),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Selected day bookings
-                if (_selectedDay != null) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Bookings for ${DateFormat('MMM d, yyyy').format(_selectedDay!)}',
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  ..._getBookingsForDay(_selectedDay!).map(
-                    (booking) => _BookingTile(
-                      booking: booking,
-                      isStaff: isStaff,
-                      onApprove: () => _approveBooking(booking),
-                      onCancel: () => _cancelBooking(booking),
-                    ),
-                  ),
-                  if (_getBookingsForDay(_selectedDay!).isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text('No bookings on this day',
-                          style: TextStyle(color: Colors.grey[500])),
-                    ),
-                  const Divider(),
-                ],
-
-                // Amenity list
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text('Available Amenities',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
-                ),
-                ...amenities.map((a) => _AmenityTile(
-                      amenity: a,
-                      onTap: () => _showAmenityDetails(a),
-                    )),
-                const SizedBox(height: 80),
-              ],
-            ),
-          );
-        },
-      ),
-      floatingActionButton: isStaff
-          ? FloatingActionButton(
-              onPressed: () => _showCreateAmenitySheet(),
-              child: const Icon(Icons.add),
-            )
-          : FloatingActionButton.extended(
-              onPressed: () {
-                if (_cachedAmenities.isNotEmpty) {
-                  _showBookingSheet(_cachedAmenities.first, _cachedAmenities);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No amenities available')),
-                  );
-                }
-              },
-              icon: const Icon(Icons.event_available),
-              label: const Text('Request Booking'),
-              backgroundColor: _brand,
-              foregroundColor: Colors.white,
-            ),
-    );
+          },
+        ),
+        floatingActionButton: isStaff
+            ? FloatingActionButton(
+                onPressed: () => _showCreateAmenitySheet(),
+                child: const Icon(Icons.add),
+              )
+            : FloatingActionButton.extended(
+                onPressed: () {
+                  if (_cachedAmenities.isNotEmpty) {
+                    _showBookingSheet(_cachedAmenities.first, _cachedAmenities);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No amenities available')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.event_available),
+                label: const Text('Request Booking'),
+                backgroundColor: _brand,
+                foregroundColor: Colors.white,
+              ),
+        floatingActionButtonLocation:
+            FloatingActionButtonLocation.centerDocked);
   }
 
   // ─── Amenity Details Bottom Sheet ──────────────────────────────────
