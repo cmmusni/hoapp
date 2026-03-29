@@ -127,6 +127,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 .eq('user_id', userId)
                 .order('created_at', ascending: false)
                 .limit(10),
+        // Staff see all unpaid invoices; residents see their own unit's
+        isStaff
+            ? client
+                .from('invoices')
+                .select('id, category, amount, due_date, status, created_at')
+                .eq('community_id', communityId)
+                .eq('status', 'unpaid')
+                .order('due_date', ascending: true)
+                .limit(20)
+            : client
+                .from('invoices')
+                .select('id, category, amount, due_date, status, created_at')
+                .eq('community_id', communityId)
+                .eq('status', 'unpaid')
+                .order('due_date', ascending: true)
+                .limit(10),
       ]);
 
       final items = <_NotificationItem>[];
@@ -197,6 +213,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           color: Colors.teal,
         ));
       }
+      for (final inv in results[6] as List) {
+        final cat = (inv['category'] as String? ?? 'other').toUpperCase();
+        final amount = inv['amount'] ?? 0;
+        final dueDate = inv['due_date'] ?? '';
+        final isOverdue = dueDate.isNotEmpty &&
+            DateTime.tryParse(dueDate)?.isBefore(DateTime.now()) == true;
+        items.add(_NotificationItem(
+          id: inv['id'],
+          type: 'invoice',
+          title: 'Unpaid Invoice: $cat',
+          subtitle:
+              '₱$amount — Due: $dueDate${isOverdue ? ' (OVERDUE)' : ''}',
+          createdAt: DateTime.parse(inv['created_at']),
+          icon: Icons.receipt_long,
+          color: isOverdue ? Colors.red : Colors.orange,
+        ));
+      }
 
       items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       if (mounted) setState(() => _items = items);
@@ -229,6 +262,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               _chip('Violations', 'violation'),
               _chip('Tickets', 'ticket'),
               _chip('Payments', 'payment'),
+              _chip('Invoices', 'invoice'),
               _chip('Bookings', 'booking'),
               _chip('Feedback', 'feedback'),
             ]),
@@ -285,6 +319,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return 'Violations';
       case 'ticket':
         return 'Tickets';
+      case 'invoice':
+        return 'Billing & Payments';
       case 'payment':
         return 'Billing & Payments';
       case 'booking':

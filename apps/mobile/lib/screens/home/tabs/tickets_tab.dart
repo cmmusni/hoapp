@@ -64,19 +64,13 @@ class _TicketsTabState extends State<TicketsTab> {
           final tickets = snapshot.data ?? [];
 
           if (tickets.isEmpty) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.support_agent, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text('No support tickets'),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () => _showCreateTicketSheet(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create Ticket'),
-                  ),
+                  Icon(Icons.support_agent, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('No support tickets'),
                 ],
               ),
             );
