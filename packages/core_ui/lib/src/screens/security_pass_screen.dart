@@ -176,6 +176,7 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
   void _showPassDetails(
       BuildContext ctx, SecurityPass pass, bool isStaff, bool isGuard) {
     final isAdmin = ctx.read<AppState>().isAdmin;
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
@@ -187,6 +188,7 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
         isStaff: isStaff,
         isGuard: isGuard,
         isAdmin: isAdmin,
+        currentUserId: currentUserId,
         onUpdated: _loadData,
       ),
     );
@@ -309,6 +311,7 @@ class _PassDetailsSheet extends StatelessWidget {
   final bool isStaff;
   final bool isGuard;
   final bool isAdmin;
+  final String? currentUserId;
   final VoidCallback onUpdated;
 
   const _PassDetailsSheet({
@@ -316,6 +319,7 @@ class _PassDetailsSheet extends StatelessWidget {
     required this.isStaff,
     required this.isGuard,
     this.isAdmin = false,
+    this.currentUserId,
     required this.onUpdated,
   });
 
@@ -547,8 +551,11 @@ class _PassDetailsSheet extends StatelessWidget {
               ),
             ],
 
-            // Delete (admin only)
-            if (isAdmin) ...[
+            // Delete: admin can delete any pass; owner can delete own submitted pass
+            if (isAdmin ||
+                (currentUserId != null &&
+                    pass.requestedBy == currentUserId &&
+                    statusStr == 'submitted')) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,

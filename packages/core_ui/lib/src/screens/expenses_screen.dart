@@ -520,9 +520,12 @@ class _ExpenseCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
-                  '${expense.category.name.toUpperCase()} • ${DateFormat('MMM d').format(expense.expenseDate)}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                Flexible(
+                  child: Text(
+                    '${expense.category.name.toUpperCase()} • ${DateFormat('MMM d').format(expense.expenseDate)}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 if (expense.receiptUrl != null) ...[
                   const SizedBox(width: 6),
