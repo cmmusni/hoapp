@@ -73,7 +73,9 @@ class _HomeScreenState extends State<HomeScreen> {
         label: 'Notifications',
         icon: Icons.notifications_outlined,
         selectedIcon: Icons.notifications,
-        pageBuilder: () => const shared.NotificationsScreen(),
+        pageBuilder: () => shared.NotificationsScreen(
+          onNavigate: _navigateToSection,
+        ),
       ),
       if (context.read<AppState>().isResident) ...[
         _NavItem(
@@ -516,6 +518,15 @@ class _HomeScreenState extends State<HomeScreen> {
         return _pendingBookings;
       default:
         return 0;
+    }
+  }
+
+  void _navigateToSection(String section) {
+    final appState = context.read<AppState>();
+    final visibleItems = _getVisibleItems(appState);
+    final index = visibleItems.indexWhere((item) => item.label == section);
+    if (index >= 0) {
+      setState(() => _selectedIndex = index);
     }
   }
 }

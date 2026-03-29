@@ -8,7 +8,11 @@ const _brand = Color(0xff215e3f);
 
 /// Shared notifications screen — works on both web and mobile.
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key});
+  /// Called when user taps a notification to navigate to the relevant section.
+  /// Passes the section name (e.g. 'Announcements', 'Violations', 'Tickets', etc.)
+  final void Function(String section)? onNavigate;
+
+  const NotificationsScreen({super.key, this.onNavigate});
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -197,8 +201,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ])
                         : ListView.builder(
                             itemCount: _filtered.length,
-                            itemBuilder: (_, i) =>
-                                _NotificationTile(item: _filtered[i]),
+                            itemBuilder: (_, i) => _NotificationTile(
+                              item: _filtered[i],
+                              onTap: widget.onNavigate != null
+                                  ? () => widget.onNavigate!(
+                                      _sectionForType(_filtered[i].type))
+                                  : null,
+                            ),
                           ),
                   ),
           ),
@@ -219,6 +228,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         onSelected: (_) => setState(() => _filter = value),
       ),
     );
+  }
+
+  String _sectionForType(String type) {
+    switch (type) {
+      case 'announcement':
+        return 'Announcements';
+      case 'violation':
+        return 'Violations';
+      case 'ticket':
+        return 'Tickets';
+      case 'payment':
+        return 'Billing & Payments';
+      case 'booking':
+        return 'Amenities';
+      case 'feedback':
+        return 'Feedback';
+      default:
+        return 'Announcements';
+    }
   }
 }
 
@@ -244,11 +272,13 @@ class _NotificationItem {
 
 class _NotificationTile extends StatelessWidget {
   final _NotificationItem item;
-  const _NotificationTile({required this.item});
+  final VoidCallback? onTap;
+  const _NotificationTile({required this.item, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: onTap,
       leading: CircleAvatar(
         backgroundColor: item.color.withValues(alpha: 0.1),
         child: Icon(item.icon, color: item.color, size: 20),
@@ -259,9 +289,17 @@ class _NotificationTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w500)),
       subtitle: Text(item.subtitle,
           style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-      trailing: Text(
-        _timeAgo(item.createdAt),
-        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _timeAgo(item.createdAt),
+            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+          ),
+          if (onTap != null) ...
+            [const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 18, color: Colors.grey[400])],
+        ],
       ),
     );
   }
