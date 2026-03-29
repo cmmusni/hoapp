@@ -38,6 +38,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (communityId == null || userId == null) return;
 
       final client = Supabase.instance.client;
+      final isStaff = appState.isStaff;
+
       final results = await Future.wait([
         client
             .from('announcements')
@@ -45,41 +47,86 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             .eq('community_id', communityId)
             .order('created_at', ascending: false)
             .limit(20),
-        client
-            .from('violations')
-            .select('id, title, status, created_at')
-            .eq('community_id', communityId)
-            .eq('reporter_user_id', userId)
-            .order('created_at', ascending: false)
-            .limit(10),
-        client
-            .from('tickets')
-            .select('id, type, status, created_at')
-            .eq('community_id', communityId)
-            .eq('created_by', userId)
-            .order('created_at', ascending: false)
-            .limit(10),
-        client
-            .from('payments')
-            .select('id, amount, status, created_at')
-            .eq('community_id', communityId)
-            .eq('user_id', userId)
-            .order('created_at', ascending: false)
-            .limit(10),
-        client
-            .from('amenity_bookings')
-            .select('id, status, created_at')
-            .eq('community_id', communityId)
-            .eq('user_id', userId)
-            .order('created_at', ascending: false)
-            .limit(10),
-        client
-            .from('feedback')
-            .select('id, subject, status, created_at')
-            .eq('community_id', communityId)
-            .eq('user_id', userId)
-            .order('created_at', ascending: false)
-            .limit(10),
+        // Staff see all violations; residents see their own
+        isStaff
+            ? client
+                .from('violations')
+                .select('id, title, status, created_at')
+                .eq('community_id', communityId)
+                .neq('status', 'resolved')
+                .order('created_at', ascending: false)
+                .limit(20)
+            : client
+                .from('violations')
+                .select('id, title, status, created_at')
+                .eq('community_id', communityId)
+                .eq('reporter_user_id', userId)
+                .order('created_at', ascending: false)
+                .limit(10),
+        // Staff see all open tickets; residents see their own
+        isStaff
+            ? client
+                .from('tickets')
+                .select('id, type, status, created_at')
+                .eq('community_id', communityId)
+                .eq('status', 'open')
+                .order('created_at', ascending: false)
+                .limit(20)
+            : client
+                .from('tickets')
+                .select('id, type, status, created_at')
+                .eq('community_id', communityId)
+                .eq('created_by', userId)
+                .order('created_at', ascending: false)
+                .limit(10),
+        // Staff see all submitted payments; residents see their own
+        isStaff
+            ? client
+                .from('payments')
+                .select('id, amount, status, created_at')
+                .eq('community_id', communityId)
+                .eq('status', 'submitted')
+                .order('created_at', ascending: false)
+                .limit(20)
+            : client
+                .from('payments')
+                .select('id, amount, status, created_at')
+                .eq('community_id', communityId)
+                .eq('user_id', userId)
+                .order('created_at', ascending: false)
+                .limit(10),
+        // Staff see all pending bookings; residents see their own
+        isStaff
+            ? client
+                .from('amenity_bookings')
+                .select('id, status, created_at')
+                .eq('community_id', communityId)
+                .eq('status', 'pending')
+                .order('created_at', ascending: false)
+                .limit(20)
+            : client
+                .from('amenity_bookings')
+                .select('id, status, created_at')
+                .eq('community_id', communityId)
+                .eq('user_id', userId)
+                .order('created_at', ascending: false)
+                .limit(10),
+        // Staff see all open feedback; residents see their own
+        isStaff
+            ? client
+                .from('feedback')
+                .select('id, subject, status, created_at')
+                .eq('community_id', communityId)
+                .eq('status', 'open')
+                .order('created_at', ascending: false)
+                .limit(20)
+            : client
+                .from('feedback')
+                .select('id, subject, status, created_at')
+                .eq('community_id', communityId)
+                .eq('user_id', userId)
+                .order('created_at', ascending: false)
+                .limit(10),
       ]);
 
       final items = <_NotificationItem>[];
