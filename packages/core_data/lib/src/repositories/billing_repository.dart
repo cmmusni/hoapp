@@ -7,28 +7,30 @@ class BillingRepository {
 
   // ============ INVOICES ============
 
-  /// Get invoices for current user's household
+  /// Get invoices for current user's household(s)
   Future<List<Invoice>> getMyInvoices(String communityId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return [];
 
-    // Get user's household unit
-    final householdResponse = await _client
+    // Get all units the user belongs to
+    final householdRows = await _client
         .from('household_members')
         .select('unit_id')
-        .eq('user_id', userId)
-        .maybeSingle();
+        .eq('user_id', userId);
 
-    if (householdResponse == null) return [];
+    final unitIds = (householdRows as List)
+        .map((row) => row['unit_id'] as String)
+        .toSet()
+        .toList();
 
-    final unitId = householdResponse['unit_id'] as String;
+    if (unitIds.isEmpty) return [];
 
-    // Get invoices for that unit
+    // Get invoices for all user's units
     final response = await _client
         .from('invoices')
         .select()
         .eq('community_id', communityId)
-        .eq('unit_id', unitId)
+        .inFilter('unit_id', unitIds)
         .order('due_date', ascending: false);
 
     return (response as List).map((item) => Invoice.fromJson(item)).toList();

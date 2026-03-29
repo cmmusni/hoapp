@@ -55,21 +55,24 @@ class _BillingPageState extends State<BillingPage>
 
       int myCount = 0;
       if (userId != null) {
-        // Get user's unit
-        final household = await client
+        // Get all units the user belongs to
+        final householdRows = await client
             .from('household_members')
             .select('unit_id')
-            .eq('user_id', userId)
-            .maybeSingle();
+            .eq('user_id', userId);
 
-        if (household != null) {
-          final unitId = household['unit_id'] as String;
-          // Get invoice IDs for user's unit
+        final unitIds = (householdRows as List)
+            .map((e) => e['unit_id'] as String)
+            .toSet()
+            .toList();
+
+        if (unitIds.isNotEmpty) {
+          // Get invoice IDs for user's units
           final invoiceIds = await client
               .from('invoices')
               .select('id')
               .eq('community_id', communityId)
-              .eq('unit_id', unitId);
+              .inFilter('unit_id', unitIds);
           final ids =
               (invoiceIds as List).map((e) => e['id'] as String).toList();
           if (ids.isNotEmpty) {
@@ -534,11 +537,14 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
                   ElevatedButton.icon(
                     onPressed: _loadInvoices,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Retry', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    label: const Text('Retry',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _brandColor,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ],
@@ -1172,11 +1178,14 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                           _showPaymentSubmissionDialog(context);
                         },
                         icon: const Icon(Icons.payment),
-                        label: const Text('Submit Payment', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        label: const Text('Submit Payment',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _brandColor,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ),
@@ -1643,14 +1652,16 @@ class _PaymentCardState extends State<_PaymentCard> {
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: 'Enter reason...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    borderSide:
+                        const BorderSide(color: _brandColor, width: 1.5),
                   ),
                   filled: true,
                   fillColor: Colors.grey.shade50,
@@ -1795,14 +1806,16 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
                   labelText: 'Amount Paid',
                   prefixText: '₱ ',
                   prefixIcon: const Icon(Icons.payments_outlined, size: 20),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                    borderSide:
+                        const BorderSide(color: _brandColor, width: 1.5),
                   ),
                 ),
                 keyboardType: TextInputType.number,
@@ -1874,13 +1887,20 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
           child: ElevatedButton.icon(
             onPressed: _isSubmitting ? null : _submitPayment,
             icon: _isSubmitting
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.send_rounded),
-            label: Text(_isSubmitting ? 'Submitting...' : 'Submit', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            label: Text(_isSubmitting ? 'Submitting...' : 'Submit',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _brandColor,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),
@@ -2056,14 +2076,16 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                       decoration: InputDecoration(
                         labelText: 'Unit',
                         prefixIcon: const Icon(Icons.apartment, size: 20),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: Colors.grey.shade300),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                          borderSide:
+                              const BorderSide(color: _brandColor, width: 1.5),
                         ),
                       ),
                       items: units.map((unit) {
@@ -2167,15 +2189,18 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                   decoration: InputDecoration(
                     labelText: 'Description (Optional)',
                     hintText: 'e.g., March 2026 Water Billing',
-                    prefixIcon: const Icon(Icons.description_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon:
+                        const Icon(Icons.description_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                 ),
@@ -2200,16 +2225,20 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                         child: InputDecorator(
                           decoration: InputDecoration(
                             labelText: 'Period Start',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                              borderSide: const BorderSide(
+                                  color: _brandColor, width: 1.5),
                             ),
-                            suffixIcon: const Icon(Icons.calendar_today, size: 18),
+                            suffixIcon:
+                                const Icon(Icons.calendar_today, size: 18),
                           ),
                           child: Text(
                             _periodStart != null
@@ -2239,16 +2268,20 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                         child: InputDecorator(
                           decoration: InputDecoration(
                             labelText: 'Period End',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                              borderSide: const BorderSide(
+                                  color: _brandColor, width: 1.5),
                             ),
-                            suffixIcon: const Icon(Icons.calendar_today, size: 18),
+                            suffixIcon:
+                                const Icon(Icons.calendar_today, size: 18),
                           ),
                           child: Text(
                             _periodEnd != null
@@ -2270,14 +2303,16 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                     labelText: 'Amount',
                     prefixText: '₱ ',
                     prefixIcon: const Icon(Icons.payments_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -2306,14 +2341,16 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                   child: InputDecorator(
                     decoration: InputDecoration(
                       labelText: 'Due Date',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                        borderSide:
+                            const BorderSide(color: _brandColor, width: 1.5),
                       ),
                       suffixIcon: const Icon(Icons.calendar_today),
                     ),
@@ -2357,14 +2394,17 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                               controller: _lineItems[i].labelController,
                               decoration: InputDecoration(
                                 hintText: 'Item label',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                                  borderSide: const BorderSide(
+                                      color: _brandColor, width: 1.5),
                                 ),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -2380,14 +2420,17 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                               decoration: InputDecoration(
                                 hintText: '0.00',
                                 prefixText: '₱ ',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                                  borderSide: const BorderSide(
+                                      color: _brandColor, width: 1.5),
                                 ),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -2415,14 +2458,16 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                   decoration: InputDecoration(
                     labelText: 'Notes (Optional)',
                     prefixIcon: const Icon(Icons.notes_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                   maxLines: 3,
@@ -2439,13 +2484,20 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
           child: ElevatedButton.icon(
             onPressed: _isCreating ? null : _createInvoice,
             icon: _isCreating
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.receipt_long_rounded),
-            label: Text(_isCreating ? 'Creating...' : 'Create', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            label: Text(_isCreating ? 'Creating...' : 'Create',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _brandColor,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),
@@ -3182,15 +3234,18 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                   decoration: InputDecoration(
                     labelText: 'Description',
                     hintText: 'e.g., Clubhouse rental fee',
-                    prefixIcon: const Icon(Icons.description_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon:
+                        const Icon(Icons.description_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                   validator: (v) =>
@@ -3298,14 +3353,16 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                     labelText: 'Amount',
                     prefixText: '₱ ',
                     prefixIcon: const Icon(Icons.payments_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -3332,14 +3389,16 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                   child: InputDecorator(
                     decoration: InputDecoration(
                       labelText: 'Income Date',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                        borderSide:
+                            const BorderSide(color: _brandColor, width: 1.5),
                       ),
                       suffixIcon: const Icon(Icons.calendar_today, size: 18),
                     ),
@@ -3355,14 +3414,16 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                     labelText: 'Source (Optional)',
                     hintText: 'e.g., Unit 5A, External vendor',
                     prefixIcon: const Icon(Icons.source_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                 ),
@@ -3372,14 +3433,16 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                   decoration: InputDecoration(
                     labelText: 'Notes (Optional)',
                     prefixIcon: const Icon(Icons.notes_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                   maxLines: 3,
@@ -3400,13 +3463,20 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
           child: ElevatedButton.icon(
             onPressed: _isCreating ? null : _submit,
             icon: _isCreating
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.add_circle_outline),
-            label: Text(_isCreating ? 'Adding...' : 'Add Income', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            label: Text(_isCreating ? 'Adding...' : 'Add Income',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _brandColor,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),
@@ -3597,11 +3667,14 @@ class _RecurringBillingViewState extends State<_RecurringBillingView> {
                         ElevatedButton.icon(
                           onPressed: _loadRecurringBillings,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Retry', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                          label: const Text('Retry',
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w600)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _brandColor,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
                       ],
@@ -4045,14 +4118,16 @@ class _CreateRecurringBillingDialogState
                         decoration: InputDecoration(
                           labelText: 'Unit',
                           prefixIcon: const Icon(Icons.apartment, size: 20),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(color: Colors.grey.shade300),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                            borderSide: const BorderSide(
+                                color: _brandColor, width: 1.5),
                           ),
                         ),
                         items: units.map((unit) {
@@ -4190,15 +4265,18 @@ class _CreateRecurringBillingDialogState
                   decoration: InputDecoration(
                     labelText: 'Description (Optional)',
                     hintText: 'e.g., Monthly HOA Dues',
-                    prefixIcon: const Icon(Icons.description_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon:
+                        const Icon(Icons.description_outlined, size: 20),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                 ),
@@ -4210,14 +4288,16 @@ class _CreateRecurringBillingDialogState
                     labelText: 'Amount',
                     prefixText: '₱ ',
                     prefixIcon: const Icon(Icons.payments_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -4238,14 +4318,16 @@ class _CreateRecurringBillingDialogState
                         decoration: InputDecoration(
                           labelText: 'Day of Month',
                           hintText: '1-28',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(color: Colors.grey.shade300),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                            borderSide: const BorderSide(
+                                color: _brandColor, width: 1.5),
                           ),
                           helperText: 'Invoice generated on this day',
                           helperMaxLines: 2,
@@ -4268,14 +4350,16 @@ class _CreateRecurringBillingDialogState
                         decoration: InputDecoration(
                           labelText: 'Due Day Offset',
                           hintText: 'Days',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(color: Colors.grey.shade300),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                            borderSide: const BorderSide(
+                                color: _brandColor, width: 1.5),
                           ),
                           helperText: 'Days after generation until due',
                           helperMaxLines: 2,
@@ -4308,14 +4392,16 @@ class _CreateRecurringBillingDialogState
                   child: InputDecorator(
                     decoration: InputDecoration(
                       labelText: 'First Invoice Date',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                        borderSide:
+                            const BorderSide(color: _brandColor, width: 1.5),
                       ),
                       suffixIcon: const Icon(Icons.calendar_today, size: 18),
                       helperText: 'When the first invoice will be generated',
@@ -4360,14 +4446,17 @@ class _CreateRecurringBillingDialogState
                               controller: _lineItems[i].labelController,
                               decoration: InputDecoration(
                                 hintText: 'Item label',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                                  borderSide: const BorderSide(
+                                      color: _brandColor, width: 1.5),
                                 ),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -4383,14 +4472,17 @@ class _CreateRecurringBillingDialogState
                               decoration: InputDecoration(
                                 hintText: '0.00',
                                 prefixText: '₱ ',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                                  borderSide: const BorderSide(
+                                      color: _brandColor, width: 1.5),
                                 ),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -4417,14 +4509,16 @@ class _CreateRecurringBillingDialogState
                   decoration: InputDecoration(
                     labelText: 'Notes (Optional)',
                     prefixIcon: const Icon(Icons.notes_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _brandColor, width: 1.5),
+                      borderSide:
+                          const BorderSide(color: _brandColor, width: 1.5),
                     ),
                   ),
                   maxLines: 2,
@@ -4441,13 +4535,20 @@ class _CreateRecurringBillingDialogState
           child: ElevatedButton.icon(
             onPressed: _isCreating ? null : _createRecurringBilling,
             icon: _isCreating
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.repeat_rounded),
-            label: Text(_isCreating ? 'Creating...' : 'Create', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            label: Text(_isCreating ? 'Creating...' : 'Create',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _brandColor,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),

@@ -270,7 +270,7 @@ class _PortalShellState extends State<PortalShell> {
     } else if (currentPath.contains('/pool-access')) {
       pageTitle = 'Pool Access';
     } else if (currentPath.contains('/households')) {
-      pageTitle = 'Households';
+      pageTitle = isStaff ? 'Households' : 'My Household';
     } else if (currentPath.contains('/manage-users')) {
       pageTitle = 'Manage Users';
     } else if (currentPath.contains('/settings')) {
