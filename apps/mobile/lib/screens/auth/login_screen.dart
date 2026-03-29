@@ -168,7 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Image.asset(
-                    'assets/images/hoapp-logo.png',
+                    AppConfig.isCommunityBuild
+                        ? 'assets/flavors/elevehomes/icon.png'
+                        : 'assets/images/hoapp-logo.png',
                     height: 120,
                   ),
                   const SizedBox(height: 24),

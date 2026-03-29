@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:math';
 import 'package:core_domain/core_domain.dart';
 import '../supabase_client.dart';
 
@@ -68,11 +70,20 @@ class SecurityPassRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not authenticated');
 
+    // Auto-approve: generate QR token and set status to active/approved
+    final random = Random.secure();
+    final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+    final qrToken = base64Url.encode(bytes).replaceAll('=', '');
+    final now = DateTime.now().toIso8601String();
+    final isNowValid = validFrom.isBefore(DateTime.now()) ||
+        validFrom.isAtSameMomentAs(DateTime.now());
+    final status = isNowValid ? 'active' : 'approved';
+
     await _client.from('security_passes').insert({
       'community_id': communityId,
       'pass_type_id': passTypeId,
       'requested_by': userId,
-      'status': 'submitted',
+      'status': status,
       'visitor_name': visitorName,
       'visitor_phone': visitorPhone,
       'visitor_email': visitorEmail,
@@ -85,6 +96,10 @@ class SecurityPassRepository {
       'valid_until': validUntil.toIso8601String(),
       'max_uses': maxUses,
       'notes': notes,
+      'qr_token': qrToken,
+      'qr_generated_at': now,
+      'reviewed_by': userId,
+      'reviewed_at': now,
     });
   }
 

@@ -84,7 +84,7 @@ class _HOAppMobileState extends State<HOAppMobile> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'HOApp',
+      title: AppConfig.appName,
       theme: AppTheme.defaultTheme,
       debugShowCheckedModeBanner: false,
       navigatorKey: _navigatorKey,

@@ -20,3 +20,7 @@ export 'src/screens/manage_users_screen.dart';
 export 'src/screens/settings_screen.dart';
 export 'src/screens/notifications_screen.dart';
 export 'src/screens/security_pass_screen.dart';
+
+// Chatbot
+export 'src/chatbot/chatbot_widget.dart';
+export 'src/chatbot/chatbot_knowledge.dart';

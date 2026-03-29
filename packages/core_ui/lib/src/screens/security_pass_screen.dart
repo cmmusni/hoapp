@@ -551,11 +551,13 @@ class _PassDetailsSheet extends StatelessWidget {
               ),
             ],
 
-            // Delete: admin can delete any pass; owner can delete own submitted pass
+            // Delete: admin can delete any pass; owner can delete own active/approved pass
             if (isAdmin ||
                 (currentUserId != null &&
                     pass.requestedBy == currentUserId &&
-                    statusStr == 'submitted')) ...[
+                    (statusStr == 'submitted' ||
+                        statusStr == 'approved' ||
+                        statusStr == 'active'))) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,

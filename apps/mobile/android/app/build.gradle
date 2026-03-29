@@ -55,6 +55,21 @@ android {
         versionName flutterVersionName
     }
 
+    flavorDimensions "community"
+
+    productFlavors {
+        standard {
+            dimension "community"
+            applicationId "com.hoapp.mobile"
+            resValue "string", "app_name", "HOApp"
+        }
+        elevehomes {
+            dimension "community"
+            applicationId "com.hoapp.elevehomes"
+            resValue "string", "app_name", "Eleve Homes"
+        }
+    }
+
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {

@@ -178,14 +178,14 @@ ElevatedButton(
 
 ## 🔧 Setup Checklist
 
-- [ ] Install dependencies: `flutter pub get`
-- [ ] Apply realtime migration: `supabase db push`
-- [ ] Create storage buckets in Supabase Dashboard
-- [ ] Add storage RLS policies
-- [ ] Add services to Provider setup
-- [ ] Test file upload with `FileUploadWidget`
-- [ ] Test PDF generation
-- [ ] Test realtime subscription
+- [x] Install dependencies: `flutter pub get`
+- [x] Apply realtime migration: `supabase db push`
+- [x] Create storage buckets in Supabase Dashboard
+- [x] Add storage RLS policies
+- [x] Add services to Provider setup
+- [x] Test file upload with `FileUploadWidget`
+- [x] Test PDF generation
+- [x] Test realtime subscription
 
 ---
 

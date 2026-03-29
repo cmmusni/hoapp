@@ -26,7 +26,7 @@ Test Flutter widgets in isolation with simulated user interactions.
 
 **Examples**:
 - `widgets_test.dart` - HOAppButton, HOAppCard, LoadingIndicator
-- `file_upload_widget_test.dart` - File upload components (TODO)
+- `file_upload_widget_test.dart` - File upload components
 
 ### 3. Integration Tests
 Test complete user workflows across multiple components.

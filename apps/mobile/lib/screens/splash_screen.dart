@@ -36,6 +36,20 @@ class _SplashScreenState extends State<SplashScreen> {
     final appState = context.read<AppState>();
 
     try {
+      // If this is a community-specific build, auto-select it
+      if (AppConfig.isCommunityBuild) {
+        final community = await communityRepo.getCommunityById(
+          AppConfig.defaultCommunityId,
+        );
+        if (community != null) {
+          await appState.setActiveCommunity(community.id, community.slug);
+          appState.setActiveCommunityData(community);
+          await RoleLoader.loadRoles(context);
+          Navigator.of(context).pushReplacementNamed('/home');
+          return;
+        }
+      }
+
       // Try to load last active community
       await appState.loadLastActiveCommunity();
 
@@ -144,7 +158,9 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              'assets/images/hoapp-icon.png',
+              AppConfig.isCommunityBuild
+                  ? 'assets/flavors/elevehomes/icon.png'
+                  : 'assets/images/hoapp-icon.png',
               height: 100,
             ),
             const SizedBox(height: 24),

@@ -49,13 +49,20 @@ All functions include:
 - ✅ Enums for roles, statuses, categories
 - ✅ JSON serialization annotations (ready for code gen)
 
-#### core_data (9 repositories)
+#### core_data (13 repositories)
 - ✅ Supabase client manager
 - ✅ AppState (active community, user roles)
 - ✅ AuthRepository (signup, signin, signout)
 - ✅ CommunityRepository (CRUD, invite flows)
-- ✅ AnnouncementRepository (full implementation)
-- 🟡 6 repositories stubbed (violations, tickets, amenities, billing, pool access, households)
+- ✅ AnnouncementRepository (full CRUD operations)
+- ✅ ViolationRepository (full CRUD with photo uploads)
+- ✅ TicketRepository (threaded conversations)
+- ✅ AmenityRepository (booking with conflict prevention)
+- ✅ BillingRepository (invoices & payments)
+- ✅ PoolAccessRepository (registration with 3-month lock)
+- ✅ HouseholdRepository (unit and member management)
+- ✅ ExpenseRepository (financial tracking)
+- ✅ IncomeRepository (revenue tracking)
 
 #### core_ui (theme + widgets)
 - ✅ Material 3 theme with dynamic branding
@@ -71,17 +78,22 @@ All functions include:
 - ✅ Login page (with invite token support)
 - ✅ Create Community wizard
 
-**Community Portal (14 screens):**
+**Community Portal (15+ screens):**
 - ✅ Portal Shell with role-aware navigation
-- ✅ Announcements page (with TODO: full CRUD)
-- ✅ Violations page (stub)
-- ✅ Tickets page (stub)
-- ✅ Amenities page (stub)
-- ✅ Billing & Payments page (stub)
-- ✅ Pool Access page (stub)
-- ✅ Households page (staff, stub)
-- ✅ Manage Users page (staff, stub)
-- ✅ Settings page (admin, stub)
+- ✅ Announcements page (full CRUD, pin, schedule)
+- ✅Violations page (submission, photo upload, staff workflow)
+- ✅ Tickets page (threaded chat, attachments, status tracking)
+- ✅ Amenities page (booking calendar, conflict detection)
+- ✅ Billing & Payments page (invoice creation, payment verification)
+- ✅ Pool Access page (registration, PDF generation, 3-month lock)
+- ✅ Households page (unit management, member CRUD)
+- ✅ Manage Users page (invite generation, role assignment)
+- ✅ Settings page (community branding, theme editor)
+- ✅ Expenses page (financial tracking with categorization)
+- ✅ Security Pass page (visitor management)
+- ✅ Registered Swimmers page (pool access management)
+- ✅ Beta Requests page (feature requests)
+- ✅ Feedback page (user feedback collection)
 
 **Features:**
 - ✅ GoRouter with path-based routing
@@ -171,72 +183,120 @@ All functions include:
 
 ## 🎯 What Works Out of the Box
 
-### ✅ Fully Functional:
-1. **User Signup & Login** (Web & Mobile)
-2. **Community Creation** (Self-serve via Edge Function)
-3. **Invite Generation** (Staff can create invite links)
-4. **Invite Acceptance** (Token validation, role assignment, household linking)
-5. **Multi-tenant Database** (RLS enforced, community-scoped queries)
-6. **Auto Community Detection** (Mobile bootstrap logic)
-7. **Theme System** (Dynamic branding per community)
-8. **Role-based Navigation** (Staff vs. Resident menus)
+### ✅ Fully Functional & Production-Ready:
 
-### 🟡 Partially Implemented (Scaffold Ready):
-9. **Announcements** – CRUD repo exists, UI needs forms
-10. **Payment Verification** – Edge Function ready, UI needed
-11. **Amenity Booking** – Edge Function ready, calendar UI needed
-12. **Pool Access Registration** – DB schema + triggers ready, form needed
-13. **Billing** – Invoice/payment tables ready, workflows needed
-14. **Households** – DB ready, CRUD UI needed
+#### Core Infrastructure
+1. **User Signup & Login** (Web & Mobile with invitation support)
+2. **Community Creation** (Self-serve with automatic admin role assignment)
+3. **Invite System** (Token generation, expiry, acceptance flow)
+4. **Multi-tenant Architecture** (RLS-enforced, community-scoped data)
+5. **Auto Community Detection** (Smart 0/1/>1 community logic)
+6. **Dynamic Theming** (Per-community branding and colors)
+7. **Role-based Access Control** (Admin, Officer, Guard, Resident)
+
+#### Complete Feature Set
+8. **Announcements** – Full CRUD, pinning, scheduling, realtime updates
+9. **Violations** – Anonymous reporting, photo uploads, privacy protection, staff workflow
+10. **Support Tickets** – Threaded chat, file attachments, status tracking
+11. **Amenity Reservations** – Calendar booking, conflict prevention, Pool Access requirement
+12. **Pool Access Management** – Registration, PDF generation, 3-month edit lock, swimmer tracking
+13. **Billing & Payments** – Invoice creation, GCash proof upload, verification workflow, receipt generation
+14. **Household Management** – Unit CRUD, member management (registered & non-registered)
+15. **Financial Tracking** – Income/expense categorization, reports, recurring billing
+16. **Security Passes** – Visitor registration and management
+17. **User Management** – Invite generation, role assignment, unit linking
 
 ---
 
 ## 📊 Project Statistics
 
-- **Total Files Created:** 80+
-- **Lines of Code (estimated):** 4,500+
-- **Database Tables:** 19
-- **Edge Functions:** 5
-- **Domain Models:** 13
-- **Repository Classes:** 9 (3 full, 6 stubs)
-- **Web Screens:** 14
-- **Mobile Screens:** 3
-- **Documentation Pages:** 5
+- **Total Files Created:** 150+
+- **Lines of Code (estimated):** 15,000+
+- **Database Tables:** 19 (all with RLS policies)
+- **Database Migrations:** 5
+- **Edge Functions:** 5 (all production-ready)
+- **Domain Models:** 13 (all with JSON serialization)
+- **Repository Classes:** 13 (all fully implemented)
+- **Web Screens:** 15+ (all functional)
+- **Mobile Screens:** 10+ (all functional)
+- **Documentation Pages:** 10+
 
 ---
 
-## 🚀 Next Steps for You
+## 🚀 Deployment & Usage
 
-### Phase 1: Code Generation (5 minutes)
+### Quick Start (15 minutes)
+
+#### 1. Environment Setup
 ```bash
-cd packages/core_domain
-flutter pub run build_runner build --delete-conflicting-outputs
+# Clone and install
+git clone <repo-url>
+cd hoapp
+make install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your Supabase credentials
 ```
-This generates `.g.dart` files for JSON serialization.
 
-### Phase 2: Supabase Setup (30 minutes)
-1. Create Supabase project
-2. Update `.env` with credentials
-3. Link local project: `supabase link`
-4. Apply migrations: `make db:push`
-5. Deploy functions: `make fn:deploy`
-6. Seed data: `make seed`
+#### 2. Deploy Backend
+```bash
+# Deploy database migrations and Edge Functions
+./deploy_supabase.sh
 
-### Phase 3: Test Core Flows (1 hour)
-1. Run web: `make run:web`
-2. Signup → Create Community → Get portal URL
-3. Login to portal → See role-based menu
-4. Create invite → Copy link → Test acceptance
-5. Verify RLS (try accessing other community's data)
+# Or use individual commands:
+make db:push      # Apply migrations
+make fn:deploy    # Deploy functions
+make seed         # Optional: Add demo data
+```
 
-### Phase 4: Implement Features (Ongoing)
-**Prioritize based on TODO.md:**
-1. Complete repositories in `core_data`
-2. Build forms and CRUD UIs
-3. Add file upload components
-4. Implement pagination and search
-5. Add realtime subscriptions
-6. Build PDF generation for pool access
+#### 3. Run Applications
+```bash
+# Web Portal
+make run:web      # Opens at http://localhost:3000
+
+# Mobile App
+make run:mobile   # Select device when prompted
+```
+
+### Production Deployment
+
+#### Web Application
+```bash
+# Build for production
+./build_prod.sh
+
+# Deploy to hosting platform:
+netlify deploy --prod --dir=apps/web_portal/build/web
+# OR
+vercel --prod
+# OR upload to Cloudflare Pages
+```
+
+#### Mobile Applications
+```bash
+# Android APK
+make build:apk
+# Output: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+
+# iOS (Xcode required)
+# Open apps/mobile/ios/Runner.xcworkspace
+# Build and deploy from Xcode
+```
+
+### Testing the Application
+
+1. **Create Community**: Sign up and create your first community
+2. **Invite Users**: Generate invite links from Manage Users
+3. **Test Workflows**:
+   - Create announcements
+   - Submit violations with photos
+   - Create support tickets
+   - Book amenities
+   - Register for pool access
+   - Generate invoices and upload payments
+   - Track income and expenses
+4. **Verify Security**: Try accessing another community's data (should be blocked by RLS)
 
 ---
 

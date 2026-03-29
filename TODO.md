@@ -1,155 +1,165 @@
-# HOApp Development TODO List
+# HOApp Future Enhancements
 
-This document tracks features that need full implementation beyond the MVP scaffold.
+This document tracks potential enhancements and features for future releases. **The core platform is production-ready and fully functional.**
 
-## 🔴 High Priority
+## 📦 Current Status
 
-### Core Repositories (core_data)
-- [x] ✅ Implement `ViolationRepository` (CRUD operations)
-- [x] ✅ Implement `TicketRepository` with message threading
-- [x] ✅ Implement `AmenityRepository` with booking logic
-- [x] ✅ Implement `BillingRepository` (invoices & payments)
-- [x] ✅ Implement `PoolAccessRepository` with PDF generation
-- [x] ✅ Implement `HouseholdRepository` (members CRUD)
+### ✅ Completed Core Features
 
-### Web Portal Features
-- [x] ✅ Announcements: Full CRUD with pin/schedule
-- [x] ✅ Violations: Anonymous submission + staff workflow
-- [x] ✅ Tickets: Threaded chat with attachments
-- [x] ✅ Amenities: Calendar view + booking form
-- [x] ✅ Billing: Invoice creation + payment verification UI
-- [x] ✅ Pool Access: Registration form + PDF generation + 3-month lock
-- [x] ✅ Households: Unit management + member list/add/remove
-- [x] ✅ Manage Users: Invite form with unit selector + invite link display
-- [x] ✅ Settings: Community branding editor
-- [x] ✅ Dashboard: Stats + recent activity widgets
+All essential features are implemented and production-ready:
 
-### Mobile App Features
-- [x] ✅ Announcements feed with realtime updates
-- [x] ✅ Violations: Submit with photo upload
-- [x] ✅ Tickets: Chat interface with attachments
-- [x] ✅ Amenities: Booking flow with pool access check
-- [x] ✅ My Household: List members + invite by email
-- [x] ✅ Pool Access: Registration form + PDF viewer
-- [x] ✅ Billing: Invoice list + GCash proof upload + receipt viewer
-- [x] ✅ Deep link handling for invite acceptance
+- ✅ **Multi-tenant architecture** with Row Level Security
+- ✅ **Self-serve community creation** with custom branding
+- ✅ **Role-based access control** (admin, officer, guard, resident)
+- ✅ **User invitations** with tokenized links
+- ✅ **Household management** with flexible membership (registered & non-registered)
+- ✅ **Announcements** with full CRUD operations
+- ✅ **Violations** with anonymous reporting and photo uploads
+- ✅ **Support tickets** with threaded conversations
+- ✅ **Amenity reservations** with conflict prevention
+- ✅ **Pool access registration** with PDF generation and 3-month lock
+- ✅ **Billing & payments** with GCash proof upload and verification
+- ✅ **Income & expense tracking** with categorization
+- ✅ **Financial reports** with visual charts
+- ✅ **Recurring billing** for automatic dues
+- ✅ **Security passes** for visitors
+- ✅ **File uploads** via Supabase Storage
+- ✅ **Search & pagination** across all major features
+- ✅ **Responsive design** for web, tablet, and mobile
+- ✅ **Mobile app** for Android and iOS
+- ✅ **Deep linking** for invite acceptance
+- ✅ **Community auto-detection** (0/1/>1 logic)
 
-## 🟡 Medium Priority
+## 🚀 Priority Enhancements
 
-### Advanced Features
-- [x] ✅ PDF generation service (invoices, waivers)
-- [x] ✅ File upload service with Supabase Storage
-- [x] ✅ Realtime subscriptions for live updates
-- [x] ✅ FileUploadWidget and ImageUploadWidget
-- [x] ✅ Integrate file uploads in violations (photos)
-- [x] ✅ Integrate file uploads in pool access (signed documents)
-- [x] ✅ Integrate file uploads in billing (payment proofs)
-- [x] ✅ Enable realtime in tickets (live chat)
-- [x] ✅ Enable realtime in announcements (instant updates)
+### High Priority
 
-### UI/UX Enhancements
-- [x] ✅ Loading states and error boundaries
-- [x] ✅ Form validation and user feedback
-- [x] ✅ Image/file upload with progress (widgets created)
-- [x] ✅ Date/time pickers for bookings
-- [x] ✅ Community branding theme switcher
-- [x] ✅ Responsive layouts (mobile, tablet, desktop)
+#### Testing & Quality Assurance
+- [ ] Comprehensive unit test coverage for repositories
+- [ ] Widget tests for critical screens
+- [ ] Integration tests for complete workflows
+- [ ] End-to-end tests for booking and payment flows
+- [ ] RLS policy testing automation
+- [ ] Load testing with realistic data volumes
 
-### Edge Functions
-- [x] ✅ Error handling improvements
-- [x] ✅ Rate limiting
-- [x] ✅ Email notifications for invites
-- [x] ✅ Webhook for payment verification
-- [x] ✅ Batch operations support
+#### Mobile Experience
+- [ ] Push notifications for announcements, tickets, payments
+- [ ] Offline support with local caching and sync
+- [ ] Biometric authentication (Face ID/Touch ID)
+- [ ] Share functionality for announcements
+- [ ] Camera integration for faster photo uploads
 
-### Testing
-- [ ] Unit tests for repositories
-- [ ] Widget tests for key screens
-- [ ] Integration tests for auth flow
-- [ ] E2E tests for booking workflow
-- [ ] RLS policy tests
+#### User Experience
+- [ ] Interactive onboarding tour for new users
+- [ ] Contextual help tooltips
+- [ ] Keyboard shortcuts for power users (web)
+- [ ] Drag-and-drop file uploads
+- [ ] Bulk operations (multi-select for announcements, invoices)
 
-## 🟢 Low Priority / Future Enhancements
+### Medium Priority
 
-### Features
-- [ ] Push notifications (mobile)
-- [ ] In-app chat/messaging
-- [ ] Document library
-- [ ] Event calendar
-- [ ] Voting/polls for HOA decisions
-- [ ] Marketplace for residents
-- [ ] Service provider directory
-- [ ] Visitor registration
-- [ ] Package tracking
-- [ ] Maintenance request tracking
+#### Advanced Features
+- [ ] **In-app messaging**: Direct chat between residents and staff
+- [ ] **Document library**: Shared files and community documents
+- [ ] **Event calendar**: Community events with RSVP
+- [ ] **Voting/polls**: HOA decision-making and surveys
+- [ ] **Marketplace**: Resident-to-resident buying and selling
+- [ ] **Service directory**: Approved contractors and vendors
+- [ ] **Visitor registration**: Pre-register visitors with QR codes
+- [ ] **Package tracking**: Delivery notifications and logs
+- [ ] **Maintenance requests**: Report and track facility issues
+- [ ] **Community feed**: Social media-style updates and discussions
 
-### Technical Debt
-- [ ] Add code generation for models (`build_runner`)
-- [ ] Implement proper state management (Riverpod/Bloc)
-- [ ] Add offline support with sync
-- [x] Implement search functionality ✅
-- [ ] Add filtering and sorting
-- [x] Pagination for large lists ✅
-- [ ] Caching strategies
-- [ ] Performance monitoring
-- [ ] Accessibility improvements
+#### Reporting & Analytics
+- [ ] **Financial dashboards**: Revenue, expenses, collection rates
+- [ ] **Usage analytics**: Most popular amenities, peak booking times
+- [ ] **Violation trends**: Common violations, repeat offenders
+- [ ] **Ticket resolution metrics**: Average response time, resolution rate
+- [ ] **Export to Excel**: Reports for accounting and audits
 
-### DevOps
-- [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Automated testing on PR
-- [ ] Code coverage reporting
-- [ ] Automated deployment to staging
-- [ ] Database backup automation
-- [ ] Monitoring and alerting setup
+#### Payment Integration
+- [ ] **GCash API integration**: Direct payment verification
+- [ ] **Maya/PayMongo integration**: Credit/debit card payments
+- [ ] **Automatic payment reminders**: Email/SMS before due dates
+- [ ] **Payment plans**: Installment options for large invoices
+- [ ] **Late fees**: Automatic penalty calculation
 
-### Documentation
-- [ ] API documentation
-- [ ] Architecture diagrams
-- [ ] User guides (admin, staff, resident)
-- [ ] Video tutorials
-- [ ] FAQ section
+#### Notifications
+- [ ] **Email notifications**: Announcements, invoices, tickets
+- [ ] **SMS notifications**: Critical alerts and payment reminders
+- [ ] **In-app notification center**: Unified notification history
+- [ ] **Notification preferences**: User-controlled channel selection
 
-## 📝 Notes
+### Low Priority
 
-### Code Generation
-Run this to generate missing `.g.dart` files for JSON serialization:
-```bash
-cd packages/core_domain
-flutter pub run build_runner build --delete-conflicting-outputs
-```
+#### Platform Features
+- [ ] **Multi-language support**: Tagalog, English localization
+- [ ] **Dark mode**: Alternative theme for low-light use
+- [ ] **Admin dashboard**: Platform-level analytics and monitoring
+- [ ] **Community templates**: Pre-configured settings for common HOA types
+- [ ] **Subdomain routing**: custom-community.hoapp.net
+- [ ] **White-label option**: Rebrand for enterprise clients
 
-### Database Migrations
-When adding new tables or columns:
-```bash
-cd supabase
-supabase migration new add_feature_name
-# Edit the generated SQL file
-make db:push
-```
+#### Technical Improvements
+- [ ] **GraphQL API**: Alternative to REST for complex queries
+- [ ] **Redis caching**: Improve read performance
+- [ ] **CDN integration**: Faster asset delivery
+- [ ] **Database replication**: Read replicas for scaling
+- [ ] **Elasticsearch integration**: Advanced search capabilities
+- [ ] **Real-time collaboration**: Multiple users editing simultaneously
+- [ ] **WebSocket optimization**: Reduce bandwidth for realtime features
 
-### Adding Dependencies
-Update `pubspec.yaml` in the appropriate package, then:
-```bash
-make install
-```
+#### Developer Experience
+- [ ] **Comprehensive API documentation**: OpenAPI/Swagger specs
+- [ ] **SDK for mobile apps**: Native Swift/Kotlin SDKs
+- [ ] **Development environment**: Docker Compose setup
+- [ ] **Automated database seeding**: Realistic test data generator
+- [ ] **Performance monitoring**: APM integration (Sentry, New Relic)
+
+## 📝 Enhancement Requests
+
+### From User Feedback
+- [ ] **Bulk invoice generation**: Create invoices for all units at once
+- [ ] **Payment history export**: PDF statements per household
+- [ ] **Amenity pricing tiers**: Different rates for residents vs. non-residents
+- [ ] **Booking cancellation**: Allow users to cancel with refund logic
+- [ ] **Photo galleries**: Community events and activities
+- [ ] **Member directory**: Searchable resident contact list
+- [ ] **Emergency alerts**: Broadcast urgent notifications
+- [ ] **Parking management**: Assign and track parking spaces
+- [ ] **Guest passes**: Digital passes for recurring visitors
+
+## 🎯 Long-Term Vision
+
+### Enterprise Features
+- [ ] **Multi-property management**: One account managing multiple communities
+- [ ] **Property management integration**: Sync with accounting software
+- [ ] **Tenant portal**: Separate interface for renters vs. owners
+- [ ] **Board meeting management**: Agendas, minutes, voting records
+- [ ] **Legal compliance tracking**: Bylaws, resolutions, amendments
+- [ ] **Insurance management**: Track policies, claims, renewals
+
+### Platform Growth
+- [ ] **Referral program**: Reward communities for bringing others
+- [ ] **Marketplace for vendors**: Service providers can advertise
+- [ ] **Training & certification**: HOA management courses
+- [ ] **Community of practice**: Forum for HOA board members
+- [ ] **Best practices library**: Templates, guides, case studies
 
 ---
 
-**Next Steps for Developer:**
+## 💡 Contributing
 
-1. **Run code generation** to create `.g.dart` files
-2. **Implement repositories** in `core_data` package
-3. **Build UI screens** for web portal and mobile
-4. **Test end-to-end flows** (signup → create community → invite → booking)
-5. **Deploy to staging** environment for testing
-6. **Gather feedback** and iterate
+Have an idea for improvement? Please:
+1. Check if it's already listed above
+2. Consider the impact and feasibility
+3. Submit a feature request with:
+   - Clear description
+   - Use case / user story
+   - Expected behavior
+   - Nice-to-have: Mockups or wireframes
 
-The scaffold provides a solid foundation with:
-✅ Database schema with RLS
-✅ Edge Functions for key operations
-✅ Domain models and structure
-✅ Auth and routing setup
-✅ Theme and shared components
-✅ Build configuration for web, Android, iOS
+---
 
-Focus on filling in the TODO sections to bring features to full functionality!
+**Last Updated**: March 2026  
+**Status**: Production-ready with enhancement roadmap

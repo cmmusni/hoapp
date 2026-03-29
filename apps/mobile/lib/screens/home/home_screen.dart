@@ -14,6 +14,7 @@ import '../qr_scanner/qr_scanner_screen.dart';
 import 'tabs/announcements_tab.dart';
 import 'tabs/violations_tab.dart';
 import 'tabs/tickets_tab.dart';
+import '../chatbot/chatbot_screen.dart';
 
 const _brand = Color(0xff215e3f);
 
@@ -166,6 +167,18 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIcon: Icons.feedback,
         pageBuilder: () => const shared.FeedbackScreen(),
       ),
+      _NavItem(
+        label: 'Help Assistant',
+        icon: Icons.support_agent_outlined,
+        selectedIcon: Icons.support_agent,
+        pageBuilder: () => ChatbotScreen(
+          currentPage: _selectedIndex < _buildNavItems().length
+              ? _buildNavItems()[_selectedIndex].label
+              : '',
+          userRole: context.read<AppState>().activeRole?.role.name,
+          onNavigate: (label) => _navigateToSection(label),
+        ),
+      ),
     ];
   }
 
@@ -287,7 +300,20 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: _buildDrawer(context, appState, visibleItems),
-      body: currentItem.pageBuilder(),
+      body: Stack(
+        children: [
+          currentItem.pageBuilder(),
+          shared.ChatbotWidget(
+            currentPage: currentItem.label.toLowerCase(),
+            userRole: appState.activeRole?.role.name,
+            onNavigate: (route) {
+              // Map route suffix to drawer nav item label
+              final label = _routeToLabel(route);
+              if (label != null) _navigateToSection(label);
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -532,5 +558,25 @@ class _HomeScreenState extends State<HomeScreen> {
     if (index >= 0) {
       setState(() => _selectedIndex = index);
     }
+  }
+
+  String? _routeToLabel(String route) {
+    const map = {
+      '/announcements': 'Announcements',
+      '/violations': 'Violations',
+      '/tickets': 'Tickets',
+      '/amenities': 'Amenities',
+      '/billing': 'Billing',
+      '/households': 'Household',
+      '/pool-access': 'Pool Access',
+      '/security-pass': 'Security Pass',
+      '/notifications': 'Notifications',
+      '/feedback': 'Feedback',
+      '/expenses': 'Expenses',
+      '/registered-swimmers': 'Registered Swimmers',
+      '/manage-users': 'Manage Users',
+      '/settings': 'Settings',
+    };
+    return map[route];
   }
 }

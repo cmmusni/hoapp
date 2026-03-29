@@ -11,4 +11,17 @@ class AppConfig {
     defaultValue:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJka3B4ZGd4ZXB5YnVzd3lpcnJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjE5NTIsImV4cCI6MjA4OTczNzk1Mn0.gU3MpxmJ2idouYZ80BbWMVsWiHmYUgR6Wc2oaUp-3pA',
   );
+
+  // Flavor / white-label configuration
+  static const defaultCommunityId = String.fromEnvironment(
+    'DEFAULT_COMMUNITY_ID',
+  );
+
+  static const appName = String.fromEnvironment(
+    'APP_NAME',
+    defaultValue: 'HOApp',
+  );
+
+  /// Whether a specific community is hardcoded for this build
+  static bool get isCommunityBuild => defaultCommunityId.isNotEmpty;
 }

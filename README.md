@@ -1,6 +1,8 @@
 # HOApp – Multi-Tenant HOA/Condo Management Platform
 
-Production-ready Flutter + Supabase platform for HOA and condominium communities with universal build and automatic community detection.
+🏘️ **Production-Ready** Flutter + Supabase platform for HOA and condominium communities.
+
+A complete multi-tenant SaaS solution with self-serve community creation, role-based access control, realtime features, and comprehensive HOA management tools.
 
 ## 🏗️ Architecture
 
@@ -207,54 +209,64 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`):
 
 ## 🔑 Key Features
 
-### 1. Self-Serve Community Creation
-- Sign up at `/signup`
-- Create community with unique slug
-- Automatic admin role assignment
-- Custom portal URL: `hoapp.net/<slug>/login.html`
+### Core Functionality
 
-### 2. Universal Build + Auto Community Detection
-- One codebase for all communities
-- Post-login logic:
-  - 1 community → auto-select
-  - >1 community → show picker
-  - 0 communities → show invite acceptance
+#### 🏢 Self-Serve Community Management
+- **Community Creation**: Sign up and create communities with unique slugs
+- **Custom Branding**: Community-specific themes and settings
+- **Multi-Tenant Architecture**: Single codebase serving all communities
+- **Auto Detection**: Intelligent community selection based on user membership
 
-### 3. Households (Units) & Invitations
-- Units support multiple residents
-- Staff can invite with household assignment
-- Residents can invite household members
-- Tokenized invite links with expiry
+#### 👥 Household & User Management
+- **Unit Management**: Create and manage household units
+- **Member Profiles**: Support for multiple residents per unit
+- **Flexible Membership**: Add both registered users and non-registered members
+- **Invitation System**: Tokenized invite links with role assignment and expiry
+- **Role-Based Access**: Community admin, HOA officer, guard, and resident roles
 
-### 4. Announcements
-- Create, pin, schedule
-- Realtime updates (future)
+#### 📢 Communications
+- **Announcements**: Create, edit, pin, and schedule community announcements
+- **Realtime Updates**: Live notification system for instant updates
+- **Rich Content**: Support for formatted text and attachments
 
-### 5. Anonymous Violations
-- Residents submit with photos
-- Reporter identity hidden from peers
-- Staff sees full details
+#### 🚨 Violations & Compliance
+- **Anonymous Reporting**: Residents can submit violations with photo evidence
+- **Privacy Protection**: Reporter identity hidden from peers, visible to staff
+- **Photo Documentation**: Upload and attach violation evidence
+- **Staff Workflow**: Review, categorize, and resolve violations
 
-### 6. Ticketed Chat
-- Threaded conversations
-- Attachment support
-- Unread counts
+#### 💬 Support Tickets
+- **Threaded Conversations**: Chat-style ticket system
+- **File Attachments**: Support for documents and images
+- **Status Tracking**: Open, in-progress, resolved, closed states
+- **Unread Indicators**: Notification system for new messages
 
-### 7. Amenity Reservations
-- Pool + Function Room (₱8,000/day)
-- Conflict prevention via exclusion constraints
-- Requires Pool Access registration
+#### 🏊 Amenity Reservations
+- **Booking Calendar**: Reserve pool and function room facilities
+- **Conflict Prevention**: Database-level exclusion constraints
+- **Payment Integration**: ₱8,000/day function room fee
+- **Access Control**: Pool Access registration requirement
 
-### 8. Pool Access Registration
-- 3-month edit lock
-- PDF generation with signature line
-- Staff can upload signed copies
+#### 🏊‍♂️ Pool Access Management
+- **Registration System**: Digital waiver and swimmer registration
+- **PDF Generation**: Auto-generated registration forms
+- **3-Month Lock**: Prevents frequent changes (safety requirement)
+- **Document Upload**: Staff can upload signed documentation
 
-### 9. Billing & Payments
-- Manual invoice creation (dues, amenity, other)
-- GCash proof upload
-- Staff verification workflow
-- Official receipt storage
+#### 💳 Billing & Payments
+- **Invoice Management**: Create invoices for dues, amenities, and other fees
+- **Multiple Categories**: HOA dues, water bills, amenity fees, violations, other
+- **GCash Integration**: Upload payment proof screenshots
+- **Verification Workflow**: Staff review and confirmation
+- **Official Receipts**: Generate and store payment receipts
+- **Payment Tracking**: Complete payment history per household
+
+#### 📊 Financial Management
+- **Income Tracking**: Record and categorize community income
+- **Expense Tracking**: Manage operational expenses with photo documentation
+- **Category Management**: Custom income and expense categories
+- **Financial Reports**: Visual charts and reports for transparency
+- **Recurring Billing**: Set up automatic monthly billing for dues
 
 ## 🗄️ Database Schema
 

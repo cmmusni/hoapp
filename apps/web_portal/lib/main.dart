@@ -53,7 +53,7 @@ class HOAppWebPortal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'HOApp - Homeowners Management',
+      title: 'HOApp',
       theme: HOAppTheme.lightTheme,
       darkTheme: HOAppTheme.darkTheme,
       themeMode: ThemeMode.light,
