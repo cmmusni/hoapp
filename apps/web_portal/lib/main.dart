@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_strategy/url_strategy.dart';
 import 'package:core_data/core_data.dart';
@@ -45,19 +46,46 @@ void main() async {
   );
 }
 
-class HOAppWebPortal extends StatelessWidget {
+class HOAppWebPortal extends StatefulWidget {
   const HOAppWebPortal({super.key, this.lastCommunitySlug});
 
   final String? lastCommunitySlug;
 
   @override
+  State<HOAppWebPortal> createState() => _HOAppWebPortalState();
+}
+
+class _HOAppWebPortalState extends State<HOAppWebPortal> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = createRouter(lastCommunitySlug: widget.lastCommunitySlug);
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final community = appState.activeCommunity;
+    Color? brandColor;
+    if (community != null) {
+      final hex = community.primaryColor;
+      brandColor = Color(int.parse(hex.replaceFirst('#', '0xff')));
+    }
+
     return MaterialApp.router(
       title: 'HOApp',
-      theme: HOAppTheme.lightTheme,
+      theme: HOAppTheme.buildLight(primaryColor: brandColor),
       darkTheme: HOAppTheme.darkTheme,
       themeMode: ThemeMode.light,
-      routerConfig: createRouter(lastCommunitySlug: lastCommunitySlug),
+      routerConfig: _router,
       builder: AppResponsive.builder,
       debugShowCheckedModeBanner: false,
     );

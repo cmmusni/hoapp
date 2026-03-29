@@ -187,11 +187,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final appState = context.read<AppState>();
                 final hex =
                     '#${pickerColor.toARGB32().toRadixString(16).substring(2)}';
+                // Merge into existing settings to preserve other fields
+                final existing = appState.activeCommunity?.settings ?? {};
+                final brand =
+                    (existing['brand'] as Map<String, dynamic>?) ?? {};
+                final updatedSettings = {
+                  ...existing,
+                  'brand': {...brand, 'primary': hex},
+                };
                 await repo.updateCommunitySettings(
                   communityId: appState.activeCommunityId!,
-                  settings: {'primary_color': hex},
+                  settings: updatedSettings,
                 );
                 if (mounted) {
+                  // Refresh AppState so theme updates
+                  final refreshed = await repo.getCommunityById(
+                    appState.activeCommunityId!,
+                  );
+                  if (refreshed != null) {
+                    appState.setActiveCommunityData(refreshed);
+                  }
                   Navigator.of(ctx).pop();
                   _loadCommunity();
                 }

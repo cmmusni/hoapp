@@ -171,13 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     AppConfig.isCommunityBuild
                         ? 'assets/flavors/elevehomes/icon.png'
                         : 'assets/images/hoapp-logo.png',
-                    height: 120,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Login',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
+                    height: 150,
                   ),
                   const SizedBox(height: 32),
                   TextFormField(

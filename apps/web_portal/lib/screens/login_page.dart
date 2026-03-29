@@ -762,19 +762,21 @@ class _LoginPageState extends State<LoginPage> {
                           )
                         : Image.asset(
                             'assets/images/hoapp-logo.png',
-                            height: 120,
+                            height: 150,
                             errorBuilder: (context, error, stackTrace) {
-                              return const SizedBox(height: 120);
+                              return const SizedBox(height: 150);
                             },
                           ),
-                    const SizedBox(height: 24),
-                    Text(
-                      widget.communitySlug != null
-                          ? 'Login to $_communityDisplayName'
-                          : 'Login',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
-                    ),
+                    if (widget.communitySlug != null) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        widget.communitySlug != null
+                            ? 'Login to $_communityDisplayName'
+                            : 'Login',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                        textAlign: TextAlign.center,
+                      )
+                    ],
                     const SizedBox(height: 32),
                     TextFormField(
                       controller: _emailController,
