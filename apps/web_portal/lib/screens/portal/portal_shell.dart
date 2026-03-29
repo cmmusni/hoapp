@@ -144,8 +144,6 @@ class _PortalShellState extends State<PortalShell> {
         link.href = logoUrl;
       }
     }
-    // Update browser tab title
-    html.document.title = '${community.name} — HOApp';
   }
 
   Future<void> _loadBadgeCounts() async {
