@@ -69,14 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIcon: Icons.announcement,
         pageBuilder: () => const AnnouncementsTab(),
       ),
-      _NavItem(
-        label: 'Notifications',
-        icon: Icons.notifications_outlined,
-        selectedIcon: Icons.notifications,
-        pageBuilder: () => shared.NotificationsScreen(
-          onNavigate: _navigateToSection,
-        ),
-      ),
       if (context.read<AppState>().isResident) ...[
         _NavItem(
           label: 'My Household',
@@ -262,24 +254,36 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: _brand,
         foregroundColor: Colors.white,
         actions: [
-          if (totalBadge > 0)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: Badge(
-                  label: Text('$totalBadge'),
-                  child: const Icon(Icons.notifications_outlined),
-                ),
-                onPressed: () {
-                  // Navigate to notifications
-                  final notifIndex = visibleItems
-                      .indexWhere((item) => item.label == 'Notifications');
-                  if (notifIndex >= 0) {
-                    setState(() => _selectedIndex = notifIndex);
-                  }
-                },
-              ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: totalBadge > 0
+                  ? Badge(
+                      label: Text('$totalBadge'),
+                      child: const Icon(Icons.notifications_outlined),
+                    )
+                  : const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(
+                        title: const Text('Notifications'),
+                        backgroundColor: _brand,
+                        foregroundColor: Colors.white,
+                      ),
+                      body: shared.NotificationsScreen(
+                        onNavigate: (section) {
+                          Navigator.of(context).pop();
+                          _navigateToSection(section);
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
+          ),
         ],
       ),
       drawer: _buildDrawer(context, appState, visibleItems),

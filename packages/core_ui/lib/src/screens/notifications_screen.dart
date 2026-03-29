@@ -296,9 +296,10 @@ class _NotificationTile extends StatelessWidget {
             _timeAgo(item.createdAt),
             style: TextStyle(fontSize: 11, color: Colors.grey[500]),
           ),
-          if (onTap != null) ...
-            [const SizedBox(width: 4),
-            Icon(Icons.chevron_right, size: 18, color: Colors.grey[400])],
+          if (onTap != null) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 18, color: Colors.grey[400])
+          ],
         ],
       ),
     );
