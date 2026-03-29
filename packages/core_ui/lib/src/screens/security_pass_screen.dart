@@ -175,6 +175,7 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
 
   void _showPassDetails(
       BuildContext ctx, SecurityPass pass, bool isStaff, bool isGuard) {
+    final isAdmin = ctx.read<AppState>().isAdmin;
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
@@ -185,6 +186,7 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
         pass: pass,
         isStaff: isStaff,
         isGuard: isGuard,
+        isAdmin: isAdmin,
         onUpdated: _loadData,
       ),
     );
@@ -306,12 +308,14 @@ class _PassDetailsSheet extends StatelessWidget {
   final SecurityPass pass;
   final bool isStaff;
   final bool isGuard;
+  final bool isAdmin;
   final VoidCallback onUpdated;
 
   const _PassDetailsSheet({
     required this.pass,
     required this.isStaff,
     required this.isGuard,
+    this.isAdmin = false,
     required this.onUpdated,
   });
 
@@ -515,7 +519,7 @@ class _PassDetailsSheet extends StatelessWidget {
               ]),
             ],
 
-            // Revoke if active
+            // Revoke if active (staff)
             if (isStaff &&
                 (statusStr == 'active' || statusStr == 'approved')) ...[
               const SizedBox(height: 12),
@@ -532,6 +536,56 @@ class _PassDetailsSheet extends StatelessWidget {
                   },
                   icon: const Icon(Icons.block, color: Colors.red),
                   label: const Text('Revoke Pass',
+                      style: TextStyle(color: Colors.red)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+
+            // Delete (admin only)
+            if (isAdmin) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Delete Pass'),
+                        content: Text(
+                          'Are you sure you want to permanently delete the pass for "${pass.visitorName ?? 'Unknown Visitor'}"? This action cannot be undone.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            style: TextButton.styleFrom(
+                                foregroundColor: Colors.red),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true) {
+                      final repo = SecurityPassRepository();
+                      await repo.deletePass(pass.id);
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                        onUpdated();
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.delete_forever, color: Colors.red),
+                  label: const Text('Delete Pass',
                       style: TextStyle(color: Colors.red)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),

@@ -223,8 +223,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           id: inv['id'],
           type: 'invoice',
           title: 'Unpaid Invoice: $cat',
-          subtitle:
-              '₱$amount — Due: $dueDate${isOverdue ? ' (OVERDUE)' : ''}',
+          subtitle: '₱$amount — Due: $dueDate${isOverdue ? ' (OVERDUE)' : ''}',
           createdAt: DateTime.parse(inv['created_at']),
           icon: Icons.receipt_long,
           color: isOverdue ? Colors.red : Colors.orange,
