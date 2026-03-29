@@ -81,7 +81,7 @@ class _HOAppWebPortalState extends State<HOAppWebPortal> {
     }
 
     return MaterialApp.router(
-      title: 'HOApp',
+      title: community != null ? '${community.name} — HOApp' : 'HOApp',
       theme: HOAppTheme.buildLight(primaryColor: brandColor),
       darkTheme: HOAppTheme.darkTheme,
       themeMode: ThemeMode.light,

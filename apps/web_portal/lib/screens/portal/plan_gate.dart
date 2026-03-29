@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 
-const _brand = Color(0xff215e3f);
 
 /// Wraps a page that requires a Professional (or higher) plan.
 /// Shows an upgrade prompt if the community is on the Starter plan.
@@ -27,10 +26,10 @@ class PlanGate extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: _brand.withOpacity(0.08),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.lock_outline, size: 56, color: _brand),
+                child: Icon(Icons.lock_outline, size: 56, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(height: 24),
               Text(
@@ -62,7 +61,7 @@ class PlanGate extends StatelessWidget {
                 icon: const Icon(Icons.arrow_upward, color: Colors.white),
                 label: const Text('Upgrade Plan'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _brand,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 32, vertical: 16),

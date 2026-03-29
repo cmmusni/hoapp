@@ -152,7 +152,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
                                 style: TextStyle(
                                     fontSize: 15, fontWeight: FontWeight.w600)),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff215e3f),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
@@ -498,12 +498,12 @@ class _FilterBar extends StatelessWidget {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onCategoryChanged(isSelected ? null : category),
-      selectedColor: const Color(0xff215e3f).withOpacity(0.15),
-      checkmarkColor: const Color(0xff215e3f),
+      selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+      checkmarkColor: Theme.of(context).colorScheme.primary,
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        color: isSelected ? const Color(0xff215e3f) : Colors.grey[700],
+        color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[700],
       ),
     );
   }
@@ -609,12 +609,12 @@ class _ExpenseCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xff215e3f).withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   _getCategoryIcon(expense.category),
-                  color: const Color(0xff215e3f),
+                  color: Theme.of(context).colorScheme.primary,
                   size: 22,
                 ),
               ),
@@ -760,8 +760,8 @@ class _ExpenseDetailsDialogState extends State<_ExpenseDetailsDialog> {
             // Header
             Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xff215e3f),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
               ),
               padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
               child: Column(
@@ -971,7 +971,7 @@ class _ExpenseDetailsDialogState extends State<_ExpenseDetailsDialog> {
                       icon: const Icon(Icons.edit_outlined, size: 18),
                       label: const Text('Edit'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff215e3f),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -1072,9 +1072,9 @@ class _ExpenseDetailsDialogState extends State<_ExpenseDetailsDialog> {
         Navigator.of(context).pop();
         widget.onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Expense deleted successfully'),
-            backgroundColor: Color(0xff215e3f),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
@@ -1161,8 +1161,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: EdgeInsets.zero,
       title: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xff215e3f),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -1218,12 +1218,12 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                             horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xff215e3f).withOpacity(0.1)
+                              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                               : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xff215e3f)
+                                ? Theme.of(context).colorScheme.primary
                                 : Colors.grey.shade200,
                             width: isSelected ? 2 : 1,
                           ),
@@ -1236,7 +1236,7 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                                 ? FontWeight.w600
                                 : FontWeight.normal,
                             color: isSelected
-                                ? const Color(0xff215e3f)
+                                ? Theme.of(context).colorScheme.primary
                                 : Colors.grey[700],
                           ),
                         ),
@@ -1260,8 +1260,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
@@ -1281,8 +1281,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -1310,8 +1310,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -1410,8 +1410,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   maxLines: 3,
@@ -1442,10 +1442,10 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               disabledBackgroundColor:
-                  const Color(0xff215e3f).withValues(alpha: 0.4),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
               disabledForegroundColor: Colors.white70,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),

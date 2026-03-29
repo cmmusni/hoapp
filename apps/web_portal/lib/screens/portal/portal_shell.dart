@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:html' as html;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
@@ -77,6 +78,7 @@ class _PortalShellState extends State<PortalShell> {
       if (community != null) {
         appState.setActiveCommunity(community.id, community.slug);
         appState.setActiveCommunityData(community);
+        _updateFavicon(community);
 
         // Load user roles
         final user = authRepo.currentUser;
@@ -99,6 +101,15 @@ class _PortalShellState extends State<PortalShell> {
                   .eq('community_id', community.id)
                   .limit(1);
               appState.setHasUnit((memberRows as List).isNotEmpty);
+
+              // Load all communities user belongs to (for community switcher)
+              try {
+                final userCommunities =
+                    await communityRepo.getUserCommunities();
+                appState.setUserCommunities(userCommunities);
+              } catch (e) {
+                print('Error loading user communities: $e');
+              }
             } catch (e) {
               print('Error loading user roles: $e');
             }
@@ -120,6 +131,21 @@ class _PortalShellState extends State<PortalShell> {
         _loadBadgeCounts();
       }
     }
+  }
+
+  void _updateFavicon(Community community) {
+    final logoUrl = community.logoUrl;
+    if (logoUrl != null && logoUrl.isNotEmpty) {
+      // Update all icon links
+      final icons = html.document
+          .querySelectorAll("link[rel='icon'], link[rel='apple-touch-icon']");
+      for (var i = 0; i < icons.length; i++) {
+        final link = icons[i] as html.LinkElement;
+        link.href = logoUrl;
+      }
+    }
+    // Update browser tab title
+    html.document.title = '${community.name} — HOApp';
   }
 
   Future<void> _loadBadgeCounts() async {
@@ -310,7 +336,7 @@ class _PortalShellState extends State<PortalShell> {
                   appBar: PreferredSize(
                     preferredSize: const Size.fromHeight(70),
                     child: AppBar(
-                      backgroundColor: const Color(0xff215e3f),
+                      backgroundColor: _getSidebarColor(appState),
                       foregroundColor: Colors.white,
                       toolbarHeight: 70,
                       leading: IconButton(
@@ -374,7 +400,7 @@ class _PortalShellState extends State<PortalShell> {
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(70),
             child: AppBar(
-              backgroundColor: const Color(0xff215e3f),
+              backgroundColor: _getSidebarColor(appState),
               foregroundColor: Colors.white,
               toolbarHeight: 70,
               title: Column(
@@ -453,6 +479,8 @@ class _PortalShellState extends State<PortalShell> {
           }
         } else if (value == 'platform_admin') {
           if (context.mounted) context.go('/admin');
+        } else if (value == 'switch_community') {
+          if (context.mounted) context.go('/select-community');
         } else if (value == 'signout') {
           await context.read<AuthRepository>().signOut();
           if (context.mounted) context.go('/login');
@@ -568,18 +596,29 @@ class _PortalShellState extends State<PortalShell> {
             ],
           ),
         ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: 'switch_community',
+          child: Row(
+            children: [
+              Icon(Icons.swap_horiz, size: 18, color: Colors.blueGrey),
+              SizedBox(width: 8),
+              Text('Switch Community'),
+            ],
+          ),
+        ),
         if (appState.isPlatformAdmin) ...[
           const PopupMenuDivider(),
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'platform_admin',
             child: Row(
               children: [
                 Icon(Icons.admin_panel_settings,
-                    size: 18, color: Color(0xff215e3f)),
+                    size: 18, color: Theme.of(context).colorScheme.primary),
                 SizedBox(width: 8),
                 Text('Platform Admin',
                     style: TextStyle(
-                      color: Color(0xff215e3f),
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     )),
               ],
@@ -639,8 +678,18 @@ class _PortalShellState extends State<PortalShell> {
 
   // ============ DARK SIDEBAR (Desktop) ============
 
-  static const _sidebarDark = Color(0xff215e3f);
-  static const _sidebarDarkLight = Color(0xFF61937A);
+  static const _defaultSidebarDark = Color(0xff215e3f);
+
+  Color _getSidebarColor(AppState appState) {
+    final community = appState.activeCommunity;
+    if (community != null) {
+      try {
+        return Color(
+            int.parse(community.primaryColor.replaceFirst('#', '0xff')));
+      } catch (_) {}
+    }
+    return _defaultSidebarDark;
+  }
 
   Widget _buildSidebar(
       BuildContext context,
@@ -660,6 +709,8 @@ class _PortalShellState extends State<PortalShell> {
         : _isCommunityLoaded
             ? 'User (contact Admin to assign unit)'
             : '';
+    final sidebarColor = _getSidebarColor(appState);
+    final sidebarLight = Color.lerp(sidebarColor, Colors.white, 0.35)!;
 
     return ClipRect(
       child: OverflowBox(
@@ -669,7 +720,7 @@ class _PortalShellState extends State<PortalShell> {
           width: 250,
           margin: const EdgeInsets.fromLTRB(0, 0, 1, 0),
           decoration: BoxDecoration(
-            color: _sidebarDark,
+            color: sidebarColor,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.25),
@@ -684,30 +735,29 @@ class _PortalShellState extends State<PortalShell> {
               Container(
                 width: double.infinity,
                 color: Colors.white,
-                padding: const EdgeInsets.all(16),
                 child: appState.activeCommunity?.logoUrl != null
                     ? Image.network(
                         appState.activeCommunity!.logoUrl!,
                         fit: BoxFit.contain,
-                        height: 38,
+                        height: 70,
                         errorBuilder: (_, __, ___) => Image.asset(
                           'assets/images/hoapp-logo.png',
                           fit: BoxFit.contain,
-                          height: 38,
+                          height: 70,
                         ),
                       )
                     : Image.asset(
                         'assets/images/hoapp-logo.png',
                         fit: BoxFit.contain,
-                        height: 38,
+                        height: 70,
                       ),
               ),
               // User header
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: _sidebarDarkLight, width: 1),
+                    bottom: BorderSide(color: sidebarLight, width: 1),
                   ),
                 ),
                 child: Row(
@@ -738,7 +788,7 @@ class _PortalShellState extends State<PortalShell> {
                             Text(
                               roleBadge,
                               style: TextStyle(
-                                color: Colors.greenAccent.shade200,
+                                color: Colors.white70,
                                 fontSize: 11,
                                 decoration: TextDecoration.none,
                               ),
@@ -846,11 +896,10 @@ class _PortalShellState extends State<PortalShell> {
                                 currentPath),
                           ],
                           if (isStaff) ...[
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 12),
-                              child:
-                                  Divider(color: _sidebarDarkLight, height: 1),
+                              child: Divider(color: sidebarLight, height: 1),
                             ),
                             _buildSidebarItem(
                                 context,
@@ -866,11 +915,10 @@ class _PortalShellState extends State<PortalShell> {
                                 Icons.people_outlined,
                                 '/manage-users',
                                 currentPath),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 12),
-                              child:
-                                  Divider(color: _sidebarDarkLight, height: 1),
+                              child: Divider(color: sidebarLight, height: 1),
                             ),
                             _buildSidebarItem(
                                 context,
@@ -1146,12 +1194,13 @@ class _PortalShellState extends State<PortalShell> {
     final pathSegments = currentPath.split('/');
     final isActive = pathSegments.contains(routeSegment);
     return ListTile(
-      leading: Icon(icon, color: isActive ? const Color(0xff215e3f) : null),
+      leading: Icon(icon,
+          color: isActive ? Theme.of(context).colorScheme.primary : null),
       title: Text(
         title,
         style: TextStyle(
           fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-          color: isActive ? const Color(0xff215e3f) : null,
+          color: isActive ? Theme.of(context).colorScheme.primary : null,
         ),
       ),
       trailing: badge > 0
@@ -1171,8 +1220,9 @@ class _PortalShellState extends State<PortalShell> {
               ),
             )
           : null,
-      tileColor:
-          isActive ? const Color(0xff215e3f).withOpacity(0.08) : Colors.white,
+      tileColor: isActive
+          ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
+          : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       onTap: () {
         Navigator.of(context).pop();
@@ -1211,8 +1261,6 @@ class _ProfileDialog extends StatefulWidget {
 }
 
 class _ProfileDialogState extends State<_ProfileDialog> {
-  static const _brandColor = Color(0xff215e3f);
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -1314,9 +1362,12 @@ class _ProfileDialogState extends State<_ProfileDialog> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [_brandColor, Color(0xff2e8b57)],
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Color(0xff2e8b57)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -1394,8 +1445,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: Color(0xff215e3f), width: 1.5),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.5),
                           ),
                           prefixIcon: const Icon(Icons.person_outline),
                         ),
@@ -1416,8 +1468,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: Color(0xff215e3f), width: 1.5),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.5),
                           ),
                           prefixIcon: const Icon(Icons.phone_outlined),
                         ),
@@ -1437,8 +1490,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: Color(0xff215e3f), width: 1.5),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.5),
                           ),
                           prefixIcon: const Icon(Icons.email_outlined),
                           filled: _authEmail != null && _authEmail!.isNotEmpty,
@@ -1466,7 +1520,8 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                                 ),
                           label: Text(_saving ? 'Saving...' : 'Save Profile'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _brandColor,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -1497,8 +1552,6 @@ class _ChangePasswordDialog extends StatefulWidget {
 }
 
 class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
-  static const _brandColor = Color(0xff215e3f);
-
   final _formKey = GlobalKey<FormState>();
   final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -1559,9 +1612,12 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [_brandColor, Color(0xff2e8b57)],
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Color(0xff2e8b57)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -1635,8 +1691,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Color(0xff215e3f), width: 1.5),
+                          borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 1.5),
                         ),
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
@@ -1667,8 +1724,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Color(0xff215e3f), width: 1.5),
+                          borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 1.5),
                         ),
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
@@ -1700,8 +1758,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Color(0xff215e3f), width: 1.5),
+                          borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 1.5),
                         ),
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
@@ -1739,7 +1798,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                         label:
                             Text(_saving ? 'Changing...' : 'Change Password'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _brandColor,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),

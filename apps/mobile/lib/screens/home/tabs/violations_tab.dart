@@ -536,15 +536,18 @@ class _ReportViolationScreenState extends State<_ReportViolationScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green),
+                border: Border.all(
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.privacy_tip, color: Colors.green),
-                  SizedBox(width: 12),
-                  Expanded(
+                  Icon(Icons.privacy_tip,
+                      color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 12),
+                  const Expanded(
                     child: Text(
                       'Your identity will remain anonymous to other residents',
                       style: TextStyle(fontSize: 13),

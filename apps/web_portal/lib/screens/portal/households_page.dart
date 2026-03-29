@@ -227,7 +227,8 @@ class _UnitListState extends State<_UnitList> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.secondaryContainer,
+                              color: theme.colorScheme.primaryContainer
+                                  .withOpacity(0.7),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -235,7 +236,8 @@ class _UnitListState extends State<_UnitList> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onSecondaryContainer,
+                                color: theme.colorScheme.onPrimaryContainer
+                                    .withOpacity(0.9),
                               ),
                             ),
                           );
@@ -289,7 +291,7 @@ class _UnitListState extends State<_UnitList> {
               label: const Text('Retry',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff215e3f),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -531,7 +533,8 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
                                 style: TextStyle(
                                     fontSize: 15, fontWeight: FontWeight.w600)),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff215e3f),
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
@@ -593,6 +596,7 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
               label: const Text('Add Member'),
             )
           : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
 
@@ -603,8 +607,8 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.settings_outlined,
-                color: Color(0xff215e3f), size: 24),
+            Icon(Icons.settings_outlined,
+                color: Theme.of(context).colorScheme.primary, size: 24),
             const SizedBox(width: 12),
             const Text('Unit Options',
                 style: TextStyle(fontWeight: FontWeight.w600)),
@@ -780,7 +784,7 @@ class _HouseholdDetailPageState extends State<_HouseholdDetailPage> {
                           style: TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff215e3f),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -1069,7 +1073,8 @@ class _InviteMemberDialogState extends State<_InviteMemberDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.mail_outlined, color: Color(0xff215e3f), size: 24),
+          Icon(Icons.mail_outlined,
+              color: Theme.of(context).colorScheme.primary, size: 24),
           const SizedBox(width: 12),
           const Text('Invite to Sign Up',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1107,8 +1112,9 @@ class _InviteMemberDialogState extends State<_InviteMemberDialog> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                    borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5),
                   ),
                   prefixIcon: const Icon(Icons.email, size: 20),
                 ),
@@ -1161,7 +1167,7 @@ class _InviteMemberDialogState extends State<_InviteMemberDialog> {
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -1266,8 +1272,8 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.add_home_outlined,
-              color: Color(0xff215e3f), size: 24),
+          Icon(Icons.add_home_outlined,
+              color: Theme.of(context).colorScheme.primary, size: 24),
           const SizedBox(width: 12),
           const Text('Create Unit',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1299,8 +1305,8 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary, width: 1.5),
                 ),
               ),
               validator: (value) {
@@ -1326,8 +1332,8 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary, width: 1.5),
                 ),
               ),
               items: [
@@ -1366,8 +1372,9 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                    borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5),
                   ),
                 ),
                 autofocus: true,
@@ -1419,7 +1426,7 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -1610,8 +1617,8 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.person_add_outlined,
-              color: Color(0xff215e3f), size: 24),
+          Icon(Icons.person_add_outlined,
+              color: Theme.of(context).colorScheme.primary, size: 24),
           const SizedBox(width: 12),
           const Text('Add Household Member',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1647,8 +1654,9 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                     helperText:
                         'Enter any name. Search results appear for registered users (2+ chars).',
@@ -1663,8 +1671,12 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                             ),
                           )
                         : _selectedUser != null
-                            ? const Icon(Icons.check_circle,
-                                color: Color.fromRGBO(39, 99, 67, 1))
+                            ? Icon(Icons.check_circle,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(0.8),
+                                size: 20)
                             : null,
                   ),
                   validator: (value) {
@@ -1711,14 +1723,24 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Color.fromRGBO(139, 178, 134, 1),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Color.fromRGBO(325, 77, 52, 1)),
+                      border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.5)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.person,
-                            color: Color.fromRGBO(39, 99, 67, 1)),
+                        Icon(Icons.person,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.8)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -1768,8 +1790,9 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                   items: MemberRole.values.map((role) {
@@ -1800,8 +1823,9 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                 ),
@@ -1827,7 +1851,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -1932,7 +1956,8 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.edit_outlined, color: Color(0xff215e3f), size: 24),
+          Icon(Icons.edit_outlined,
+              color: Theme.of(context).colorScheme.primary, size: 24),
           const SizedBox(width: 12),
           const Text('Edit Role',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1963,8 +1988,8 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary, width: 1.5),
                 ),
               ),
               items: MemberRole.values.map((role) {
@@ -1995,8 +2020,8 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary, width: 1.5),
                 ),
               ),
             ),
@@ -2020,7 +2045,7 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),

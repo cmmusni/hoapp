@@ -598,20 +598,25 @@ class _ReportViolationDialogState extends State<_ReportViolationDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green),
+                  border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.privacy_tip, color: Colors.green),
+                    Icon(Icons.privacy_tip,
+                        color: Theme.of(context).colorScheme.primary),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Your identity will remain anonymous to other residents',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.green,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ),
@@ -756,7 +761,7 @@ class _ReportViolationDialogState extends State<_ReportViolationDialog> {
             label: const Text('Submit Report',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -1018,7 +1023,7 @@ class _EditViolationDialogState extends State<_EditViolationDialog> {
             label: const Text('Save Changes',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),

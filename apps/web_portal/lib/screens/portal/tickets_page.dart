@@ -451,8 +451,8 @@ class _TicketDetailState extends State<_TicketDetail> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Color(0xff215e3f), width: 1.5),
+                          borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary, width: 1.5),
                         ),
                       ),
                       maxLines: null,
@@ -609,8 +609,8 @@ class _CreateTicketDialogState extends State<_CreateTicketDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: EdgeInsets.zero,
       title: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xff215e3f),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -688,7 +688,7 @@ class _CreateTicketDialogState extends State<_CreateTicketDialog> {
             label: const Text('Create Ticket',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -706,7 +706,7 @@ class _CreateTicketDialogState extends State<_CreateTicketDialog> {
     required String description,
   }) {
     final isSelected = _selectedType == type;
-    final primaryColor = const Color(0xff215e3f);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return InkWell(
       onTap: () => setState(() => _selectedType = type),

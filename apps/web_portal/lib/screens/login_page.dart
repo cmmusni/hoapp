@@ -295,9 +295,9 @@ class _LoginPageState extends State<LoginPage> {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.lock_reset, color: Color(0xFF215E3F), size: 28),
+                  Icon(Icons.lock_reset, color: Theme.of(context).colorScheme.primary, size: 28),
                   SizedBox(width: 8),
                   Text('Reset Password',
                       style:
@@ -372,7 +372,7 @@ class _LoginPageState extends State<LoginPage> {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF215E3F),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                   ),
                   child: sending
@@ -452,7 +452,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: ElevatedButton(
                           onPressed: () => Navigator.pop(ctx),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF215E3F),
+                            backgroundColor: Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -533,8 +533,8 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                    color: Color(0xFF215E3F), width: 2),
+                                borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.primary, width: 2),
                               ),
                               filled: true,
                               fillColor: Colors.grey.shade50,
@@ -558,8 +558,8 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                    color: Color(0xFF215E3F), width: 2),
+                                borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.primary, width: 2),
                               ),
                               filled: true,
                               fillColor: Colors.grey.shade50,
@@ -591,8 +591,8 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                    color: Color(0xFF215E3F), width: 2),
+                                borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.primary, width: 2),
                               ),
                               filled: true,
                               fillColor: Colors.grey.shade50,
@@ -696,10 +696,10 @@ class _LoginPageState extends State<LoginPage> {
                                     }
                                   },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF215E3F),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                               foregroundColor: Colors.white,
                               disabledBackgroundColor:
-                                  const Color(0xFF215E3F).withOpacity(0.6),
+                                  Theme.of(context).colorScheme.primary.withOpacity(0.6),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),

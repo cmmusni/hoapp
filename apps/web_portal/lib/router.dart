@@ -31,6 +31,7 @@ import 'screens/features_page.dart';
 import 'screens/pricing_page.dart';
 import 'screens/support_page.dart';
 import 'screens/contact_page.dart';
+import 'screens/select_community_page.dart';
 
 GoRouter createRouter({String? lastCommunitySlug}) {
   return GoRouter(
@@ -128,6 +129,15 @@ GoRouter createRouter({String? lastCommunitySlug}) {
       GoRoute(
         path: '/create-community',
         builder: (context, state) => const CreateCommunityPage(),
+      ),
+      GoRoute(
+        path: '/select-community',
+        redirect: (context, state) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session == null) return '/login';
+          return null;
+        },
+        builder: (context, state) => const SelectCommunityPage(),
       ),
       // Platform admin (cross-community management)
       GoRoute(

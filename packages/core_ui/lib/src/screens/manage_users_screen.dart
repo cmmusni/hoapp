@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 
-const _brand = Color(0xff215e3f);
+Color _getBrandColor(BuildContext context) =>
+    Theme.of(context).colorScheme.primary;
 
 String _roleDisplayName(Role role) => switch (role) {
       Role.communityAdmin => 'Community Admin',
@@ -169,11 +170,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _brand.withValues(alpha: 0.1),
+                color: _getBrandColor(context).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child:
-                  const Icon(Icons.swap_horiz_rounded, color: _brand, size: 24),
+              child: Icon(Icons.swap_horiz_rounded,
+                  color: _getBrandColor(context), size: 24),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -203,7 +204,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: _brand, width: 1.5),
+              borderSide:
+                  BorderSide(color: _getBrandColor(context), width: 1.5),
             ),
           ),
           items: Role.values
@@ -247,7 +249,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             label: const Text('Save Changes',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _brand,
+              backgroundColor: _getBrandColor(context),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -368,7 +370,7 @@ class _RoleSection extends StatelessWidget {
         Role.hoaOfficer => Colors.blue,
         Role.guard => Colors.orange,
         Role.maintenance => Colors.teal,
-        _ => _brand,
+        _ => Colors.grey,
       };
 
   IconData get _roleIcon => switch (role) {
@@ -482,11 +484,11 @@ class _InviteUserSheetState extends State<_InviteUserSheet> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _brand.withValues(alpha: 0.1),
+                    color: _getBrandColor(context).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.person_add_rounded,
-                      color: _brand, size: 24),
+                  child: Icon(Icons.person_add_rounded,
+                      color: _getBrandColor(context), size: 24),
                 ),
                 const SizedBox(width: 14),
                 Column(
@@ -517,7 +519,8 @@ class _InviteUserSheetState extends State<_InviteUserSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                    borderSide:
+                        BorderSide(color: _getBrandColor(context), width: 1.5),
                   )),
             ),
             const SizedBox(height: 12),
@@ -534,7 +537,8 @@ class _InviteUserSheetState extends State<_InviteUserSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                    borderSide:
+                        BorderSide(color: _getBrandColor(context), width: 1.5),
                   )),
               items: Role.values
                   .map((r) => DropdownMenuItem(
@@ -555,12 +559,12 @@ class _InviteUserSheetState extends State<_InviteUserSheet> {
                         width: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.send_rounded),
+                    : const Icon(Icons.send_rounded, color: Colors.white),
                 label: const Text('Send Invite',
                     style:
                         TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: _brand,
+                    backgroundColor: _getBrandColor(context),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12))),
@@ -588,7 +592,7 @@ class _InviteUserSheetState extends State<_InviteUserSheet> {
         communityId: appState.activeCommunityId!,
         email: email,
         role: _role.name,
-        inviteKind: 'email',
+        inviteKind: 'role',
       );
       if (mounted) {
         Navigator.of(context).pop();

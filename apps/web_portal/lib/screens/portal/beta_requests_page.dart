@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:intl/intl.dart';
 
-const _brand = Color(0xff215e3f);
 
 class BetaRequestsPage extends StatefulWidget {
   const BetaRequestsPage({super.key});
@@ -51,11 +50,11 @@ class _BetaRequestsPageState extends State<BetaRequestsPage> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: _brand.withOpacity(0.1),
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.science_rounded,
-                          color: _brand, size: 24),
+                      child: Icon(Icons.science_rounded,
+                          color: Theme.of(context).colorScheme.primary, size: 24),
                     ),
                     const SizedBox(width: 14),
                     const Expanded(
@@ -177,10 +176,10 @@ class _BetaRequestsPageState extends State<BetaRequestsPage> {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => setState(() => _filter = value),
-      selectedColor: _brand.withOpacity(0.15),
-      checkmarkColor: _brand,
+      selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+      checkmarkColor: Theme.of(context).colorScheme.primary,
       labelStyle: TextStyle(
-        color: isSelected ? _brand : Colors.grey[700],
+        color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[700],
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
     );
@@ -389,9 +388,9 @@ class _BetaRequestDetailDialogState extends State<_BetaRequestDetailDialog> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [_brand, Color(0xff2e8b57)],
+                  colors: [Theme.of(context).colorScheme.primary, Color(0xff2e8b57)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -639,10 +638,10 @@ class _BetaRequestDetailDialogState extends State<_BetaRequestDetailDialog> {
                                   ? 'Provisioning...'
                                   : 'Provision Community'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _brand,
+                                backgroundColor: Theme.of(context).colorScheme.primary,
                                 foregroundColor: Colors.white,
                                 disabledBackgroundColor:
-                                    _brand.withOpacity(0.6),
+                                    Theme.of(context).colorScheme.primary.withOpacity(0.6),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
@@ -709,11 +708,11 @@ class _BetaRequestDetailDialogState extends State<_BetaRequestDetailDialog> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.link, size: 18, color: _brand),
+                    Icon(Icons.link, size: 18, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(portalUrl,
-                          style: const TextStyle(fontSize: 13, color: _brand)),
+                          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary)),
                     ),
                     IconButton(
                       icon: const Icon(Icons.copy, size: 18),
@@ -740,7 +739,7 @@ class _BetaRequestDetailDialogState extends State<_BetaRequestDetailDialog> {
                   widget.onRefresh();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _brand,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(

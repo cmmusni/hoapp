@@ -10,6 +10,7 @@ class AppState extends ChangeNotifier {
   String? _activeCommunityId;
   String? _activeCommunitySlug;
   Community? _activeCommunity;
+  List<Community> _userCommunities = [];
   List<UserRole>? _userRoles;
   bool _isPlatformAdmin = false;
   bool _hasUnit = false;
@@ -17,6 +18,7 @@ class AppState extends ChangeNotifier {
   String? get activeCommunityId => _activeCommunityId;
   String? get activeCommunitySlug => _activeCommunitySlug;
   Community? get activeCommunity => _activeCommunity;
+  List<Community> get userCommunities => _userCommunities;
   List<UserRole>? get userRoles => _userRoles;
   bool get isPlatformAdmin => _isPlatformAdmin;
   bool get hasUnit => _hasUnit;
@@ -77,6 +79,11 @@ class AppState extends ChangeNotifier {
 
   void setActiveCommunityData(Community community) {
     _activeCommunity = community;
+    notifyListeners();
+  }
+
+  void setUserCommunities(List<Community> communities) {
+    _userCommunities = communities;
     notifyListeners();
   }
 

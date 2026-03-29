@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:html' as html;
 
-const _brandColor = Color(0xff215e3f);
 
 class AnnouncementsPage extends StatefulWidget {
   const AnnouncementsPage({super.key});
@@ -765,8 +764,8 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: EdgeInsets.zero,
       title: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xff215e3f),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -818,7 +817,7 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   validator: (value) {
@@ -844,7 +843,7 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   maxLines: 5,
@@ -859,12 +858,12 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                 Container(
                   decoration: BoxDecoration(
                     color: _pinned
-                        ? _brandColor.withValues(alpha: 0.06)
+                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.06)
                         : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _pinned
-                          ? _brandColor.withValues(alpha: 0.2)
+                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
                           : Colors.grey.shade200,
                     ),
                   ),
@@ -882,7 +881,7 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
-                    activeColor: _brandColor,
+                    activeColor: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -955,7 +954,7 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _brandColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -970,7 +969,7 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: _brandColor.withValues(alpha: 0.06),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -980,7 +979,7 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: _brandColor,
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -1103,8 +1102,8 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: EdgeInsets.zero,
       title: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xff215e3f),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -1155,7 +1154,7 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   validator: (value) {
@@ -1181,7 +1180,7 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   maxLines: 5,
@@ -1196,12 +1195,12 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                 Container(
                   decoration: BoxDecoration(
                     color: _pinned
-                        ? _brandColor.withValues(alpha: 0.06)
+                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.06)
                         : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _pinned
-                          ? _brandColor.withValues(alpha: 0.2)
+                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
                           : Colors.grey.shade200,
                     ),
                   ),
@@ -1219,7 +1218,7 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
-                    activeColor: _brandColor,
+                    activeColor: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1292,7 +1291,7 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _brandColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -1307,7 +1306,7 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: _brandColor.withValues(alpha: 0.06),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -1317,7 +1316,7 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: _brandColor,
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(3),
             ),
           ),

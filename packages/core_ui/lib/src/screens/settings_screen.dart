@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Shared settings screen — adaptive for web and mobile.
 class SettingsScreen extends StatefulWidget {
@@ -108,6 +109,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(width: 8),
                         Text(community.primaryColor),
                       ]),
+                      const Divider(height: 24),
+                      Row(children: [
+                        const Text('Community Logo:'),
+                        const Spacer(),
+                        if (isAdmin)
+                          TextButton.icon(
+                            onPressed: () => _uploadLogo(context, community),
+                            icon: const Icon(Icons.upload, size: 18),
+                            label: Text(community.logoUrl != null
+                                ? 'Change'
+                                : 'Upload'),
+                          ),
+                      ]),
                       if (community.logoUrl != null) ...[
                         const SizedBox(height: 12),
                         ClipRRect(
@@ -119,7 +133,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 const Icon(Icons.broken_image),
                           ),
                         ),
-                      ],
+                      ] else
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Text('No logo uploaded',
+                              style: TextStyle(color: Colors.grey)),
+                        ),
                     ]),
                   ),
                 ),
@@ -156,72 +175,169 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showBrandingDialog(BuildContext context, Community community) {
     Color pickerColor =
         Color(int.parse(community.primaryColor.replaceFirst('#', '0xff')));
+    final hexController = TextEditingController(
+      text: community.primaryColor.replaceFirst('#', '').toUpperCase(),
+    );
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Branding'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Primary Color'),
-              const SizedBox(height: 8),
-              ColorPicker(
-                pickerColor: pickerColor,
-                onColorChanged: (c) => pickerColor = c,
-                enableAlpha: false,
-                pickerAreaHeightPercent: 0.6,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          void updateFromHex(String hex) {
+            hex = hex.replaceFirst('#', '').toUpperCase();
+            if (hex.length == 6 && RegExp(r'^[0-9A-F]{6}$').hasMatch(hex)) {
+              setDialogState(() {
+                pickerColor = Color(int.parse('0xff$hex'));
+              });
+            }
+          }
+
+          void updateFromPicker(Color c) {
+            setDialogState(() {
+              pickerColor = c;
+              hexController.text =
+                  c.toARGB32().toRadixString(16).substring(2).toUpperCase();
+            });
+          }
+
+          return AlertDialog(
+            title: const Text('Edit Branding'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Hex text field
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: pickerColor,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: hexController,
+                          decoration: const InputDecoration(
+                            prefixText: '#',
+                            labelText: 'Hex Color',
+                            border: OutlineInputBorder(),
+                            hintText: '2E7D32',
+                          ),
+                          maxLength: 6,
+                          onChanged: updateFromHex,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Or pick a color:'),
+                  const SizedBox(height: 8),
+                  ColorPicker(
+                    pickerColor: pickerColor,
+                    onColorChanged: updateFromPicker,
+                    enableAlpha: false,
+                    pickerAreaHeightPercent: 0.6,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    final repo = context.read<CommunityRepository>();
+                    final appState = context.read<AppState>();
+                    final hex =
+                        '#${pickerColor.toARGB32().toRadixString(16).substring(2)}';
+                    // Merge into existing settings to preserve other fields
+                    final existing = appState.activeCommunity?.settings ?? {};
+                    final brand =
+                        (existing['brand'] as Map<String, dynamic>?) ?? {};
+                    final updatedSettings = {
+                      ...existing,
+                      'brand': {...brand, 'primary': hex},
+                    };
+                    await repo.updateCommunitySettings(
+                      communityId: appState.activeCommunityId!,
+                      settings: updatedSettings,
+                    );
+                    if (mounted) {
+                      // Refresh AppState so theme updates
+                      final refreshed = await repo.getCommunityById(
+                        appState.activeCommunityId!,
+                      );
+                      if (refreshed != null) {
+                        appState.setActiveCommunityData(refreshed);
+                      }
+                      Navigator.of(ctx).pop();
+                      _loadCommunity();
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
+                  }
+                },
+                child: const Text('Save'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                final repo = context.read<CommunityRepository>();
-                final appState = context.read<AppState>();
-                final hex =
-                    '#${pickerColor.toARGB32().toRadixString(16).substring(2)}';
-                // Merge into existing settings to preserve other fields
-                final existing = appState.activeCommunity?.settings ?? {};
-                final brand =
-                    (existing['brand'] as Map<String, dynamic>?) ?? {};
-                final updatedSettings = {
-                  ...existing,
-                  'brand': {...brand, 'primary': hex},
-                };
-                await repo.updateCommunitySettings(
-                  communityId: appState.activeCommunityId!,
-                  settings: updatedSettings,
-                );
-                if (mounted) {
-                  // Refresh AppState so theme updates
-                  final refreshed = await repo.getCommunityById(
-                    appState.activeCommunityId!,
-                  );
-                  if (refreshed != null) {
-                    appState.setActiveCommunityData(refreshed);
-                  }
-                  Navigator.of(ctx).pop();
-                  _loadCommunity();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
+          );
+        },
       ),
     );
+  }
+
+  Future<void> _uploadLogo(BuildContext context, Community community) async {
+    try {
+      final storageService = StorageService(Supabase.instance.client);
+      final file = await storageService.pickImage();
+      if (file == null) return;
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Uploading logo...')));
+
+      final url = await storageService.uploadImage(
+        bucket: 'community-logos',
+        file: file,
+        folder: community.id,
+      );
+
+      if (!mounted) return;
+      final repo = context.read<CommunityRepository>();
+      final appState = context.read<AppState>();
+      final existing = appState.activeCommunity?.settings ?? {};
+      final updatedSettings = {
+        ...existing,
+        'logo_url': url,
+      };
+      await repo.updateCommunitySettings(
+        communityId: community.id,
+        settings: updatedSettings,
+      );
+
+      final refreshed = await repo.getCommunityById(community.id);
+      if (refreshed != null && mounted) {
+        appState.setActiveCommunityData(refreshed);
+        _loadCommunity();
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Logo uploaded successfully')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      }
+    }
   }
 
   Future<void> _handleSignOut(BuildContext context) async {

@@ -5,7 +5,6 @@ import 'package:core_data/core_data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'beta_requests_page.dart';
 
-const _brand = Color(0xff215e3f);
 
 /// Platform admin shell — outside the community portal context.
 /// Accessible only to users with the app_admin platform role.
@@ -66,7 +65,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
     if (!_isAllowed) {
       return Scaffold(
         appBar: AppBar(
-          backgroundColor: _brand,
+          backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
           title: const Text('Access Denied'),
         ),
@@ -89,7 +88,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
               ElevatedButton(
                 onPressed: () => context.go('/'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _brand,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Back to Home'),
@@ -106,7 +105,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
 
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: _brand,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,
             title: Row(
               children: [
@@ -186,8 +185,8 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              color: _brand,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
             ),
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,7 +205,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.science_outlined, color: _brand),
+            leading: Icon(Icons.science_outlined, color: Theme.of(context).colorScheme.primary),
             title: const Text('Beta Requests',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             trailing: _pendingBetaRequests > 0
@@ -229,7 +228,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
                     ),
                   )
                 : null,
-            tileColor: _brand.withOpacity(0.08),
+            tileColor: Theme.of(context).colorScheme.primary.withOpacity(0.08),
             onTap: () => Navigator.pop(context),
           ),
           const Divider(),

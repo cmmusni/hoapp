@@ -69,8 +69,8 @@ class _CreateCommunityPageState extends State<CreateCommunityPage> {
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Row(
               children: [
-                const Icon(Icons.check_circle_outlined,
-                    color: Color(0xff215e3f), size: 24),
+                Icon(Icons.check_circle_outlined,
+                    color: Theme.of(context).colorScheme.primary, size: 24),
                 const SizedBox(width: 12),
                 const Text('Community Created!',
                     style: TextStyle(fontWeight: FontWeight.w600)),

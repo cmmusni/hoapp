@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:intl/intl.dart';
 
-const _brand = Color(0xff215e3f);
 
 class RegisteredSwimmersPage extends StatefulWidget {
   const RegisteredSwimmersPage({super.key});
@@ -118,7 +117,7 @@ class _RegisteredSwimmersPageState extends State<RegisteredSwimmersPage> {
                           Icons.people,
                           '${_allSwimmers.length}',
                           'Total Swimmers',
-                          _brand,
+                          Theme.of(context).colorScheme.primary,
                         ),
                         const SizedBox(width: 12),
                         _buildStatChip(
@@ -298,11 +297,11 @@ class _RegisteredSwimmersPageState extends State<RegisteredSwimmersPage> {
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
               backgroundColor: approved
-                  ? _brand.withOpacity(0.1)
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                   : Colors.orange.withOpacity(0.1),
               child: Icon(
                 Icons.pool,
-                color: approved ? _brand : Colors.orange,
+                color: approved ? Theme.of(context).colorScheme.primary : Colors.orange,
               ),
             ),
             title: Row(

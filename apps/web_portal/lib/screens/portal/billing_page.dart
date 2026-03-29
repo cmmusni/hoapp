@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _brandColor = Color(0xff215e3f);
 
 class BillingPage extends StatefulWidget {
   const BillingPage({super.key});
@@ -541,7 +540,7 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
                         style: TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w600)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _brandColor,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -834,8 +833,8 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
             // Green header
             Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xff215e3f),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
               ),
               padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
               child: Column(
@@ -1182,7 +1181,7 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                             style: TextStyle(
                                 fontSize: 15, fontWeight: FontWeight.w600)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _brandColor,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
@@ -1233,9 +1232,9 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
         Navigator.of(context).pop();
         widget.onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Invoice deleted successfully'),
-            backgroundColor: Color(0xff215e3f),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
@@ -1275,10 +1274,10 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
         ),
         Text(
           currencyFormat.format(widget.invoice.amount),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xff215e3f),
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
       ],
@@ -1661,7 +1660,7 @@ class _PaymentCardState extends State<_PaymentCard> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide:
-                        const BorderSide(color: _brandColor, width: 1.5),
+                        BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                   ),
                   filled: true,
                   fillColor: Colors.grey.shade50,
@@ -1758,8 +1757,8 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: EdgeInsets.zero,
       title: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xff215e3f),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -1815,7 +1814,7 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide:
-                        const BorderSide(color: _brandColor, width: 1.5),
+                        BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                   ),
                 ),
                 keyboardType: TextInputType.number,
@@ -1897,7 +1896,7 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _brandColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -2021,8 +2020,8 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: EdgeInsets.zero,
       title: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xff215e3f),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -2085,7 +2084,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide:
-                              const BorderSide(color: _brandColor, width: 1.5),
+                              BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                         ),
                       ),
                       items: units.map((unit) {
@@ -2146,12 +2145,12 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                             horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xff215e3f).withOpacity(0.1)
+                              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                               : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xff215e3f)
+                                ? Theme.of(context).colorScheme.primary
                                 : Colors.grey.shade200,
                             width: isSelected ? 2 : 1,
                           ),
@@ -2162,7 +2161,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                             Icon(icon,
                                 size: 18,
                                 color: isSelected
-                                    ? const Color(0xff215e3f)
+                                    ? Theme.of(context).colorScheme.primary
                                     : Colors.grey),
                             const SizedBox(width: 6),
                             Text(
@@ -2173,7 +2172,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                                     ? FontWeight.w600
                                     : FontWeight.normal,
                                 color: isSelected
-                                    ? const Color(0xff215e3f)
+                                    ? Theme.of(context).colorScheme.primary
                                     : Colors.grey[700],
                               ),
                             ),
@@ -2200,7 +2199,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -2234,8 +2233,8 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: _brandColor, width: 1.5),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.primary, width: 1.5),
                             ),
                             suffixIcon:
                                 const Icon(Icons.calendar_today, size: 18),
@@ -2277,8 +2276,8 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: _brandColor, width: 1.5),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.primary, width: 1.5),
                             ),
                             suffixIcon:
                                 const Icon(Icons.calendar_today, size: 18),
@@ -2312,7 +2311,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -2350,7 +2349,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: _brandColor, width: 1.5),
+                            BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                       ),
                       suffixIcon: const Icon(Icons.calendar_today),
                     ),
@@ -2403,8 +2402,8 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: _brandColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                      color: Theme.of(context).colorScheme.primary, width: 1.5),
                                 ),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -2429,8 +2428,8 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: _brandColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                      color: Theme.of(context).colorScheme.primary, width: 1.5),
                                 ),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -2467,7 +2466,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   maxLines: 3,
@@ -2494,7 +2493,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _brandColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -2796,7 +2795,7 @@ class _IncomeSummaryCards extends StatelessWidget {
             label: 'Total Income',
             amount: currencyFormat.format(grandTotal),
             icon: Icons.trending_up,
-            color: const Color(0xff215e3f),
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
         const SizedBox(width: 12),
@@ -2987,10 +2986,10 @@ class _ManualIncomeCard extends StatelessWidget {
               children: [
                 Text(
                   currencyFormat.format(entry.amount),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xff215e3f),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -3042,9 +3041,9 @@ class _ManualIncomeCard extends StatelessWidget {
         onDeleted();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Income entry deleted'),
-              backgroundColor: Color(0xff215e3f),
+              backgroundColor: Theme.of(context).colorScheme.primary,
             ),
           );
         }
@@ -3085,11 +3084,11 @@ class _VerifiedPaymentCard extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xff215e3f).withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.verified,
-                  size: 20, color: Color(0xff215e3f)),
+              child: Icon(Icons.verified,
+                  size: 20, color: Theme.of(context).colorScheme.primary),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -3110,15 +3109,15 @@ class _VerifiedPaymentCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xff215e3f).withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           payment.method.replaceAll('_', ' ').toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xff215e3f),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -3136,10 +3135,10 @@ class _VerifiedPaymentCard extends StatelessWidget {
             ),
             Text(
               currencyFormat.format(payment.amount),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xff215e3f),
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ],
@@ -3186,8 +3185,8 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: EdgeInsets.zero,
       title: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xff215e3f),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -3245,7 +3244,7 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   validator: (v) =>
@@ -3309,12 +3308,12 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                             horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xff215e3f).withOpacity(0.1)
+                              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                               : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xff215e3f)
+                                ? Theme.of(context).colorScheme.primary
                                 : Colors.grey.shade200,
                             width: isSelected ? 2 : 1,
                           ),
@@ -3325,7 +3324,7 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                             Icon(icon,
                                 size: 16,
                                 color: isSelected
-                                    ? const Color(0xff215e3f)
+                                    ? Theme.of(context).colorScheme.primary
                                     : Colors.grey),
                             const SizedBox(width: 4),
                             Text(
@@ -3336,7 +3335,7 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                                     ? FontWeight.w600
                                     : FontWeight.normal,
                                 color: isSelected
-                                    ? const Color(0xff215e3f)
+                                    ? Theme.of(context).colorScheme.primary
                                     : Colors.grey[700],
                               ),
                             ),
@@ -3362,7 +3361,7 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -3398,7 +3397,7 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: _brandColor, width: 1.5),
+                            BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                       ),
                       suffixIcon: const Icon(Icons.calendar_today, size: 18),
                     ),
@@ -3423,7 +3422,7 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -3442,7 +3441,7 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   maxLines: 3,
@@ -3473,7 +3472,7 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _brandColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -3510,9 +3509,9 @@ class _AddManualIncomeDialogState extends State<_AddManualIncomeDialog> {
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Income entry added successfully'),
-            backgroundColor: Color(0xff215e3f),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
         widget.onCreated();
@@ -3582,7 +3581,7 @@ class _RecurringBillingViewState extends State<_RecurringBillingView> {
                 ? '$count invoice(s) generated successfully'
                 : 'No invoices are due for generation'),
             backgroundColor:
-                count > 0 ? const Color(0xff215e3f) : Colors.orange,
+                count > 0 ? Theme.of(context).colorScheme.primary : Colors.orange,
           ),
         );
       }
@@ -3627,7 +3626,7 @@ class _RecurringBillingViewState extends State<_RecurringBillingView> {
                     : const Icon(Icons.play_arrow, size: 18),
                 label: Text(_isGenerating ? 'Generating...' : 'Generate Due'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xff215e3f),
+                  foregroundColor: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(width: 4),
@@ -3636,7 +3635,7 @@ class _RecurringBillingViewState extends State<_RecurringBillingView> {
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('New Template'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xff215e3f),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
@@ -3671,7 +3670,7 @@ class _RecurringBillingViewState extends State<_RecurringBillingView> {
                               style: TextStyle(
                                   fontSize: 15, fontWeight: FontWeight.w600)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _brandColor,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
@@ -3767,15 +3766,15 @@ class _RecurringBillingCardState extends State<_RecurringBillingCard> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xff215e3f).withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     billing.categoryLabel.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xff215e3f),
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -3820,7 +3819,7 @@ class _RecurringBillingCardState extends State<_RecurringBillingCard> {
                 Switch(
                   value: billing.isActive,
                   onChanged: _isProcessing ? null : _toggleActive,
-                  activeColor: const Color(0xff215e3f),
+                  activeColor: Theme.of(context).colorScheme.primary,
                 ),
               ],
             ),
@@ -3955,9 +3954,9 @@ class _RecurringBillingCardState extends State<_RecurringBillingCard> {
       if (mounted) {
         widget.onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Recurring billing deleted'),
-            backgroundColor: Color(0xff215e3f),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
@@ -4049,8 +4048,8 @@ class _CreateRecurringBillingDialogState
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: EdgeInsets.zero,
       title: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xff215e3f),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -4094,7 +4093,7 @@ class _CreateRecurringBillingDialogState
                   ),
                   value: _applyToAll,
                   onChanged: (v) => setState(() => _applyToAll = v),
-                  activeColor: const Color(0xff215e3f),
+                  activeColor: Theme.of(context).colorScheme.primary,
                   contentPadding: EdgeInsets.zero,
                 ),
                 // Unit picker (if not apply to all)
@@ -4126,8 +4125,8 @@ class _CreateRecurringBillingDialogState
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: _brandColor, width: 1.5),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary, width: 1.5),
                           ),
                         ),
                         items: units.map((unit) {
@@ -4191,12 +4190,12 @@ class _CreateRecurringBillingDialogState
                             horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xff215e3f).withOpacity(0.1)
+                              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                               : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xff215e3f)
+                                ? Theme.of(context).colorScheme.primary
                                 : Colors.grey.shade200,
                             width: isSelected ? 2 : 1,
                           ),
@@ -4207,7 +4206,7 @@ class _CreateRecurringBillingDialogState
                             Icon(icon,
                                 size: 18,
                                 color: isSelected
-                                    ? const Color(0xff215e3f)
+                                    ? Theme.of(context).colorScheme.primary
                                     : Colors.grey),
                             const SizedBox(width: 6),
                             Text(
@@ -4218,7 +4217,7 @@ class _CreateRecurringBillingDialogState
                                     ? FontWeight.w600
                                     : FontWeight.normal,
                                 color: isSelected
-                                    ? const Color(0xff215e3f)
+                                    ? Theme.of(context).colorScheme.primary
                                     : Colors.grey[700],
                               ),
                             ),
@@ -4247,10 +4246,10 @@ class _CreateRecurringBillingDialogState
                       selected: isSelected,
                       onSelected: (_) =>
                           setState(() => _selectedFrequency = freq),
-                      selectedColor: const Color(0xff215e3f).withOpacity(0.15),
+                      selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                       labelStyle: TextStyle(
                         color: isSelected
-                            ? const Color(0xff215e3f)
+                            ? Theme.of(context).colorScheme.primary
                             : Colors.grey[700],
                         fontWeight:
                             isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -4276,7 +4275,7 @@ class _CreateRecurringBillingDialogState
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -4297,7 +4296,7 @@ class _CreateRecurringBillingDialogState
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -4326,8 +4325,8 @@ class _CreateRecurringBillingDialogState
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: _brandColor, width: 1.5),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary, width: 1.5),
                           ),
                           helperText: 'Invoice generated on this day',
                           helperMaxLines: 2,
@@ -4358,8 +4357,8 @@ class _CreateRecurringBillingDialogState
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: _brandColor, width: 1.5),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary, width: 1.5),
                           ),
                           helperText: 'Days after generation until due',
                           helperMaxLines: 2,
@@ -4401,7 +4400,7 @@ class _CreateRecurringBillingDialogState
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: _brandColor, width: 1.5),
+                            BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                       ),
                       suffixIcon: const Icon(Icons.calendar_today, size: 18),
                       helperText: 'When the first invoice will be generated',
@@ -4455,8 +4454,8 @@ class _CreateRecurringBillingDialogState
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: _brandColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                      color: Theme.of(context).colorScheme.primary, width: 1.5),
                                 ),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -4481,8 +4480,8 @@ class _CreateRecurringBillingDialogState
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: _brandColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                      color: Theme.of(context).colorScheme.primary, width: 1.5),
                                 ),
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -4518,7 +4517,7 @@ class _CreateRecurringBillingDialogState
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide:
-                          const BorderSide(color: _brandColor, width: 1.5),
+                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   maxLines: 2,
@@ -4545,7 +4544,7 @@ class _CreateRecurringBillingDialogState
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _brandColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -4603,9 +4602,9 @@ class _CreateRecurringBillingDialogState
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Recurring billing created successfully'),
-            backgroundColor: Color(0xff215e3f),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
         widget.onCreated();

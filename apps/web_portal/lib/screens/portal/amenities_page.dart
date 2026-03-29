@@ -316,7 +316,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                               'Invoice has been created for this booking.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: const Color(0xff215e3f),
+                                color: Theme.of(context).colorScheme.primary,
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
@@ -347,7 +347,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
 
   Widget _buildApproveButton(AmenityBooking booking) {
     return IconButton(
-      icon: const Icon(Icons.check_circle_outline, color: Color(0xff215e3f)),
+      icon: Icon(Icons.check_circle_outline, color: Theme.of(context).colorScheme.primary),
       tooltip: 'Approve booking',
       onPressed: () => _approveBooking(booking),
       iconSize: 22,
@@ -374,8 +374,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         titlePadding: EdgeInsets.zero,
         title: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xff215e3f),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
             borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
           ),
           padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -414,7 +414,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
               label: const Text('Approve Booking',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff215e3f),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -552,7 +552,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
       case BookingStatus.pending:
         color = Colors.orange;
       case BookingStatus.confirmed:
-        color = const Color(0xff215e3f);
+        color = Theme.of(context).colorScheme.primary;
       case BookingStatus.cancelled:
         color = Colors.red;
     }
@@ -626,8 +626,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         titlePadding: EdgeInsets.zero,
         title: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xff215e3f),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
             borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
           ),
           padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -701,7 +701,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                       style:
                           TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff215e3f),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -785,8 +785,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                   borderRadius: BorderRadius.circular(16)),
               titlePadding: EdgeInsets.zero,
               title: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xff215e3f),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -860,8 +860,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: Color(0xff215e3f), width: 1.5),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.primary, width: 1.5),
                             ),
                           ),
                           items: amenities.map((a) {
@@ -894,7 +894,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                           child: Row(
                             children: [
                               Icon(Icons.pool,
-                                  size: 18, color: const Color(0xff215e3f)),
+                                  size: 18, color: Theme.of(context).colorScheme.primary),
                               const SizedBox(width: 10),
                               Text(selectedAmenity?.name ?? '',
                                   style: const TextStyle(
@@ -962,8 +962,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: Color(0xff215e3f), width: 1.5),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.primary, width: 1.5),
                             ),
                           ),
                           items: userUnits.map((u) {
@@ -1072,11 +1072,11 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                               child: Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xff215e3f)
+                                  color: Theme.of(context).colorScheme.primary
                                       .withValues(alpha: 0.06),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                      color: const Color(0xff215e3f)
+                                      color: Theme.of(context).colorScheme.primary
                                           .withValues(alpha: 0.2)),
                                 ),
                                 child: Column(
@@ -1084,13 +1084,13 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(Icons.payments_outlined,
-                                            size: 14, color: Color(0xff215e3f)),
+                                        Icon(Icons.payments_outlined,
+                                            size: 14, color: Theme.of(context).colorScheme.primary),
                                         const SizedBox(width: 6),
                                         Text('Rate',
                                             style: TextStyle(
                                                 fontSize: 11,
-                                                color: const Color(0xff215e3f)
+                                                color: Theme.of(context).colorScheme.primary
                                                     .withValues(alpha: 0.7),
                                                 fontWeight: FontWeight.w500)),
                                       ],
@@ -1098,10 +1098,10 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                                     const SizedBox(height: 4),
                                     Text(
                                       '₱${selectedAmenity!.price} ${selectedAmenity!.currency ?? 'PHP'}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
-                                        color: Color(0xff215e3f),
+                                        color: Theme.of(context).colorScheme.primary,
                                       ),
                                     ),
                                   ],
@@ -1125,8 +1125,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: Color(0xff215e3f), width: 1.5),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary, width: 1.5),
                           ),
                           hintText: 'Any special requests...',
                         ),
@@ -1192,10 +1192,10 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                         style: const TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w600)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff215e3f),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       disabledBackgroundColor:
-                          const Color(0xff215e3f).withValues(alpha: 0.4),
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
                       disabledForegroundColor: Colors.white70,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -1222,8 +1222,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         titlePadding: EdgeInsets.zero,
         title: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xff215e3f),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
             borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
           ),
           padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
@@ -1268,8 +1268,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -1288,8 +1288,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -1309,8 +1309,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -1329,8 +1329,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -1383,7 +1383,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
               label: const Text('Create Amenity',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff215e3f),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),

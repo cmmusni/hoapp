@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _brand = Color(0xff215e3f);
 
 /// Tour step model
 class _TourStep {
@@ -289,7 +288,7 @@ class _OnboardingTourState extends State<OnboardingTour>
                   LinearProgressIndicator(
                     value: progress,
                     backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(_brand),
+                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                     minHeight: 4,
                   ),
 
@@ -305,10 +304,10 @@ class _OnboardingTourState extends State<OnboardingTour>
                           Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: _brand.withOpacity(0.1),
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(step.icon, size: 48, color: _brand),
+                            child: Icon(step.icon, size: 48, color: Theme.of(context).colorScheme.primary),
                           ),
                           const SizedBox(height: 24),
 
@@ -377,8 +376,8 @@ class _OnboardingTourState extends State<OnboardingTour>
                         if (!isFirst)
                           TextButton(
                             onPressed: _prev,
-                            child: const Text('Back',
-                                style: TextStyle(color: _brand)),
+                            child: Text('Back',
+                                style: TextStyle(color: Theme.of(context).colorScheme.primary)),
                           ),
 
                         const SizedBox(width: 8),
@@ -387,7 +386,7 @@ class _OnboardingTourState extends State<OnboardingTour>
                         ElevatedButton(
                           onPressed: _next,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _brand,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 28, vertical: 12),

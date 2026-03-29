@@ -122,6 +122,7 @@ class _PortalChatbotState extends State<PortalChatbot>
 
   @override
   Widget build(BuildContext context) {
+    final brandColor = Theme.of(context).colorScheme.primary;
     if (_hiddenPages.any((p) => widget.currentPath.contains(p))) {
       return const SizedBox.shrink();
     }
@@ -145,7 +146,7 @@ class _PortalChatbotState extends State<PortalChatbot>
           child: FloatingActionButton(
             heroTag: 'chatbot_fab',
             onPressed: () => setState(() => _isOpen = !_isOpen),
-            backgroundColor: const Color(0xff215e3f),
+            backgroundColor: brandColor,
             child: Icon(
               _isOpen ? Icons.close : Icons.support_agent,
               color: Colors.white,
@@ -157,6 +158,7 @@ class _PortalChatbotState extends State<PortalChatbot>
   }
 
   Widget _buildChatPanel(BuildContext context) {
+    final brandColor = Theme.of(context).colorScheme.primary;
     final screenHeight = MediaQuery.of(context).size.height;
     final panelHeight = (screenHeight * 0.6).clamp(300.0, 520.0);
     final screenWidth = MediaQuery.of(context).size.width;
@@ -177,8 +179,8 @@ class _PortalChatbotState extends State<PortalChatbot>
             // Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xff215e3f),
+              decoration: BoxDecoration(
+                color: brandColor,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Row(
@@ -243,7 +245,7 @@ class _PortalChatbotState extends State<PortalChatbot>
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.send, color: Color(0xff215e3f)),
+                    icon: Icon(Icons.send, color: brandColor),
                     onPressed: () => _handleSubmit(_controller.text),
                     iconSize: 22,
                   ),
@@ -257,6 +259,7 @@ class _PortalChatbotState extends State<PortalChatbot>
   }
 
   Widget _buildMessageBubble(_ChatMessage message) {
+    final brandColor = Theme.of(context).colorScheme.primary;
     final isUser = message.isUser;
     final isLink = message.route != null;
 
@@ -273,7 +276,7 @@ class _PortalChatbotState extends State<PortalChatbot>
             icon: const Icon(Icons.open_in_new, size: 16),
             label: Text(message.text),
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xff215e3f),
+              foregroundColor: brandColor,
               textStyle: const TextStyle(fontSize: 13),
             ),
           ),
@@ -288,7 +291,7 @@ class _PortalChatbotState extends State<PortalChatbot>
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isUser ? const Color(0xff215e3f) : Colors.grey.shade100,
+          color: isUser ? brandColor : Colors.grey.shade100,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(14),
             topRight: const Radius.circular(14),
@@ -305,6 +308,7 @@ class _PortalChatbotState extends State<PortalChatbot>
   }
 
   Widget _buildSuggestions() {
+    final brandColor = Theme.of(context).colorScheme.primary;
     final suggestions = suggestionsForRoute(
       widget.currentPath,
       userRole: widget.userRole,
@@ -319,9 +323,8 @@ class _PortalChatbotState extends State<PortalChatbot>
         children: suggestions.map((topic) {
           return ActionChip(
             label: Text(topic.question, style: const TextStyle(fontSize: 12)),
-            backgroundColor: const Color(0xff215e3f).withValues(alpha: 0.08),
-            side: BorderSide(
-                color: const Color(0xff215e3f).withValues(alpha: 0.2)),
+            backgroundColor: brandColor.withValues(alpha: 0.08),
+            side: BorderSide(color: brandColor.withValues(alpha: 0.2)),
             onPressed: () => _handleSuggestionTap(topic),
           );
         }).toList(),

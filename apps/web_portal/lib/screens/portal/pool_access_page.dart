@@ -6,8 +6,6 @@ import 'package:core_ui/core_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _brandColor = Color(0xff215e3f);
-
 /// Determine max swimmers allowed based on unit type name.
 int _maxPaxForUnitType(String? unitType) {
   if (unitType == null) return 5;
@@ -183,7 +181,7 @@ class _ResidentViewState extends State<_ResidentView> {
                           style: TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff215e3f),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -442,8 +440,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                     filled: widget.profileOccupantType != null,
                     fillColor: Colors.grey.shade100,
@@ -478,8 +477,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                     prefixIcon: const Icon(Icons.person),
                     filled: widget.profileName != null &&
@@ -503,8 +503,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                     prefixIcon: const Icon(Icons.phone),
                     filled: widget.profilePhone != null &&
@@ -529,8 +530,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                     prefixIcon: const Icon(Icons.email),
                     filled: widget.profileEmail != null &&
@@ -567,8 +569,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     icon: const Icon(Icons.add),
                     label: const Text('Add Swimmer'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _brandColor,
-                      side: const BorderSide(color: _brandColor),
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                      side: BorderSide(
+                          color: Theme.of(context).colorScheme.primary),
                     ),
                   ),
                 const SizedBox(height: 24),
@@ -588,8 +591,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                     prefixIcon: const Icon(Icons.person_outline),
                   ),
@@ -608,8 +612,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xff215e3f), width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                     prefixIcon: const Icon(Icons.phone_outlined),
                   ),
@@ -630,7 +635,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                   ),
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: _brandColor,
+                  activeColor: Theme.of(context).colorScheme.primary,
                 ),
                 CheckboxListTile(
                   value: _acknowledgeWaiver,
@@ -641,7 +646,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                   ),
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
-                  activeColor: _brandColor,
+                  activeColor: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(height: 12),
 
@@ -694,7 +699,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                           fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff215e3f),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(
@@ -717,8 +722,8 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_brandColor, Color(0xff2e8b57)],
+        gradient: LinearGradient(
+          colors: [Theme.of(context).colorScheme.primary, Color(0xff2e8b57)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -780,10 +785,11 @@ class _RegistrationFormState extends State<_RegistrationForm> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _brandColor.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.home, color: _brandColor, size: 24),
+              child: Icon(Icons.home,
+                  color: Theme.of(context).colorScheme.primary, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -811,13 +817,13 @@ class _RegistrationFormState extends State<_RegistrationForm> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _brandColor.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 'Max $_maxPax swimmers',
-                style: const TextStyle(
-                  color: _brandColor,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -854,15 +860,18 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: _brandColor.withOpacity(0.1),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           '${index + 1}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: _brandColor,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -898,8 +907,11 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: _brandColor, width: 1.5),
+                                      borderSide: BorderSide(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          width: 1.5),
                                     ),
                                     isDense: true,
                                     contentPadding: const EdgeInsets.symmetric(
@@ -1126,7 +1138,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   Widget _sectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: _brandColor, size: 20),
+        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
         const SizedBox(width: 8),
         Text(
           title,
@@ -1175,17 +1187,17 @@ class _RegistrationDetails extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ===== BANNER =====
-              _buildBanner(),
+              _buildBanner(context),
               const SizedBox(height: 24),
 
               // ===== UNIT INFO =====
               if (unitNo != null) ...[
-                _buildUnitCard(),
+                _buildUnitCard(context),
                 const SizedBox(height: 20),
               ],
 
               // ===== PERSONAL INFORMATION =====
-              _buildSection('Personal Information', Icons.person, [
+              _buildSection(context, 'Personal Information', Icons.person, [
                 _InfoRow(
                   label: 'Occupant Type',
                   value: registration.occupantType.name[0].toUpperCase() +
@@ -1198,11 +1210,11 @@ class _RegistrationDetails extends StatelessWidget {
               const SizedBox(height: 20),
 
               // ===== SWIMMERS TABLE =====
-              _buildSwimmersSection(dateFormat),
+              _buildSwimmersSection(context, dateFormat),
               const SizedBox(height: 20),
 
               // ===== EMERGENCY CONTACT =====
-              _buildSection('Emergency Contact', Icons.emergency, [
+              _buildSection(context, 'Emergency Contact', Icons.emergency, [
                 _InfoRow(
                     label: 'Name', value: registration.emergencyContactName),
                 _InfoRow(
@@ -1212,7 +1224,7 @@ class _RegistrationDetails extends StatelessWidget {
               // ===== APPROVAL =====
               if (registration.approved && registration.approvedAt != null) ...[
                 const SizedBox(height: 20),
-                _buildSection('Approval', Icons.check_circle, [
+                _buildSection(context, 'Approval', Icons.check_circle, [
                   _InfoRow(
                     label: 'Approved At',
                     value: dateFormat.format(registration.approvedAt!),
@@ -1259,7 +1271,7 @@ class _RegistrationDetails extends StatelessWidget {
                         style: TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w600)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff215e3f),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(
@@ -1276,13 +1288,13 @@ class _RegistrationDetails extends StatelessWidget {
     );
   }
 
-  Widget _buildBanner() {
+  Widget _buildBanner(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_brandColor, Color(0xff2e8b57)],
+        gradient: LinearGradient(
+          colors: [Theme.of(context).colorScheme.primary, Color(0xff2e8b57)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1329,7 +1341,7 @@ class _RegistrationDetails extends StatelessWidget {
     );
   }
 
-  Widget _buildUnitCard() {
+  Widget _buildUnitCard(BuildContext context) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1343,10 +1355,11 @@ class _RegistrationDetails extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _brandColor.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.home, color: _brandColor, size: 24),
+              child: Icon(Icons.home,
+                  color: Theme.of(context).colorScheme.primary, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -1366,13 +1379,13 @@ class _RegistrationDetails extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _brandColor.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 '${swimmers.length} / ${registration.maxPax} swimmers',
-                style: const TextStyle(
-                  color: _brandColor,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -1384,13 +1397,14 @@ class _RegistrationDetails extends StatelessWidget {
     );
   }
 
-  Widget _buildSwimmersSection(DateFormat dateFormat) {
+  Widget _buildSwimmersSection(BuildContext context, DateFormat dateFormat) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.pool, color: _brandColor, size: 20),
+            Icon(Icons.pool,
+                color: Theme.of(context).colorScheme.primary, size: 20),
             const SizedBox(width: 8),
             const Text(
               'Registered Swimmers',
@@ -1502,13 +1516,14 @@ class _RegistrationDetails extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(String title, IconData icon, List<Widget> children) {
+  Widget _buildSection(BuildContext context, String title, IconData icon,
+      List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, color: _brandColor, size: 20),
+            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
             const SizedBox(width: 8),
             Text(title,
                 style:
@@ -1527,7 +1542,7 @@ class _RegistrationDetails extends StatelessWidget {
         builder: (_) => Scaffold(
           appBar: AppBar(
             title: const Text('Edit Registration'),
-            backgroundColor: _brandColor,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,
           ),
           body: MultiProvider(
@@ -1630,7 +1645,7 @@ class _StaffViewState extends State<_StaffView> {
                           style: TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff215e3f),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -1667,7 +1682,7 @@ class _StaffViewState extends State<_StaffView> {
                           style: TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff215e3f),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -1911,9 +1926,12 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [_brandColor, Color(0xff2e8b57)],
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Color(0xff2e8b57)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -2023,8 +2041,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: _brandColor, width: 1.5),
+                                    borderSide: BorderSide(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        width: 1.5),
                                   ),
                                   prefixIcon: const Icon(Icons.home_outlined),
                                 ),
@@ -2045,18 +2066,26 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: _brandColor.withOpacity(0.08),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withOpacity(0.08),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.pool,
-                                          size: 16, color: _brandColor),
+                                      Icon(Icons.pool,
+                                          size: 16,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary),
                                       const SizedBox(width: 8),
                                       Text(
                                         'Max $_maxPax swimmers allowed',
-                                        style: const TextStyle(
-                                          color: _brandColor,
+                                        style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 13,
                                         ),
@@ -2085,8 +2114,10 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: _brandColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      width: 1.5),
                                 ),
                               ),
                               items: OccupantType.values.map((type) {
@@ -2116,8 +2147,10 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: _brandColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      width: 1.5),
                                 ),
                                 prefixIcon: const Icon(Icons.person_outline),
                               ),
@@ -2139,8 +2172,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: _brandColor, width: 1.5),
+                                    borderSide: BorderSide(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        width: 1.5),
                                   ),
                                   prefixIcon: const Icon(Icons.phone_outlined),
                                 ),
@@ -2162,8 +2198,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: _brandColor, width: 1.5),
+                                    borderSide: BorderSide(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        width: 1.5),
                                   ),
                                   prefixIcon: const Icon(Icons.email_outlined),
                                 ),
@@ -2194,8 +2233,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                              color: _brandColor, width: 1.5),
+                                          borderSide: BorderSide(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                              width: 1.5),
                                         ),
                                         prefixIcon:
                                             const Icon(Icons.phone_outlined),
@@ -2224,8 +2266,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                              color: _brandColor, width: 1.5),
+                                          borderSide: BorderSide(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                              width: 1.5),
                                         ),
                                         prefixIcon:
                                             const Icon(Icons.email_outlined),
@@ -2276,8 +2321,12 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                 icon: const Icon(Icons.add, size: 18),
                                 label: const Text('Add Swimmer'),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: _brandColor,
-                                  side: const BorderSide(color: _brandColor),
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                  side: BorderSide(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary),
                                 ),
                               ),
                             const SizedBox(height: 20),
@@ -2300,8 +2349,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: _brandColor, width: 1.5),
+                                    borderSide: BorderSide(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        width: 1.5),
                                   ),
                                   prefixIcon: const Icon(Icons.person_outline),
                                 ),
@@ -2322,8 +2374,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: _brandColor, width: 1.5),
+                                    borderSide: BorderSide(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        width: 1.5),
                                   ),
                                   prefixIcon: const Icon(Icons.phone_outlined),
                                 ),
@@ -2351,8 +2406,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                              color: _brandColor, width: 1.5),
+                                          borderSide: BorderSide(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                              width: 1.5),
                                         ),
                                         prefixIcon:
                                             const Icon(Icons.person_outline),
@@ -2380,8 +2438,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius:
                                               BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                              color: _brandColor, width: 1.5),
+                                          borderSide: BorderSide(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                              width: 1.5),
                                         ),
                                         prefixIcon:
                                             const Icon(Icons.phone_outlined),
@@ -2452,10 +2513,12 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                           fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _brandColor,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor:
-                          _brandColor.withValues(alpha: 0.4),
+                      disabledBackgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.4),
                       disabledForegroundColor: Colors.white70,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -2493,15 +2556,18 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: _brandColor.withValues(alpha: 0.1),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           '${index + 1}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: _brandColor,
+                            color: Theme.of(context).colorScheme.primary,
                             fontSize: 13,
                           ),
                         ),
@@ -2538,8 +2604,11 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: _brandColor, width: 1.5),
+                                      borderSide: BorderSide(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          width: 1.5),
                                     ),
                                     isDense: true,
                                     contentPadding: const EdgeInsets.symmetric(
@@ -2696,7 +2765,7 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: _brandColor.withValues(alpha: 0.06),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -2705,10 +2774,12 @@ class _StaffRegistrationDialogState extends State<_StaffRegistrationDialog> {
             width: 30,
             height: 30,
             decoration: BoxDecoration(
-              color: _brandColor.withValues(alpha: 0.12),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: _brandColor, size: 16),
+            child: Icon(icon,
+                color: Theme.of(context).colorScheme.primary, size: 16),
           ),
           const SizedBox(width: 10),
           Text(
@@ -2760,11 +2831,13 @@ class _RegistrationCardState extends State<_RegistrationCard> {
             children: [
               CircleAvatar(
                 backgroundColor: reg.approved
-                    ? _brandColor.withOpacity(0.15)
+                    ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
                     : Colors.orange.withOpacity(0.15),
                 child: Icon(
                   reg.approved ? Icons.check : Icons.pending,
-                  color: reg.approved ? _brandColor : Colors.orange,
+                  color: reg.approved
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.orange,
                 ),
               ),
               const SizedBox(width: 16),
@@ -2800,7 +2873,8 @@ class _RegistrationCardState extends State<_RegistrationCard> {
                     : ElevatedButton(
                         onPressed: _approve,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _brandColor,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.white,
                         ),
                         child: const Text('Approve'),
@@ -2906,9 +2980,12 @@ class _RegistrationDetailDialogState extends State<_RegistrationDetailDialog> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [_brandColor, Color(0xff2e8b57)],
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Color(0xff2e8b57)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -3070,7 +3147,8 @@ class _RegistrationDetailDialogState extends State<_RegistrationDetailDialog> {
                             style: TextStyle(
                                 fontSize: 15, fontWeight: FontWeight.w600)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff215e3f),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),

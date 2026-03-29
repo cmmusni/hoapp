@@ -4,7 +4,6 @@ import 'package:core_data/core_data.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-const _brandColor = Color(0xff215e3f);
 
 /// Modes for the scanner page: camera live scan or manual token entry.
 enum _ScanMode { camera, manual }
@@ -179,8 +178,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Scan Next Pass'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: _brandColor,
-                        side: const BorderSide(color: _brandColor),
+                        foregroundColor: Theme.of(context).colorScheme.primary,
+                        side: BorderSide(color: Theme.of(context).colorScheme.primary),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                       ),
@@ -202,8 +201,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_brandColor, Color(0xff2e8b57)],
+        gradient: LinearGradient(
+          colors: [Theme.of(context).colorScheme.primary, Color(0xff2e8b57)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -311,7 +310,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border:
-                Border.all(color: _brandColor.withValues(alpha: 0.3), width: 2),
+                Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 2),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -378,7 +377,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide:
-                  const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                  BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
             ),
             prefixIcon: const Icon(Icons.qr_code),
             suffixIcon: IconButton(
@@ -406,7 +405,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                 : const Icon(Icons.verified_outlined, color: Colors.white),
             label: Text(_validating ? 'Validating…' : 'Validate Pass'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _brandColor,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),

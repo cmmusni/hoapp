@@ -23,6 +23,26 @@ class CommunityRepository {
     return row != null;
   }
 
+  /// Fetch all communities (platform admin only)
+  Future<List<Community>> getAllCommunities() async {
+    try {
+      final response = await _client.from('communities').select().order('name');
+
+      return (response as List)
+          .map((item) {
+            try {
+              return Community.fromJson(item as Map<String, dynamic>);
+            } catch (e) {
+              return null;
+            }
+          })
+          .whereType<Community>()
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
   Future<Community?> getCommunityBySlug(String slug) async {
     final response = await _client
         .from('communities')
@@ -54,32 +74,36 @@ class CommunityRepository {
 
       print('DEBUG: getUserCommunities response: $response');
 
-      return (response as List).where((item) {
-        final community = item['communities'];
-        if (community == null) {
-          print('DEBUG: Skipping null community');
-          return false;
-        }
-        // Check if required fields exist
-        if (community['id'] == null || community['slug'] == null) {
-          print(
-              'DEBUG: Skipping community with null required fields: $community');
-          return false;
-        }
-        return true;
-      }).map((item) {
-        try {
-          return Community.fromJson(
-              item['communities'] as Map<String, dynamic>);
-        } catch (e) {
-          print('DEBUG: Error parsing community: $e');
-          print('DEBUG: Community data: ${item['communities']}');
-          rethrow;
-        }
-      }).toList();
+      return (response as List)
+          .where((item) {
+            final community = item['communities'];
+            if (community == null) {
+              print('DEBUG: Skipping null community');
+              return false;
+            }
+            // Check if required fields exist
+            if (community['id'] == null || community['slug'] == null) {
+              print(
+                  'DEBUG: Skipping community with null required fields: $community');
+              return false;
+            }
+            return true;
+          })
+          .map((item) {
+            try {
+              return Community.fromJson(
+                  item['communities'] as Map<String, dynamic>);
+            } catch (e) {
+              print('DEBUG: Error parsing community: $e');
+              print('DEBUG: Community data: ${item['communities']}');
+              return null;
+            }
+          })
+          .whereType<Community>()
+          .toList();
     } catch (e) {
       print('DEBUG: getUserCommunities error: $e');
-      rethrow;
+      return [];
     }
   }
 
