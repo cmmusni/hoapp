@@ -273,10 +273,7 @@ GoRouter createRouter({String? lastCommunitySlug}) {
               }
               return null;
             },
-            builder: (context, state) => const PlanGate(
-              feature: 'Billing & Payments',
-              child: BillingPage(),
-            ),
+            builder: (context, state) => const BillingPage(),
           ),
           GoRoute(
             path: '/:community/expenses',
@@ -288,10 +285,7 @@ GoRouter createRouter({String? lastCommunitySlug}) {
               }
               return null;
             },
-            builder: (context, state) => const PlanGate(
-              feature: 'Expense Tracker',
-              child: ExpensesPage(),
-            ),
+            builder: (context, state) => const ExpensesPage(),
           ),
           GoRoute(
             path: '/:community/financial-reports',

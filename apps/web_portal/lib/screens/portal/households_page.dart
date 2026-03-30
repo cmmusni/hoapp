@@ -1390,17 +1390,20 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 20, color: Colors.blue),
-                  SizedBox(width: 8),
+                  Icon(Icons.info_outline,
+                      size: 20, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Unit numbers must be unique within the community.',
-                      style: TextStyle(fontSize: 12, color: Colors.blue),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.primary),
                     ),
                   ),
                 ],
@@ -1416,18 +1419,20 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
           child: ElevatedButton.icon(
             onPressed: _isCreating ? null : _createUnit,
             icon: _isCreating
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.add_home_outlined),
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.onPrimary))
+                : Icon(Icons.add_home_outlined,
+                    color: Theme.of(context).colorScheme.onPrimary),
             label: Text(_isCreating ? 'Creating...' : 'Create',
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),

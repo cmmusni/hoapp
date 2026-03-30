@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignupPage extends StatefulWidget {
   final String? inviteToken;
@@ -26,12 +27,25 @@ class _SignupPageState extends State<SignupPage> {
   bool _emailLocked = false;
   bool _signupComplete = false;
 
+  // Unit selection
+  List<String> _availableUnits = [];
+  String? _selectedUnit;
+  bool _loadingUnits = false;
+
   @override
   void initState() {
     super.initState();
     if (widget.inviteEmail != null) {
       _emailController.text = widget.inviteEmail!;
       _emailLocked = true;
+    }
+    // Load available units for community signup after frame is built
+    if (widget.communitySlug != null && widget.inviteToken == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadAvailableUnits();
+        }
+      });
     }
   }
 
@@ -42,6 +56,66 @@ class _SignupPageState extends State<SignupPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAvailableUnits() async {
+    setState(() => _loadingUnits = true);
+    try {
+      debugPrint('Loading units for community: ${widget.communitySlug}');
+      final communityRepo = context.read<CommunityRepository>();
+      final community =
+          await communityRepo.getCommunityBySlug(widget.communitySlug!);
+
+      if (community != null) {
+        debugPrint('Community found: ${community.name} (${community.id})');
+        final client = Supabase.instance.client;
+
+        debugPrint('Querying units table for community_id: ${community.id}');
+        final units = await client
+            .from('units')
+            .select('unit_no')
+            .eq('community_id', community.id)
+            .order('unit_no');
+
+        debugPrint('Units query response: $units');
+        debugPrint('Found ${(units as List).length} units');
+
+        if (mounted) {
+          setState(() {
+            _availableUnits =
+                (units as List).map((u) => u['unit_no'] as String).toList();
+            _loadingUnits = false;
+          });
+
+          if (_availableUnits.isEmpty) {
+            debugPrint(
+                'WARNING: No units found for community ${community.name}');
+          }
+        }
+      } else {
+        // Community not found
+        debugPrint('ERROR: Community ${widget.communitySlug} not found');
+        if (mounted) {
+          setState(() => _loadingUnits = false);
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('ERROR loading units: $e');
+      debugPrint('Stack trace: $stackTrace');
+      if (mounted) {
+        setState(() => _loadingUnits = false);
+      }
+    }
+  }
+
+  String _formatCommunityName(String slug) {
+    // Convert "eleve-homes" to "Eleve Homes"
+    return slug
+        .split('-')
+        .map((word) => word.isEmpty
+            ? ''
+            : word[0].toUpperCase() + word.substring(1).toLowerCase())
+        .join(' ');
   }
 
   Future<void> _handleSignup() async {
@@ -60,6 +134,10 @@ class _SignupPageState extends State<SignupPage> {
       }
       if (widget.communitySlug != null) {
         metadata['community_slug'] = widget.communitySlug;
+      }
+      // Store unit number for community signups (will be used after email confirmation)
+      if (widget.communitySlug != null && _selectedUnit != null) {
+        metadata['unit_number'] = _selectedUnit;
       }
       final response = await authRepo.signUp(
         email: _emailController.text.trim(),
@@ -203,10 +281,23 @@ class _SignupPageState extends State<SignupPage> {
                     Text(
                       widget.inviteToken != null
                           ? 'Create Account to Join'
-                          : 'Create Account',
+                          : widget.communitySlug != null
+                              ? 'Join ${_formatCommunityName(widget.communitySlug!)} Community'
+                              : 'Create Account',
                       style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
+                    if (widget.communitySlug != null &&
+                        widget.inviteToken == null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Sign up as a resident and join your unit',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                     const SizedBox(height: 32),
                     TextFormField(
                       controller: _nameController,
@@ -245,6 +336,89 @@ class _SignupPageState extends State<SignupPage> {
                       },
                     ),
                     const SizedBox(height: 16),
+                    // Show unit number field only for community-specific signups (not invite-based)
+                    if (widget.communitySlug != null &&
+                        widget.inviteToken == null) ...[
+                      if (_loadingUnits)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Loading available units...',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (_availableUnits.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.orange.shade200,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.orange.shade700,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'No units available yet. Please contact your community admin.',
+                                  style: TextStyle(
+                                    color: Colors.orange.shade900,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        DropdownButtonFormField<String>(
+                          value: _selectedUnit,
+                          decoration: const InputDecoration(
+                            labelText: 'Select Your Unit',
+                            prefixIcon: Icon(Icons.home),
+                            helperText: 'Choose your unit/lot number',
+                          ),
+                          items: _availableUnits.map((unit) {
+                            return DropdownMenuItem<String>(
+                              value: unit,
+                              child: Text(unit),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() => _selectedUnit = value);
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select your unit number';
+                            }
+                            return null;
+                          },
+                        ),
+                      const SizedBox(height: 16),
+                    ],
                     TextFormField(
                       controller: _passwordController,
                       decoration: const InputDecoration(

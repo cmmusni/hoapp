@@ -166,9 +166,10 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
     final userMeta = authRepo.currentUser?.userMetadata;
     final inviteToken = userMeta?['invite_token'] as String?;
     final communitySlug = userMeta?['community_slug'] as String?;
+    final unitNumber = userMeta?['unit_number'] as String?;
 
     debugPrint(
-        'Auth callback: user=${authRepo.currentUser?.email}, inviteToken=$inviteToken, communitySlug=$communitySlug');
+        'Auth callback: user=${authRepo.currentUser?.email}, inviteToken=$inviteToken, communitySlug=$communitySlug, unitNumber=$unitNumber');
 
     // Only accept invite if there's an explicit invite token
     // Don't auto-accept pending invites for regular signups
@@ -179,6 +180,64 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
         debugPrint('Auth callback: acceptInvite result=$result');
       } catch (e) {
         debugPrint('Auth callback: invite acceptance failed: $e');
+      }
+    }
+
+    // Handle community signup with unit number
+    if (communitySlug != null && unitNumber != null && unitNumber.isNotEmpty) {
+      try {
+        debugPrint(
+            'Auth callback: Processing unit assignment for $communitySlug, unit $unitNumber');
+
+        // Get community by slug
+        final community = await communityRepo.getCommunityBySlug(communitySlug);
+
+        if (community != null) {
+          final client = Supabase.instance.client;
+          final userId = authRepo.currentUser!.id;
+
+          // Find the unit by unit_no
+          final unitRow = await client
+              .from('units')
+              .select('id')
+              .eq('community_id', community.id)
+              .eq('unit_no', unitNumber)
+              .maybeSingle();
+
+          if (unitRow != null) {
+            final unitId = unitRow['id'];
+            debugPrint(
+                'Auth callback: Found unit $unitId for unit_no $unitNumber');
+
+            // Add user as household member
+            await client.from('household_members').insert({
+              'unit_id': unitId,
+              'user_id': userId,
+              'community_id': community.id,
+              'member_role': 'primary', // First member is primary
+              'created_at': DateTime.now().toIso8601String(),
+            });
+
+            // Create user role as resident
+            await client.from('user_roles').insert({
+              'user_id': userId,
+              'community_id': community.id,
+              'role': 'resident',
+              'created_at': DateTime.now().toIso8601String(),
+            });
+
+            debugPrint(
+                'Auth callback: Successfully assigned user to unit $unitNumber');
+          } else {
+            debugPrint(
+                'Auth callback: Unit $unitNumber not found in community');
+          }
+        } else {
+          debugPrint('Auth callback: Community $communitySlug not found');
+        }
+      } catch (e) {
+        debugPrint('Auth callback: Unit assignment failed: $e');
+        // Don't block login if unit assignment fails
       }
     }
 

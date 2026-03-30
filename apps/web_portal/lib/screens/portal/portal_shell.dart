@@ -878,8 +878,7 @@ class _PortalShellState extends State<PortalShell> {
                                 currentPath),
                           if (!isGuard &&
                               !isMaintenance &&
-                              (hasUnit || isStaff) &&
-                              isPro) ...[
+                              (hasUnit || isStaff)) ...[
                             _buildSidebarItem(
                                 context,
                                 'Community Expenses',
@@ -1150,10 +1149,7 @@ class _PortalShellState extends State<PortalShell> {
                     Icons.qr_code_scanner,
                     '/${widget.communitySlug}/qr-scanner',
                     currentPath),
-              if (!isGuard &&
-                  !isMaintenance &&
-                  (hasUnit || isStaff) &&
-                  isPro) ...[
+              if (!isGuard && !isMaintenance && (hasUnit || isStaff)) ...[
                 _buildMenuItem(
                     context,
                     'Community Expenses',

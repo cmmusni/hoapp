@@ -4,6 +4,7 @@ import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/eyedropper.dart' as eyedropper;
 
 /// Shared settings screen — adaptive for web and mobile.
 class SettingsScreen extends StatefulWidget {
@@ -172,12 +173,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Preset color swatches for quick selection
+  static const List<Color> _presetColors = [
+    Color(0xff215E3F), // Forest green (default)
+    Color(0xff1565C0), // Blue
+    Color(0xff6A1B9A), // Purple
+    Color(0xffC62828), // Red
+    Color(0xffE65100), // Deep orange
+    Color(0xff2E7D32), // Green
+    Color(0xff00838F), // Teal
+    Color(0xff4527A0), // Deep purple
+    Color(0xff283593), // Indigo
+    Color(0xff558B2F), // Light green
+    Color(0xff795548), // Brown
+    Color(0xff37474F), // Blue grey
+    Color(0xffF57F17), // Amber
+    Color(0xffAD1457), // Pink
+    Color(0xff00695C), // Dark teal
+    Color(0xff1B5E20), // Dark green
+  ];
+
   void _showBrandingDialog(BuildContext context, Community community) {
     Color pickerColor =
         Color(int.parse(community.primaryColor.replaceFirst('#', '0xff')));
     final hexController = TextEditingController(
       text: community.primaryColor.replaceFirst('#', '').toUpperCase(),
     );
+    bool saving = false;
 
     showDialog(
       context: context,
@@ -200,94 +222,299 @@ class _SettingsScreenState extends State<SettingsScreen> {
             });
           }
 
+          final theme = Theme.of(ctx);
+
           return AlertDialog(
-            title: const Text('Edit Branding'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            titlePadding: EdgeInsets.zero,
+            title: Container(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+              decoration: BoxDecoration(
+                color: pickerColor.withValues(alpha: 0.08),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
                 children: [
-                  // Hex text field
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: pickerColor,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: hexController,
-                          decoration: const InputDecoration(
-                            prefixText: '#',
-                            labelText: 'Hex Color',
-                            border: OutlineInputBorder(),
-                            hintText: '2E7D32',
-                          ),
-                          maxLength: 6,
-                          onChanged: updateFromHex,
-                        ),
-                      ),
-                    ],
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: pickerColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.palette_rounded,
+                        color: pickerColor, size: 22),
                   ),
-                  const SizedBox(height: 16),
-                  const Text('Or pick a color:'),
-                  const SizedBox(height: 8),
-                  ColorPicker(
-                    pickerColor: pickerColor,
-                    onColorChanged: updateFromPicker,
-                    enableAlpha: false,
-                    pickerAreaHeightPercent: 0.6,
-                  ),
+                  const SizedBox(width: 12),
+                  Text('Edit Branding',
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
+            content: SizedBox(
+              width: 400,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Live preview
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: pickerColor,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: pickerColor.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.visibility_rounded,
+                              color: Colors.white, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Live Preview',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '#${hexController.text}',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontFamily: 'monospace',
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Hex input + eyedropper
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: pickerColor,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: Colors.grey.shade300, width: 1.5),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: hexController,
+                            decoration: InputDecoration(
+                              prefixText: '#',
+                              labelText: 'Hex Color',
+                              hintText: '2E7D32',
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: pickerColor, width: 1.5),
+                              ),
+                              counterText: '',
+                            ),
+                            maxLength: 6,
+                            onChanged: updateFromHex,
+                          ),
+                        ),
+                        if (eyedropper.isEyeDropperAvailable) ...[
+                          const SizedBox(width: 8),
+                          Tooltip(
+                            message: 'Pick color from screen',
+                            child: Material(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(10),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () async {
+                                  final color =
+                                      await eyedropper.pickColorFromScreen();
+                                  if (color != null) {
+                                    updateFromPicker(color);
+                                  }
+                                },
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  alignment: Alignment.center,
+                                  child: Icon(Icons.colorize_rounded,
+                                      color: Colors.grey.shade700, size: 22),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Preset colors
+                    Text('Quick Select',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _presetColors.map((color) {
+                        final isSelected =
+                            pickerColor.toARGB32() == color.toARGB32();
+                        return GestureDetector(
+                          onTap: () => updateFromPicker(color),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.transparent,
+                                width: 2.5,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: color.withValues(alpha: 0.5),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      )
+                                    ]
+                                  : null,
+                            ),
+                            child: isSelected
+                                ? const Icon(Icons.check_rounded,
+                                    color: Colors.white, size: 18)
+                                : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Color picker
+                    Text('Custom Color',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ColorPicker(
+                        pickerColor: pickerColor,
+                        onColorChanged: updateFromPicker,
+                        enableAlpha: false,
+                        pickerAreaHeightPercent: 0.5,
+                        displayThumbColor: true,
+                        paletteType: PaletteType.hsvWithHue,
+                        labelTypes: const [],
+                        pickerAreaBorderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actionsPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Cancel')),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    final repo = context.read<CommunityRepository>();
-                    final appState = context.read<AppState>();
-                    final hex =
-                        '#${pickerColor.toARGB32().toRadixString(16).substring(2)}';
-                    // Merge into existing settings to preserve other fields
-                    final existing = appState.activeCommunity?.settings ?? {};
-                    final brand =
-                        (existing['brand'] as Map<String, dynamic>?) ?? {};
-                    final updatedSettings = {
-                      ...existing,
-                      'brand': {...brand, 'primary': hex},
-                    };
-                    await repo.updateCommunitySettings(
-                      communityId: appState.activeCommunityId!,
-                      settings: updatedSettings,
-                    );
-                    if (mounted) {
-                      // Refresh AppState so theme updates
-                      final refreshed = await repo.getCommunityById(
-                        appState.activeCommunityId!,
-                      );
-                      if (refreshed != null) {
-                        appState.setActiveCommunityData(refreshed);
-                      }
-                      Navigator.of(ctx).pop();
-                      _loadCommunity();
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(SnackBar(content: Text('Error: $e')));
-                    }
-                  }
-                },
-                child: const Text('Save'),
+                onPressed: saving ? null : () => Navigator.of(ctx).pop(),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        setDialogState(() => saving = true);
+                        try {
+                          final repo = context.read<CommunityRepository>();
+                          final appState = context.read<AppState>();
+                          final hex =
+                              '#${pickerColor.toARGB32().toRadixString(16).substring(2)}';
+                          final existing =
+                              appState.activeCommunity?.settings ?? {};
+                          final brand =
+                              (existing['brand'] as Map<String, dynamic>?) ??
+                                  {};
+                          final updatedSettings = {
+                            ...existing,
+                            'brand': {...brand, 'primary': hex},
+                          };
+                          await repo.updateCommunitySettings(
+                            communityId: appState.activeCommunityId!,
+                            settings: updatedSettings,
+                          );
+                          if (mounted) {
+                            final refreshed = await repo.getCommunityById(
+                              appState.activeCommunityId!,
+                            );
+                            if (refreshed != null) {
+                              appState.setActiveCommunityData(refreshed);
+                            }
+                            Navigator.of(ctx).pop();
+                            _loadCommunity();
+                          }
+                        } catch (e) {
+                          setDialogState(() => saving = false);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')));
+                          }
+                        }
+                      },
+                icon: saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.check_rounded),
+                label: Text(saving ? 'Saving...' : 'Save'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: pickerColor,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
               ),
             ],
           );
@@ -344,16 +571,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sign Out?'),
-        content: const Text('Are you sure you want to sign out?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.logout_rounded,
+                    color: Colors.red.shade700, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Text('Sign Out',
+                  style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600, color: Colors.red.shade700)),
+            ],
+          ),
+        ),
+        content: const Text(
+          'Are you sure you want to sign out? You will need to log in again to access your community.',
+          style: TextStyle(fontSize: 15, height: 1.4),
+        ),
+        actionsPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Sign Out')),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Cancel'),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            icon: const Icon(Icons.logout_rounded, size: 18),
+            label: const Text('Sign Out'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+          ),
         ],
       ),
     );
@@ -490,15 +763,44 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
     final descCtrl = TextEditingController();
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Add Unit Type'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: InputDecoration(
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final primary = theme.colorScheme.primary;
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: 0.08),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.add_home_work_rounded,
+                      color: primary, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Text('Add Unit Type',
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
                   labelText: 'Name',
                   prefixIcon: const Icon(Icons.label_outlined, size: 20),
                   border: OutlineInputBorder(
@@ -509,14 +811,14 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
-                  )),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descCtrl,
-              decoration: InputDecoration(
+                    borderSide: BorderSide(color: primary, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: descCtrl,
+                decoration: InputDecoration(
                   labelText: 'Description (optional)',
                   prefixIcon: const Icon(Icons.description_outlined, size: 20),
                   border: OutlineInputBorder(
@@ -527,53 +829,64 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 1.5),
-                  )),
+                    borderSide: BorderSide(color: primary, width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Cancel'),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty) return;
+                try {
+                  final repo = context.read<HouseholdRepository>();
+                  await repo.createUnitType(
+                    communityId: widget.communityId,
+                    name: nameCtrl.text.trim(),
+                    description: descCtrl.text.trim().isEmpty
+                        ? null
+                        : descCtrl.text.trim(),
+                  );
+                  if (mounted) {
+                    Navigator.of(ctx).pop();
+                    _load();
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                }
+              },
+              icon: Icon(Icons.add_circle_outline, color: primary),
+              label: const Text('Create'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
-          ElevatedButton.icon(
-            onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty) return;
-              try {
-                final repo = context.read<HouseholdRepository>();
-                await repo.createUnitType(
-                  communityId: widget.communityId,
-                  name: nameCtrl.text.trim(),
-                  description: descCtrl.text.trim().isEmpty
-                      ? null
-                      : descCtrl.text.trim(),
-                );
-                if (mounted) {
-                  Navigator.of(ctx).pop();
-                  _load();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              }
-            },
-            icon: Icon(Icons.add_circle_outline,
-                color: Theme.of(context).colorScheme.onPrimary),
-            label: Text('Create',
-                style:
-                    TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -582,15 +895,43 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
     final descCtrl = TextEditingController(text: unitType.description ?? '');
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit Unit Type'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: InputDecoration(
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final primary = theme.colorScheme.primary;
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: 0.08),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.edit_rounded, color: primary, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Text('Edit Unit Type',
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
                   labelText: 'Name',
                   prefixIcon: const Icon(Icons.label_outlined, size: 20),
                   border: OutlineInputBorder(
@@ -601,14 +942,14 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
-                  )),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descCtrl,
-              decoration: InputDecoration(
+                    borderSide: BorderSide(color: primary, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: descCtrl,
+                decoration: InputDecoration(
                   labelText: 'Description (optional)',
                   prefixIcon: const Icon(Icons.description_outlined, size: 20),
                   border: OutlineInputBorder(
@@ -619,50 +960,64 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
-                  )),
+                    borderSide: BorderSide(color: primary, width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Cancel'),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty) return;
+                try {
+                  final repo = context.read<HouseholdRepository>();
+                  await repo.updateUnitType(
+                    id: unitType.id,
+                    name: nameCtrl.text.trim(),
+                    description: descCtrl.text.trim().isEmpty
+                        ? null
+                        : descCtrl.text.trim(),
+                  );
+                  if (mounted) {
+                    Navigator.of(ctx).pop();
+                    _load();
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                }
+              },
+              icon: const Icon(Icons.save_rounded, size: 18),
+              label: const Text('Save'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
-          ElevatedButton.icon(
-            onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty) return;
-              try {
-                final repo = context.read<HouseholdRepository>();
-                await repo.updateUnitType(
-                  id: unitType.id,
-                  name: nameCtrl.text.trim(),
-                  description: descCtrl.text.trim().isEmpty
-                      ? null
-                      : descCtrl.text.trim(),
-                );
-                if (mounted) {
-                  Navigator.of(ctx).pop();
-                  _load();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              }
-            },
-            icon: const Icon(Icons.save_rounded),
-            label: const Text('Save'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
