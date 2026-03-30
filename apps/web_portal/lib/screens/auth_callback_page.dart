@@ -209,22 +209,49 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
             debugPrint(
                 'Auth callback: Found unit $unitId for unit_no $unitNumber');
 
-            // Add user as household member
-            await client.from('household_members').insert({
-              'unit_id': unitId,
-              'user_id': userId,
-              'community_id': community.id,
-              'member_role': 'primary', // First member is primary
-              'created_at': DateTime.now().toIso8601String(),
-            });
+            // Check if user is already a household member
+            final existingMember = await client
+                .from('household_members')
+                .select('id')
+                .eq('unit_id', unitId)
+                .eq('user_id', userId)
+                .maybeSingle();
 
-            // Create user role as resident
-            await client.from('user_roles').insert({
-              'user_id': userId,
-              'community_id': community.id,
-              'role': 'resident',
-              'created_at': DateTime.now().toIso8601String(),
-            });
+            if (existingMember == null) {
+              // Add user as household member
+              await client.from('household_members').insert({
+                'unit_id': unitId,
+                'user_id': userId,
+                'community_id': community.id,
+                'member_role': 'primary', // First member is primary
+                'created_at': DateTime.now().toIso8601String(),
+              });
+              debugPrint('Auth callback: Created household_members record');
+            } else {
+              debugPrint(
+                  'Auth callback: User already exists in household_members');
+            }
+
+            // Check if user already has a role
+            final existingRole = await client
+                .from('user_roles')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('community_id', community.id)
+                .maybeSingle();
+
+            if (existingRole == null) {
+              // Create user role as resident
+              await client.from('user_roles').insert({
+                'user_id': userId,
+                'community_id': community.id,
+                'role': 'resident',
+                'created_at': DateTime.now().toIso8601String(),
+              });
+              debugPrint('Auth callback: Created user_roles record');
+            } else {
+              debugPrint('Auth callback: User already has a role');
+            }
 
             debugPrint(
                 'Auth callback: Successfully assigned user to unit $unitNumber');
