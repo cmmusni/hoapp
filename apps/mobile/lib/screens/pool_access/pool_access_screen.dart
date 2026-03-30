@@ -8,14 +8,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _brand = Color(0xff215e3f);
 
-/// Determine max swimmers allowed based on unit type name.
-int _maxPaxForUnitType(String? unitType) {
+/// Look up max swimmers from the DB-driven [maxPaxMap] (unit-type-name -> max).
+/// Falls back to 5 when the unit type is null or not found.
+int _resolveMaxPax(String? unitType, Map<String, int> maxPaxMap) {
   if (unitType == null) return 5;
-  final lower = unitType.toLowerCase();
-  if (lower.contains('cluster')) return 7;
-  if (lower.contains('2') || lower.contains('two')) return 5;
-  if (lower.contains('1') || lower.contains('one')) return 3;
-  return 5;
+  return maxPaxMap[unitType.toLowerCase()] ?? 5;
 }
 
 class PoolAccessScreen extends StatefulWidget {
@@ -131,6 +128,8 @@ class _ResidentViewState extends State<_ResidentView> {
       }
     }
 
+    final maxPaxMap = await repo.getMaxPaxByUnitType(communityId);
+
     return _ResidentData(
       registration: registration,
       swimmers: swimmers,
@@ -142,6 +141,7 @@ class _ResidentViewState extends State<_ResidentView> {
       profileEmail: profileEmail,
       profileOccupantType: profileOccupantType,
       unitMemberNames: unitMemberNames,
+      maxPaxMap: maxPaxMap,
     );
   }
 
@@ -219,6 +219,7 @@ class _ResidentViewState extends State<_ResidentView> {
                         profileEmail: data.profileEmail,
                         profileOccupantType: data.profileOccupantType,
                         unitMemberNames: data.unitMemberNames,
+                        maxPaxMap: data.maxPaxMap,
                       ),
                     ))
                     .then((_) => _loadData());
@@ -390,6 +391,7 @@ class _ResidentViewState extends State<_ResidentView> {
                         unitNo: data.unitNo,
                         unitType: data.unitType,
                         unitMemberNames: data.unitMemberNames,
+                        maxPaxMap: data.maxPaxMap,
                         existingRegistration: reg,
                         existingSwimmers: data.swimmers,
                       ),
@@ -463,6 +465,7 @@ class _ResidentData {
   final String? profileEmail;
   final OccupantType? profileOccupantType;
   final List<String> unitMemberNames;
+  final Map<String, int> maxPaxMap;
 
   _ResidentData({
     this.registration,
@@ -475,6 +478,7 @@ class _ResidentData {
     this.profileEmail,
     this.profileOccupantType,
     this.unitMemberNames = const [],
+    this.maxPaxMap = const {},
   });
 }
 
@@ -518,6 +522,7 @@ class _RegistrationFormScreen extends StatefulWidget {
   final String? profileEmail;
   final OccupantType? profileOccupantType;
   final List<String> unitMemberNames;
+  final Map<String, int> maxPaxMap;
   final PoolAccessRegistration? existingRegistration;
   final List<PoolSwimmer>? existingSwimmers;
 
@@ -530,6 +535,7 @@ class _RegistrationFormScreen extends StatefulWidget {
     this.profileEmail,
     this.profileOccupantType,
     this.unitMemberNames = const [],
+    this.maxPaxMap = const {},
     this.existingRegistration,
     this.existingSwimmers,
   });
@@ -580,7 +586,7 @@ class _RegistrationFormScreenState extends State<_RegistrationFormScreen> {
         }
       }
     } else {
-      _maxPax = _maxPaxForUnitType(widget.unitType);
+      _maxPax = _resolveMaxPax(widget.unitType, widget.maxPaxMap);
       if (widget.profileName != null) {
         _fullNameController.text = widget.profileName!;
       }
@@ -1092,7 +1098,16 @@ class _StaffViewState extends State<_StaffView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pool Access')),
+      appBar: AppBar(
+        title: const Text('Pool Access'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Max Swimmers Settings',
+            onPressed: () => _showMaxPaxSettings(context),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openStaffRegistration,
         backgroundColor: _brand,
@@ -1161,6 +1176,12 @@ class _StaffViewState extends State<_StaffView> {
         ),
       ),
     );
+  }
+
+  void _showMaxPaxSettings(BuildContext context) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => const _MaxPaxSettingsScreen(),
+    ));
   }
 }
 
@@ -1590,6 +1611,7 @@ class _StaffRegistrationScreenState extends State<_StaffRegistrationScreen> {
   late int _maxPax;
   final List<_SwimmerEntry> _swimmers = [_SwimmerEntry()];
   List<String> _unitMemberNames = [];
+  Map<String, int> _maxPaxMap = {};
 
   @override
   void initState() {
@@ -1622,6 +1644,7 @@ class _StaffRegistrationScreenState extends State<_StaffRegistrationScreen> {
 
       final allUnits = await householdRepo.getUnits(communityId);
       final registrations = await poolRepo.getRegistrations(communityId);
+      final maxPaxMap = await poolRepo.getMaxPaxByUnitType(communityId);
 
       final registeredUnitIds = registrations
           .where((r) => r.unitId != null)
@@ -1632,6 +1655,7 @@ class _StaffRegistrationScreenState extends State<_StaffRegistrationScreen> {
         setState(() {
           _availableUnits =
               allUnits.where((u) => !registeredUnitIds.contains(u.id)).toList();
+          _maxPaxMap = maxPaxMap;
           _isLoadingUnits = false;
         });
       }
@@ -1652,7 +1676,7 @@ class _StaffRegistrationScreenState extends State<_StaffRegistrationScreen> {
     });
     if (unit == null) return;
 
-    _maxPax = _maxPaxForUnitType(unit.unitType);
+    _maxPax = _resolveMaxPax(unit.unitType, _maxPaxMap);
     while (_swimmers.length > _maxPax) {
       _swimmers.last.dispose();
       _swimmers.removeLast();
@@ -2125,6 +2149,198 @@ class _StaffRegistrationScreenState extends State<_StaffRegistrationScreen> {
                     ],
                   ),
                 ),
+    );
+  }
+}
+
+// ============================================================
+// MAX PAX SETTINGS SCREEN (mobile)
+// ============================================================
+
+class _MaxPaxSettingsScreen extends StatefulWidget {
+  const _MaxPaxSettingsScreen();
+
+  @override
+  State<_MaxPaxSettingsScreen> createState() => _MaxPaxSettingsScreenState();
+}
+
+class _MaxPaxSettingsScreenState extends State<_MaxPaxSettingsScreen> {
+  List<UnitType>? _unitTypes;
+  bool _isLoading = true;
+  String? _error;
+  final Map<String, TextEditingController> _controllers = {};
+  final Set<String> _saving = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnitTypes();
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _loadUnitTypes() async {
+    try {
+      final appState = context.read<AppState>();
+      final repo = context.read<HouseholdRepository>();
+      final types = await repo.getUnitTypes(appState.activeCommunityId!);
+      if (mounted) {
+        for (final c in _controllers.values) {
+          c.dispose();
+        }
+        _controllers.clear();
+        setState(() {
+          _unitTypes = types;
+          _isLoading = false;
+          for (final t in types) {
+            _controllers[t.id] =
+                TextEditingController(text: t.maxPax.toString());
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _save(UnitType ut) async {
+    final controller = _controllers[ut.id];
+    if (controller == null) return;
+    final newValue = int.tryParse(controller.text.trim());
+    if (newValue == null || newValue < 1 || newValue > 20) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a number between 1 and 20.')),
+      );
+      return;
+    }
+    if (newValue == ut.maxPax) return;
+
+    setState(() => _saving.add(ut.id));
+    try {
+      final repo = context.read<HouseholdRepository>();
+      await repo.updateUnitType(id: ut.id, maxPax: newValue);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('${ut.name} updated to max $newValue swimmers.')),
+        );
+        _loadUnitTypes();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving.remove(ut.id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Max Swimmers Settings')),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Text('Error: $_error'))
+              : _unitTypes == null || _unitTypes!.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'No unit types configured.\n'
+                          'Add unit types in Household management first.',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        Text(
+                          'Set the maximum number of registered swimmers per unit type.',
+                          style:
+                              TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 16),
+                        ..._unitTypes!.map((ut) {
+                          final controller = _controllers[ut.id]!;
+                          final isSaving = _saving.contains(ut.id);
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(ut.name,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15)),
+                                        if (ut.description != null &&
+                                            ut.description!.isNotEmpty)
+                                          Text(ut.description!,
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[500])),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: 64,
+                                    child: TextFormField(
+                                      controller: controller,
+                                      keyboardType: TextInputType.number,
+                                      textAlign: TextAlign.center,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8)),
+                                        isDense: true,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 10),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  isSaving
+                                      ? const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2))
+                                      : IconButton(
+                                          icon: Icon(Icons.check_circle,
+                                              color: _brand),
+                                          onPressed: () => _save(ut),
+                                          tooltip: 'Save',
+                                        ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
     );
   }
 }

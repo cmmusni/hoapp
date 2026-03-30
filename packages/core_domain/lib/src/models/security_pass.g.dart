@@ -6,18 +6,6 @@ part of 'security_pass.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-const _$PassStatusEnumMap = {
-  PassStatus.draft: 'draft',
-  PassStatus.submitted: 'submitted',
-  PassStatus.pendingReview: 'pending_review',
-  PassStatus.approved: 'approved',
-  PassStatus.active: 'active',
-  PassStatus.used: 'used',
-  PassStatus.expired: 'expired',
-  PassStatus.revoked: 'revoked',
-  PassStatus.rejected: 'rejected',
-};
-
 PassType _$PassTypeFromJson(Map<String, dynamic> json) => PassType(
       id: json['id'] as String,
       communityId: json['community_id'] as String,
@@ -59,7 +47,8 @@ SecurityPass _$SecurityPassFromJson(Map<String, dynamic> json) => SecurityPass(
       communityId: json['community_id'] as String,
       passTypeId: json['pass_type_id'] as String,
       requestedBy: json['requested_by'] as String,
-      status: $enumDecode(_$PassStatusEnumMap, json['status']),
+      status: $enumDecodeNullable(_$PassStatusEnumMap, json['status']) ??
+          PassStatus.submitted,
       visitorName: json['visitor_name'] as String?,
       visitorPhone: json['visitor_phone'] as String?,
       visitorEmail: json['visitor_email'] as String?,
@@ -122,8 +111,20 @@ Map<String, dynamic> _$SecurityPassToJson(SecurityPass instance) =>
       'notes': instance.notes,
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
-      'pass_types': instance.passType?.toJson(),
+      'pass_types': instance.passType,
     };
+
+const _$PassStatusEnumMap = {
+  PassStatus.draft: 'draft',
+  PassStatus.submitted: 'submitted',
+  PassStatus.pendingReview: 'pending_review',
+  PassStatus.approved: 'approved',
+  PassStatus.active: 'active',
+  PassStatus.used: 'used',
+  PassStatus.expired: 'expired',
+  PassStatus.revoked: 'revoked',
+  PassStatus.rejected: 'rejected',
+};
 
 PassScanLog _$PassScanLogFromJson(Map<String, dynamic> json) => PassScanLog(
       id: json['id'] as String,

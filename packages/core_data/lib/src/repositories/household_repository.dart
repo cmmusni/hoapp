@@ -244,10 +244,12 @@ class HouseholdRepository {
     required String id,
     String? name,
     String? description,
+    int? maxPax,
   }) async {
     final updates = <String, dynamic>{};
     if (name != null) updates['name'] = name;
     if (description != null) updates['description'] = description;
+    if (maxPax != null) updates['max_pax'] = maxPax;
     if (updates.isEmpty) return;
 
     await _client.from('unit_types').update(updates).eq('id', id);

@@ -234,4 +234,23 @@ class PoolAccessRepository {
       await _client.from('pool_registered_swimmers').insert(rows);
     }
   }
+
+  /// Fetch a map of unit-type-name → maxPax for a community from [unit_types].
+  /// Returns empty map if no unit types are configured (callers should fallback to 5).
+  Future<Map<String, int>> getMaxPaxByUnitType(String communityId) async {
+    final response = await _client
+        .from('unit_types')
+        .select('name, max_pax')
+        .eq('community_id', communityId);
+
+    final map = <String, int>{};
+    for (final row in (response as List)) {
+      final name = row['name'] as String?;
+      final maxPax = row['max_pax'] as int?;
+      if (name != null) {
+        map[name.toLowerCase()] = maxPax ?? 5;
+      }
+    }
+    return map;
+  }
 }

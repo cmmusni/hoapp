@@ -13,6 +13,9 @@ class UnitType {
 
   final String? description;
 
+  @JsonKey(name: 'max_pax')
+  final int maxPax;
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
@@ -21,6 +24,7 @@ class UnitType {
     required this.communityId,
     required this.name,
     this.description,
+    this.maxPax = 5,
     required this.createdAt,
   });
 

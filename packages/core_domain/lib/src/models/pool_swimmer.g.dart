@@ -13,7 +13,7 @@ PoolSwimmer _$PoolSwimmerFromJson(Map<String, dynamic> json) => PoolSwimmer(
       birthdate: json['birthdate'] == null
           ? null
           : DateTime.parse(json['birthdate'] as String),
-      sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
+      sortOrder: (json['sort_order'] as num).toInt(),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
 
