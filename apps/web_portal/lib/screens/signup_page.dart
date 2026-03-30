@@ -138,7 +138,11 @@ class _SignupPageState extends State<SignupPage> {
       // Store unit number for community signups (will be used after email confirmation)
       if (widget.communitySlug != null && _selectedUnit != null) {
         metadata['unit_number'] = _selectedUnit;
+        debugPrint('Signup: Storing unit_number in metadata: $_selectedUnit');
       }
+
+      debugPrint('Signup: Full metadata being sent: $metadata');
+
       final response = await authRepo.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,

@@ -235,10 +235,14 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
         } else {
           debugPrint('Auth callback: Community $communitySlug not found');
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
         debugPrint('Auth callback: Unit assignment failed: $e');
+        debugPrint('Stack trace: $stackTrace');
         // Don't block login if unit assignment fails
       }
+    } else {
+      debugPrint(
+          'Auth callback: Skipping unit assignment - communitySlug=$communitySlug, unitNumber=$unitNumber');
     }
 
     if (!mounted) return;

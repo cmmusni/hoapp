@@ -1,38 +1,46 @@
--- Migration: Allow anonymous users to access community and household data for signup
--- Description: Enables unauthenticated users to view community info and available units
---              during the signup flow at /:community-slug/signup
+-- Migration: Allow anonymous and authenticated users to access community and household data for signup
+-- Description: Enables both unauthenticated and newly authenticated users to view
+--              community info and units during signup flow and unit assignment
 -- Date: 2026-03-30
 
 -- ============================================================================
--- Allow anonymous users to read community information
+-- Allow anonymous and authenticated users to read community information
 -- ============================================================================
 -- This is needed so users can sign up for a specific community through
 -- the community-specific signup page (e.g., /eleve-homes/signup)
+-- Both anon (during signup) and authenticated (after email confirmation) need access
 
-CREATE POLICY "Allow anonymous users to read communities"
+-- Drop old policy if it exists
+DROP POLICY IF EXISTS "Allow anonymous users to read communities" ON public.communities;
+
+CREATE POLICY "Allow public read access to communities"
 ON public.communities
 FOR SELECT
-TO anon
+TO anon, authenticated
 USING (true);
 
-COMMENT ON POLICY "Allow anonymous users to read communities" ON public.communities IS
-'Allows unauthenticated users to view community basic information (name, slug, logo, colors) needed for the signup page';
+COMMENT ON POLICY "Allow public read access to communities" ON public.communities IS
+'Allows both unauthenticated and authenticated users to view community basic information (name, slug, logo, colors) needed for the signup page and portal';
 
 
 -- ============================================================================
--- Allow anonymous users to read units
+-- Allow anonymous and authenticated users to read units
 -- ============================================================================
 -- This is needed so users can select their unit from a dropdown during signup
+-- and so authenticated users can complete unit assignment after email confirmation
 -- Only unit_no is exposed - no personal resident information
 
-CREATE POLICY "Allow anonymous users to read units"
+-- Drop old policy if it exists
+DROP POLICY IF EXISTS "Allow anonymous users to read units" ON public.units;
+
+CREATE POLICY "Allow public read access to units"
 ON public.units
 FOR SELECT
-TO anon
+TO anon, authenticated
 USING (true);
 
-COMMENT ON POLICY "Allow anonymous users to read units" ON public.units IS
-'Allows unauthenticated users to view available unit numbers during signup. Only unit identifiers are exposed, no personal data.';
+COMMENT ON POLICY "Allow public read access to units" ON public.units IS
+'Allows both unauthenticated and authenticated users to view available unit numbers during signup and unit assignment. Only unit identifiers are exposed, no personal data.';
 
 
 -- ============================================================================
