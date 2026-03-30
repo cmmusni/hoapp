@@ -527,8 +527,9 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: Color(0xff215e3f), width: 1.5),
+                    borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5),
                   )),
             ),
           ],
@@ -560,11 +561,13 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
                 }
               }
             },
-            icon: const Icon(Icons.add_circle_outline),
-            label: const Text('Create'),
+            icon: Icon(Icons.add_circle_outline,
+                color: Theme.of(context).colorScheme.onPrimary),
+            label: Text('Create',
+                style:
+                    TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff215e3f),
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
