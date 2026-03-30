@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   final String? communitySlug;
@@ -147,13 +148,17 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      // Handle invite acceptance
+      // Handle invite acceptance and unit assignment from metadata
       if (mounted) {
         final communityRepo = context.read<CommunityRepository>();
         final authRepo2 = context.read<AuthRepository>();
         final userMeta = authRepo2.currentUser?.userMetadata;
         final metaInviteToken = userMeta?['invite_token'] as String?;
         final metaCommunitySlug = userMeta?['community_slug'] as String?;
+        final metaUnitNumber = userMeta?['unit_number'] as String?;
+
+        debugPrint(
+            'Login: Processing metadata - communitySlug=$metaCommunitySlug, unitNumber=$metaUnitNumber, inviteToken=$metaInviteToken');
 
         // Determine which invite token to use
         final effectiveToken = widget.inviteToken ?? metaInviteToken;
@@ -177,6 +182,132 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               );
             }
+          }
+        }
+
+        // Handle pending unit assignment from signup metadata
+        // This handles cases where user signed up via /community/signup but experienced
+        // PKCE timeout during email verification, then manually logged in
+        if (metaCommunitySlug != null &&
+            metaUnitNumber != null &&
+            metaUnitNumber.isNotEmpty) {
+          try {
+            debugPrint(
+                'Login: Processing pending unit assignment for $metaCommunitySlug, unit $metaUnitNumber');
+
+            final community =
+                await communityRepo.getCommunityBySlug(metaCommunitySlug);
+
+            if (community != null) {
+              final client = Supabase.instance.client;
+              final userId = authRepo2.currentUser!.id;
+
+              // Check if user already has household_members record
+              // If they already have a unit assigned, skip this
+              final existingHousehold = await client
+                  .from('household_members')
+                  .select('id')
+                  .eq('user_id', userId)
+                  .eq('community_id', community.id)
+                  .maybeSingle();
+
+              if (existingHousehold == null) {
+                // Find the unit by unit_no
+                final unitRow = await client
+                    .from('units')
+                    .select('id')
+                    .eq('community_id', community.id)
+                    .eq('unit_no', metaUnitNumber)
+                    .maybeSingle();
+
+                if (unitRow != null) {
+                  final unitId = unitRow['id'];
+                  debugPrint(
+                      'Login: Found unit $unitId for unit_no $metaUnitNumber');
+
+                  // Check if unit already has a primary member
+                  final existingPrimary = await client
+                      .from('household_members')
+                      .select('id')
+                      .eq('unit_id', unitId)
+                      .eq('member_role', 'primary')
+                      .maybeSingle();
+
+                  // Determine member role: first person is primary, others are secondary
+                  final memberRole =
+                      existingPrimary == null ? 'primary' : 'secondary';
+
+                  // Add user as household member
+                  await client.from('household_members').insert({
+                    'unit_id': unitId,
+                    'user_id': userId,
+                    'community_id': community.id,
+                    'member_role': memberRole,
+                    'created_at': DateTime.now().toIso8601String(),
+                  });
+                  debugPrint(
+                      'Login: Created household_members record with role: $memberRole');
+
+                  // Check if user already has a role
+                  final existingRole = await client
+                      .from('user_roles')
+                      .select('id')
+                      .eq('user_id', userId)
+                      .eq('community_id', community.id)
+                      .maybeSingle();
+
+                  if (existingRole == null) {
+                    // Create user role as resident
+                    await client.from('user_roles').insert({
+                      'user_id': userId,
+                      'community_id': community.id,
+                      'role': 'resident',
+                      'created_at': DateTime.now().toIso8601String(),
+                    });
+                    debugPrint('Login: Created user_roles record');
+                  }
+
+                  // Clear metadata after successful assignment
+                  await client.auth.updateUser(
+                    UserAttributes(data: {
+                      'community_slug': null,
+                      'unit_number': null,
+                    }),
+                  );
+
+                  debugPrint(
+                      'Login: Successfully assigned user to unit $metaUnitNumber as $memberRole and cleared metadata');
+                } else {
+                  debugPrint(
+                      'Login: Unit $metaUnitNumber not found in community');
+
+                  // Clear invalid metadata
+                  await client.auth.updateUser(
+                    UserAttributes(data: {
+                      'community_slug': null,
+                      'unit_number': null,
+                    }),
+                  );
+                }
+              } else {
+                debugPrint(
+                    'Login: User already has household assignment, clearing metadata');
+
+                // Clear metadata since user already has assignment
+                await client.auth.updateUser(
+                  UserAttributes(data: {
+                    'community_slug': null,
+                    'unit_number': null,
+                  }),
+                );
+              }
+            } else {
+              debugPrint('Login: Community $metaCommunitySlug not found');
+            }
+          } catch (e, stackTrace) {
+            debugPrint('Login: Unit assignment failed: $e');
+            debugPrint('Stack trace: $stackTrace');
+            // Don't block login if unit assignment fails
           }
         }
 

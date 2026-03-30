@@ -242,15 +242,28 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
                 .maybeSingle();
 
             if (existingMember == null) {
+              // Check if unit already has a primary member
+              final existingPrimary = await client
+                  .from('household_members')
+                  .select('id')
+                  .eq('unit_id', unitId)
+                  .eq('member_role', 'primary')
+                  .maybeSingle();
+
+              // Determine member role: first person is primary, others are secondary
+              final memberRole =
+                  existingPrimary == null ? 'primary' : 'secondary';
+
               // Add user as household member
               await client.from('household_members').insert({
                 'unit_id': unitId,
                 'user_id': userId,
                 'community_id': community.id,
-                'member_role': 'primary', // First member is primary
+                'member_role': memberRole,
                 'created_at': DateTime.now().toIso8601String(),
               });
-              debugPrint('Auth callback: Created household_members record');
+              debugPrint(
+                  'Auth callback: Created household_members record with role: $memberRole');
             } else {
               debugPrint(
                   'Auth callback: User already exists in household_members');
@@ -277,11 +290,27 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
               debugPrint('Auth callback: User already has a role');
             }
 
+            // Clear metadata after successful assignment
+            await client.auth.updateUser(
+              UserAttributes(data: {
+                'community_slug': null,
+                'unit_number': null,
+              }),
+            );
+
             debugPrint(
-                'Auth callback: Successfully assigned user to unit $unitNumber');
+                'Auth callback: Successfully assigned user to unit $unitNumber and cleared metadata');
           } else {
             debugPrint(
                 'Auth callback: Unit $unitNumber not found in community');
+
+            // Clear invalid metadata
+            await client.auth.updateUser(
+              UserAttributes(data: {
+                'community_slug': null,
+                'unit_number': null,
+              }),
+            );
           }
         } else {
           debugPrint('Auth callback: Community $communitySlug not found');
