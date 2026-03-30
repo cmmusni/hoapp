@@ -285,12 +285,20 @@ class _SignupPageState extends State<SignupPage> {
                   HOAppButton(
                     label: 'Go to Login',
                     onPressed: () {
-                      final path = widget.communitySlug != null &&
-                              widget.inviteToken != null
-                          ? '/${widget.communitySlug}/login?invite=${widget.inviteToken}'
-                          : widget.inviteToken != null
-                              ? '/login?invite=${widget.inviteToken}'
-                              : '/login';
+                      // Build login path based on community slug and invite token
+                      String path = '/login';
+
+                      if (widget.communitySlug != null) {
+                        // Community-specific login
+                        path = '/${widget.communitySlug}/login';
+                        if (widget.inviteToken != null) {
+                          path += '?invite=${widget.inviteToken}';
+                        }
+                      } else if (widget.inviteToken != null) {
+                        // Regular login with invite token
+                        path = '/login?invite=${widget.inviteToken}';
+                      }
+
                       context.go(path);
                     },
                   ),
