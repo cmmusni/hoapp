@@ -44,6 +44,21 @@ COMMENT ON POLICY "Allow users to create their own resident role" ON public.user
 
 
 -- ============================================================================
+-- Allow authenticated users to read their own roles
+-- ============================================================================
+DROP POLICY IF EXISTS "user_roles_select_own" ON public.user_roles;
+
+CREATE POLICY "user_roles_select_own"
+ON public.user_roles
+FOR SELECT
+TO authenticated
+USING (user_id = auth.uid());
+
+COMMENT ON POLICY "user_roles_select_own" ON public.user_roles IS
+'Allows authenticated users to read their own roles';
+
+
+-- ============================================================================
 -- Security Notes:
 -- ============================================================================
 -- These policies are safe because:
@@ -51,4 +66,5 @@ COMMENT ON POLICY "Allow users to create their own resident role" ON public.user
 -- 2. The resident role policy restricts role assignment to 'resident' only
 -- 3. Other roles (admin, officer, guard) still require admin assignment
 -- 4. Users cannot modify or delete existing records (only INSERT allowed)
--- 5. Existing RLS policies still control SELECT, UPDATE, DELETE operations
+-- 5. Users can only read their own records (SELECT filtered by user_id)
+-- 6. Existing RLS policies still control UPDATE, DELETE operations

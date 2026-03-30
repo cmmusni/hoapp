@@ -7,7 +7,7 @@
 DO $$
 DECLARE
     v_user_id uuid;
-    v_email text := 'kliffzkii@gmail.com';
+    v_email text := 'USER_EMAIL_HERE'; -- CHANGE THIS TO THE EMAIL YOU WANT TO DELETE
 BEGIN
     -- Get the user ID
     SELECT id INTO v_user_id 
@@ -47,11 +47,12 @@ END $$;
 -- ============================================================================
 -- Verify deletion
 -- ============================================================================
+-- Change the email in these queries to match the one you deleted above
 SELECT 
     'auth.users' as table_name,
     COUNT(*) as record_count
 FROM auth.users 
-WHERE email = 'kliffzkii@gmail.com'
+WHERE email = 'USER_EMAIL_HERE' -- CHANGE THIS
 
 UNION ALL
 
@@ -60,7 +61,7 @@ SELECT
     COUNT(*) as record_count
 FROM public.household_members hm
 JOIN auth.users u ON hm.user_id = u.id
-WHERE u.email = 'kliffzkii@gmail.com'
+WHERE u.email = 'USER_EMAIL_HERE' -- CHANGE THIS
 
 UNION ALL
 
@@ -69,4 +70,4 @@ SELECT
     COUNT(*) as record_count
 FROM public.user_roles ur
 JOIN auth.users u ON ur.user_id = u.id
-WHERE u.email = 'kliffzkii@gmail.com';
+WHERE u.email = 'USER_EMAIL_HERE'; -- CHANGE THIS

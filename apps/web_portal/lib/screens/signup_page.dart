@@ -118,6 +118,24 @@ class _SignupPageState extends State<SignupPage> {
         .join(' ');
   }
 
+  Future<bool> _checkEmailExists(String email) async {
+    try {
+      final client = Supabase.instance.client;
+      // Query auth.users table to check if email exists
+      // Note: This requires a database function or RPC call
+      // Alternative: try to sign in and catch the error
+      final response = await client.rpc('check_email_exists', params: {
+        'email_address': email,
+      });
+      return response == true;
+    } catch (e) {
+      // If RPC doesn't exist, return false to allow signup attempt
+      // The actual signup will catch duplicate email errors
+      debugPrint('Email check failed (RPC may not exist): $e');
+      return false;
+    }
+  }
+
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -125,6 +143,24 @@ class _SignupPageState extends State<SignupPage> {
 
     try {
       final authRepo = context.read<AuthRepository>();
+
+      // Check if email already exists
+      final emailExists = await _checkEmailExists(_emailController.text.trim());
+      if (emailExists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'This email is already registered. Please login instead.'),
+              duration: Duration(seconds: 5),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+
       final metadata = <String, dynamic>{
         'full_name': _nameController.text.trim(),
       };
