@@ -268,6 +268,9 @@ class BillingRepository {
     final jwt = _client.auth.currentSession?.accessToken;
     final response = await _client.functions.invoke(
       'verify_payment',
+      headers: {
+        if (jwt != null) 'x-user-token': jwt,
+      },
       body: {
         'payment_id': paymentId,
         'verified': verified,

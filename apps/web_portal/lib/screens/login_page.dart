@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_ui/core_ui.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   final String? communitySlug;
@@ -159,6 +158,8 @@ class _LoginPageState extends State<LoginPage> {
         // Determine which invite token to use
         final effectiveToken = widget.inviteToken ?? metaInviteToken;
 
+        // Only accept invite if there's an explicit invite token
+        // Don't auto-accept pending invites for regular logins
         if (effectiveToken != null) {
           try {
             await communityRepo.acceptInvite(effectiveToken);
@@ -176,20 +177,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               );
             }
-          }
-        } else {
-          // No token at all — only try to claim pending invites for new users
-          // Skip for users who already have roles (prevents cross-community assignment)
-          try {
-            final userId = Supabase.instance.client.auth.currentUser?.id;
-            if (userId != null) {
-              final existingRoles = await communityRepo.getUserRoles(userId);
-              if (existingRoles.isEmpty) {
-                await communityRepo.acceptPendingInvites();
-              }
-            }
-          } catch (e) {
-            debugPrint('Auto-accept pending invites failed (non-blocking): $e');
           }
         }
 
@@ -297,7 +284,8 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(20)),
               title: Row(
                 children: [
-                  Icon(Icons.lock_reset, color: Theme.of(context).colorScheme.primary, size: 28),
+                  Icon(Icons.lock_reset,
+                      color: Theme.of(context).colorScheme.primary, size: 28),
                   SizedBox(width: 8),
                   Text('Reset Password',
                       style:
@@ -392,344 +380,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _showRequestAccessDialog() {
-    final nameCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    final orgCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        var sending = false;
-        var sent = false;
-        String? error;
-
-        return StatefulBuilder(
-          builder: (ctx, setDialogState) {
-            if (sent) {
-              return Dialog(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24)),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.green.shade50,
-                              Colors.green.shade100,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.check_circle_outline_rounded,
-                            size: 52, color: Colors.green.shade600),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text('Request Submitted!',
-                          style: TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Thank you for your interest! We\'ll review your request and send you an invite shortly.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 14,
-                            height: 1.5),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('Done',
-                              style: TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w600)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24)),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 440),
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header icon
-                    Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.amber.shade50,
-                            Colors.orange.shade50,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.science_rounded,
-                          size: 44, color: Colors.amber.shade700),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Request Beta Access',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'HOApp is currently in beta. Fill out the form below and we\'ll send you an invite.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 14, color: Color(0xFF6B7280), height: 1.5),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Form
-                    Form(
-                      key: formKey,
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            controller: nameCtrl,
-                            decoration: InputDecoration(
-                              labelText: 'Full Name',
-                              hintText: 'Juan Dela Cruz',
-                              prefixIcon: const Icon(Icons.person_outline),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide:
-                                    BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                    color: Theme.of(context).colorScheme.primary, width: 2),
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey.shade50,
-                            ),
-                            validator: (v) =>
-                                (v?.trim().isEmpty ?? true) ? 'Required' : null,
-                          ),
-                          const SizedBox(height: 14),
-                          TextFormField(
-                            controller: emailCtrl,
-                            decoration: InputDecoration(
-                              labelText: 'Email Address',
-                              hintText: 'you@example.com',
-                              prefixIcon: const Icon(Icons.email_outlined),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide:
-                                    BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                    color: Theme.of(context).colorScheme.primary, width: 2),
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey.shade50,
-                            ),
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) {
-                                return 'Required';
-                              }
-                              if (!v.contains('@')) {
-                                return 'Enter a valid email';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                          TextFormField(
-                            controller: orgCtrl,
-                            decoration: InputDecoration(
-                              labelText: 'Community / Organization',
-                              hintText: 'e.g. Greenfield Village HOA',
-                              prefixIcon: const Icon(Icons.apartment_outlined),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide:
-                                    BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                    color: Theme.of(context).colorScheme.primary, width: 2),
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey.shade50,
-                            ),
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) {
-                                return 'Required';
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    if (error != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline,
-                                size: 18, color: Colors.red.shade600),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(error!,
-                                  style: TextStyle(
-                                      color: Colors.red.shade700,
-                                      fontSize: 13)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 24),
-
-                    // Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed:
-                                sending ? null : () => Navigator.pop(ctx),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF6B7280),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: BorderSide(color: Colors.grey.shade300),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: const Text('Cancel',
-                                style: TextStyle(
-                                    fontSize: 15, fontWeight: FontWeight.w500)),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton(
-                            onPressed: sending
-                                ? null
-                                : () async {
-                                    if (!formKey.currentState!.validate()) {
-                                      return;
-                                    }
-                                    setDialogState(() {
-                                      sending = true;
-                                      error = null;
-                                    });
-                                    try {
-                                      final response = await Supabase
-                                          .instance.client.functions
-                                          .invoke(
-                                        'request_access',
-                                        body: {
-                                          'name': nameCtrl.text.trim(),
-                                          'email': emailCtrl.text.trim(),
-                                          'organization': orgCtrl.text.trim(),
-                                        },
-                                      );
-                                      if (response.status != 200) {
-                                        final data = response.data
-                                            as Map<String, dynamic>?;
-                                        throw Exception(data?['error'] ??
-                                            'Failed to submit request');
-                                      }
-                                      setDialogState(() => sent = true);
-                                    } catch (e) {
-                                      setDialogState(() {
-                                        error = e
-                                            .toString()
-                                            .replaceFirst('Exception: ', '');
-                                        sending = false;
-                                      });
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor:
-                                  Theme.of(context).colorScheme.primary.withOpacity(0.6),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              elevation: 0,
-                            ),
-                            child: sending
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.white),
-                                  )
-                                : const Text('Submit Request',
-                                    style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -785,6 +435,7 @@ class _LoginPageState extends State<LoginPage> {
                         prefixIcon: Icon(Icons.email),
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
@@ -800,6 +451,7 @@ class _LoginPageState extends State<LoginPage> {
                         prefixIcon: Icon(Icons.lock),
                       ),
                       obscureText: true,
+                      textInputAction: TextInputAction.done,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your password';
@@ -900,20 +552,12 @@ class _LoginPageState extends State<LoginPage> {
                               },
                         isOutlined: true,
                       )
-                    else ...[
-                      // Hidden during beta — uncomment when beta ends:
-                      // TextButton(
-                      //   onPressed: _isLoading ? null : () => context.go('/signup'),
-                      //   child: const Text('Don\'t have an account? Sign up'),
-                      // ),
-                      TextButton.icon(
-                        onPressed: _isLoading
-                            ? null
-                            : () => _showRequestAccessDialog(),
-                        icon: const Icon(Icons.science_outlined, size: 18),
-                        label: const Text('Request Beta Access'),
+                    else
+                      TextButton(
+                        onPressed:
+                            _isLoading ? null : () => context.go('/signup'),
+                        child: const Text('Don\'t have an account? Sign up'),
                       ),
-                    ],
                   ],
                 ),
               ),

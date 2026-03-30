@@ -15,7 +15,8 @@ class QrScannerScreen extends StatefulWidget {
   State<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
-class _QrScannerScreenState extends State<QrScannerScreen> {
+class _QrScannerScreenState extends State<QrScannerScreen>
+    with WidgetsBindingObserver {
   final _repo = SecurityPassRepository();
   final _tokenCtrl = TextEditingController();
   MobileScannerController? _cameraController;
@@ -30,10 +31,26 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initCamera();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Stop camera when app goes to background; restart when resumed.
+    if (_cameraController == null) return;
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _cameraController?.stop();
+    } else if (state == AppLifecycleState.resumed &&
+        _mode == _ScanMode.camera &&
+        !_cameraError) {
+      _cameraController?.start();
+    }
+  }
+
   void _initCamera() {
+    _cameraController?.dispose();
     _cameraController = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
       facing: CameraFacing.back,
@@ -51,6 +68,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _cameraController?.stop();
     _cameraController?.dispose();
     _tokenCtrl.dispose();
     super.dispose();
@@ -141,8 +160,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2)),
                     SizedBox(width: 12),
-                    Text('Validating pass…',
-                        style: TextStyle(fontSize: 14)),
+                    Text('Validating pass…', style: TextStyle(fontSize: 14)),
                   ],
                 ),
               ),
@@ -281,16 +299,17 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           height: 300,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: _brandColor.withValues(alpha: 0.3), width: 2),
+            border:
+                Border.all(color: _brandColor.withValues(alpha: 0.3), width: 2),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              MobileScanner(
-                controller: _cameraController!,
-                onDetect: _onDetect,
-              ),
+              if (_cameraController != null)
+                MobileScanner(
+                  controller: _cameraController!,
+                  onDetect: _onDetect,
+                ),
               Center(
                 child: Container(
                   width: 200,
@@ -308,18 +327,15 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      _validating
-                          ? 'Validating…'
-                          : 'Point camera at QR code',
-                      style:
-                          const TextStyle(color: Colors.white, fontSize: 13),
+                      _validating ? 'Validating…' : 'Point camera at QR code',
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ),
                 ),
@@ -342,8 +358,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           decoration: InputDecoration(
             labelText: 'QR Code Token',
             hintText: 'Paste the QR code token here',
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.qr_code),
             suffixIcon: IconButton(
               icon: const Icon(Icons.clear),

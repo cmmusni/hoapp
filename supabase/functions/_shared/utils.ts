@@ -91,25 +91,25 @@ export async function validateAuth(
   req: Request,
   body?: any
 ): Promise<{ user: any; supabase: SupabaseClient } | Response> {
-  let authHeader = req.headers.get('Authorization')
   let token: string | null = null
   
-  // Try to get JWT from Authorization header
-  if (authHeader) {
-    token = authHeader.replace('Bearer ', '')
-    console.log('validateAuth - using Authorization header')
+  // Priority 1: x-user-token custom header (most reliable, not stripped by edge gateway)
+  const customToken = req.headers.get('x-user-token')
+  if (customToken) {
+    token = customToken
+    console.log('validateAuth - using x-user-token header')
   }
   
-  // Fallback to custom header if Authorization was stripped by edge gateway
+  // Priority 2: Authorization header
   if (!token) {
-    const customToken = req.headers.get('x-user-token')
-    if (customToken) {
-      token = customToken
-      console.log('validateAuth - using x-user-token fallback')
+    const authHeader = req.headers.get('Authorization')
+    if (authHeader) {
+      token = authHeader.replace('Bearer ', '')
+      console.log('validateAuth - using Authorization header')
     }
   }
   
-  // Fallback to body if headers are stripped
+  // Priority 3: _jwt from request body
   if (!token && body && body._jwt) {
     token = body._jwt
     console.log('validateAuth - using _jwt from body')
@@ -121,7 +121,7 @@ export async function validateAuth(
     return errorResponse('Missing authentication token', 401, 'MISSING_AUTH')
   }
 
-  // Create client with the Authorization header so Supabase handles relay tokens
+  // Create client with the user's token
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -133,7 +133,7 @@ export async function validateAuth(
   )
 
   console.log('validateAuth - calling getUser()')
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser(token)
   
   console.log('validateAuth - getUser result:', {
     hasUser: !!user,
@@ -142,8 +142,8 @@ export async function validateAuth(
   })
   
   if (error || !user) {
-    // If relay token failed, try with explicit token (from body)
-    if (body?._jwt) {
+    // If x-user-token failed, try _jwt from body as last resort
+    if (body?._jwt && body._jwt !== token) {
       console.log('validateAuth - retrying with _jwt from body')
       const { data: { user: user2 }, error: error2 } = await supabase.auth.getUser(body._jwt)
       if (!error2 && user2) {

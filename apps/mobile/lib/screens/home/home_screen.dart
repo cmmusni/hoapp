@@ -55,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _pendingViolations = 0;
   int _openFeedback = 0;
   int _pendingBookings = 0;
+  int _lastBadgeVersion = 0;
 
   @override
   void initState() {
@@ -248,6 +249,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final visibleItems = _getVisibleItems(appState);
+
+    // Refresh badge counts when requested by child screens
+    if (appState.badgeRefreshVersion != _lastBadgeVersion) {
+      _lastBadgeVersion = appState.badgeRefreshVersion;
+      _loadBadgeCounts();
+    }
 
     // Clamp selected index
     if (_selectedIndex >= visibleItems.length) {

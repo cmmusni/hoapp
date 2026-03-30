@@ -77,7 +77,7 @@ class PricingPage extends StatelessWidget {
                                       'Community support',
                                     ],
                                     ctaLabel: 'Get Started',
-                                    onCta: () => showBetaAccessDialog(context),
+                                    onCta: () => context.go('/signup'),
                                   ),
                                   const SizedBox(height: 24),
                                   _PricingCard(
@@ -99,7 +99,7 @@ class PricingPage extends StatelessWidget {
                                       'Priority support',
                                     ],
                                     ctaLabel: 'Get Started',
-                                    onCta: () => showBetaAccessDialog(context),
+                                    onCta: () => context.go('/signup'),
                                   ),
                                   const SizedBox(height: 24),
                                   _PricingCard(
@@ -139,8 +139,7 @@ class PricingPage extends StatelessWidget {
                                         'Community support',
                                       ],
                                       ctaLabel: 'Get Started',
-                                      onCta: () =>
-                                          showBetaAccessDialog(context),
+                                      onCta: () => context.go('/signup'),
                                     ),
                                   ),
                                   const SizedBox(width: 24),
@@ -164,8 +163,7 @@ class PricingPage extends StatelessWidget {
                                         'Priority support',
                                       ],
                                       ctaLabel: 'Get Started',
-                                      onCta: () =>
-                                          showBetaAccessDialog(context),
+                                      onCta: () => context.go('/signup'),
                                     ),
                                   ),
                                   const SizedBox(width: 24),
@@ -248,7 +246,7 @@ class PricingPage extends StatelessWidget {
                           alignment: WrapAlignment.center,
                           children: [
                             ElevatedButton(
-                              onPressed: () => showBetaAccessDialog(context),
+                              onPressed: () => context.go('/signup'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _brand,
                                 foregroundColor: Colors.white,
@@ -411,9 +409,11 @@ class _PricingCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
-                    color: highlighted ? Colors.white54 : const Color(0xFF9CA3AF),
+                    color:
+                        highlighted ? Colors.white54 : const Color(0xFF9CA3AF),
                     decoration: TextDecoration.lineThrough,
-                    decorationColor: highlighted ? Colors.white54 : const Color(0xFF9CA3AF),
+                    decorationColor:
+                        highlighted ? Colors.white54 : const Color(0xFF9CA3AF),
                   ),
                 ),
                 const SizedBox(width: 8),

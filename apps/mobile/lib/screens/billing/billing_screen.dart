@@ -1015,6 +1015,7 @@ class _InvoiceDetailsSheetState extends State<_InvoiceDetailsSheet> {
       final repo = context.read<BillingRepository>();
       await repo.deleteInvoice(widget.invoice.id);
       if (mounted) {
+        context.read<AppState>().requestBadgeRefresh();
         Navigator.of(context).pop();
         widget.onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1268,6 +1269,7 @@ class _PaymentCardState extends State<_PaymentCard> {
       final repo = context.read<BillingRepository>();
       await repo.verifyPayment(paymentId: widget.payment.id, verified: true);
       if (context.mounted) {
+        context.read<AppState>().requestBadgeRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Payment verified successfully')),
         );
@@ -1333,6 +1335,7 @@ class _PaymentCardState extends State<_PaymentCard> {
           rejectionReason: reasonController.text,
         );
         if (context.mounted) {
+          context.read<AppState>().requestBadgeRefresh();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Payment rejected')),
           );

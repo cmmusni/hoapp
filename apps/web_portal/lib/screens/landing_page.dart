@@ -223,7 +223,7 @@ class LandingPage extends StatelessWidget {
                           alignment: WrapAlignment.center,
                           children: [
                             ElevatedButton(
-                              onPressed: () => showBetaAccessDialog(context),
+                              onPressed: () => context.go('/signup'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF2E5C3F),
                                 foregroundColor: Colors.white,

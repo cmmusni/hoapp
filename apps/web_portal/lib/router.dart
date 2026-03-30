@@ -83,33 +83,25 @@ GoRouter createRouter({String? lastCommunitySlug}) {
         },
       ),
       GoRoute(
-          path: '/signup',
-          builder: (context, state) {
-            return const ContactPage();
-          },
-          redirect: (context, state) {
-            return '/contact';
-          }),
-      // GoRoute(
-      //   path: '/signup',
-      //   builder: (context, state) {
-      //     final inviteToken = state.uri.queryParameters['invite'];
-      //     final encodedEmail = state.uri.queryParameters['email'];
-      //     String? inviteEmail;
-      //     if (encodedEmail != null) {
-      //       try {
-      //         // Restore base64 padding and decode
-      //         final padded =
-      //             encodedEmail.replaceAll('-', '+').replaceAll('_', '/');
-      //         final remainder = padded.length % 4;
-      //         final base64 =
-      //             remainder > 0 ? padded + '=' * (4 - remainder) : padded;
-      //         inviteEmail = utf8.decode(base64Decode(base64));
-      //       } catch (_) {}
-      //     }
-      //     return SignupPage(inviteToken: inviteToken, inviteEmail: inviteEmail);
-      //   },
-      // ),
+        path: '/signup',
+        builder: (context, state) {
+          final inviteToken = state.uri.queryParameters['invite'];
+          final encodedEmail = state.uri.queryParameters['email'];
+          String? inviteEmail;
+          if (encodedEmail != null) {
+            try {
+              // Restore base64 padding and decode
+              final padded =
+                  encodedEmail.replaceAll('-', '+').replaceAll('_', '/');
+              final remainder = padded.length % 4;
+              final base64 =
+                  remainder > 0 ? padded + '=' * (4 - remainder) : padded;
+              inviteEmail = utf8.decode(base64Decode(base64));
+            } catch (_) {}
+          }
+          return SignupPage(inviteToken: inviteToken, inviteEmail: inviteEmail);
+        },
+      ),
       GoRoute(
         path: '/features',
         builder: (context, state) => const FeaturesPage(),

@@ -55,7 +55,6 @@ serve(async (req) => {
         *,
         invoices (
           id,
-          invoice_number,
           amount,
           unit_id
         )
@@ -157,7 +156,7 @@ serve(async (req) => {
           html: generatePaymentNotificationHTML({
             recipientName: payerProfile.full_name || payerProfile.email.split('@')[0],
             communityName: community.name,
-            invoiceNumber: payment.invoices.invoice_number,
+            invoiceNumber: payment.invoices.id,
             amount: amount || payment.amount,
             status: verified ? 'verified' : 'rejected',
             rejectionReason: rejection_reason,

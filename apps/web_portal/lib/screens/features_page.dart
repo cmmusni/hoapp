@@ -217,7 +217,7 @@ class FeaturesPage extends StatelessWidget {
                           alignment: WrapAlignment.center,
                           children: [
                             ElevatedButton(
-                              onPressed: () => showBetaAccessDialog(context),
+                              onPressed: () => context.go('/signup'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _brand,
                                 foregroundColor: Colors.white,

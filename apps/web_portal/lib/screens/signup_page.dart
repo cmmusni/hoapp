@@ -215,6 +215,7 @@ class _SignupPageState extends State<SignupPage> {
                         prefixIcon: Icon(Icons.person),
                       ),
                       textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your name';
@@ -233,6 +234,7 @@ class _SignupPageState extends State<SignupPage> {
                             : null,
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
                       readOnly: _emailLocked,
                       enabled: !_emailLocked,
                       validator: (value) {
@@ -250,6 +252,7 @@ class _SignupPageState extends State<SignupPage> {
                         prefixIcon: Icon(Icons.lock),
                       ),
                       obscureText: true,
+                      textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.length < 6) {
                           return 'Password must be at least 6 characters';
@@ -265,6 +268,8 @@ class _SignupPageState extends State<SignupPage> {
                         prefixIcon: Icon(Icons.lock_outline),
                       ),
                       obscureText: true,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _handleSignup(),
                       validator: (value) {
                         if (value != _passwordController.text) {
                           return 'Passwords do not match';

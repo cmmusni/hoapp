@@ -36,3 +36,40 @@ enable_signup = true
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
+
+# Edge Functions - disable gateway JWT verification so functions handle auth internally via validateAuth()
+[functions.verify_payment]
+verify_jwt = false
+
+[functions.accept_invite]
+verify_jwt = false
+
+[functions.batch_operations]
+verify_jwt = false
+
+[functions.book_amenity]
+verify_jwt = false
+
+[functions.contact_us]
+verify_jwt = false
+
+[functions.create_community]
+verify_jwt = false
+
+[functions.create_invite]
+verify_jwt = false
+
+[functions.delete_user]
+verify_jwt = false
+
+[functions.provision_community]
+verify_jwt = false
+
+[functions.request_access]
+verify_jwt = false
+
+[functions.review_pass]
+verify_jwt = false
+
+[functions.validate_pass]
+verify_jwt = false
