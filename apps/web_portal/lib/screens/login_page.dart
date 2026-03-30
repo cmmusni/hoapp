@@ -385,180 +385,184 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       body: Stack(
         children: [
-          Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 400),
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _communityLogoUrl != null
-                        ? Image.network(
-                            _communityLogoUrl!,
-                            height: 120,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/images/hoapp-logo.png',
-                                height: 120,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const SizedBox(height: 120);
-                                },
-                              );
-                            },
-                          )
-                        : Image.asset(
-                            'assets/images/hoapp-logo.png',
-                            height: 150,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const SizedBox(height: 150);
-                            },
-                          ),
-                    if (widget.communitySlug != null) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        widget.communitySlug != null
-                            ? 'Login to $_communityDisplayName'
-                            : 'Login',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                        textAlign: TextAlign.center,
-                      )
-                    ],
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock),
-                      ),
-                      obscureText: true,
-                      textInputAction: TextInputAction.done,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        return null;
-                      },
-                      onFieldSubmitted: (_) => _handleLogin(),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed:
-                            _isLoading ? null : _showForgotPasswordDialog,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ),
-                    if (_errorMessage != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: Colors.red.shade700, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: TextStyle(
-                                  color: Colors.red.shade700,
-                                  fontSize: 13,
-                                ),
-                              ),
+          SingleChildScrollView(
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 400),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _communityLogoUrl != null
+                          ? Image.network(
+                              _communityLogoUrl!,
+                              height: 120,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/images/hoapp-logo.png',
+                                  height: 120,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const SizedBox(height: 120);
+                                  },
+                                );
+                              },
+                            )
+                          : Image.asset(
+                              'assets/images/hoapp-logo.png',
+                              height: 150,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const SizedBox(height: 150);
+                              },
                             ),
-                          ],
+                      if (widget.communitySlug != null) ...[
+                        const SizedBox(height: 24),
+                        Text(
+                          widget.communitySlug != null
+                              ? 'Login to $_communityDisplayName'
+                              : 'Login',
+                          style: Theme.of(context).textTheme.headlineMedium,
+                          textAlign: TextAlign.center,
+                        )
+                      ],
+                      const SizedBox(height: 32),
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email),
                         ),
-                      ),
-                    ],
-                    if (widget.inviteToken != null) ...[
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.mail,
-                                color: Theme.of(context).colorScheme.primary),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'You\'ve been invited${widget.communitySlug != null ? ' to $_communityDisplayName' : ''}! Go to your email to accept the invitation or login here with your credentials if already accepted.',
-                                style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimaryContainer,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
-                    ],
-                    const SizedBox(height: 24),
-                    HOAppButton(
-                      label: 'Login',
-                      onPressed: _isLoading ? null : _handleLogin,
-                      isLoading: _isLoading,
-                    ),
-                    const SizedBox(height: 16),
-                    if (widget.inviteToken != null)
-                      HOAppButton(
-                        label: 'Create Account',
-                        onPressed: _isLoading
-                            ? null
-                            : () {
-                                final path = widget.communitySlug != null
-                                    ? '/${widget.communitySlug}/signup?invite=${widget.inviteToken}'
-                                    : '/signup?invite=${widget.inviteToken}';
-                                context.go(path);
-                              },
-                        isOutlined: true,
-                      )
-                    else
-                      TextButton(
-                        onPressed:
-                            _isLoading ? null : () => context.go('/signup'),
-                        child: const Text('Don\'t have an account? Sign up'),
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: Icon(Icons.lock),
+                        ),
+                        obscureText: true,
+                        textInputAction: TextInputAction.done,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          return null;
+                        },
+                        onFieldSubmitted: (_) => _handleLogin(),
                       ),
-                  ],
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed:
+                              _isLoading ? null : _showForgotPasswordDialog,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ),
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.error_outline,
+                                  color: Colors.red.shade700, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: TextStyle(
+                                    color: Colors.red.shade700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (widget.inviteToken != null) ...[
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.mail,
+                                  color: Theme.of(context).colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'You\'ve been invited${widget.communitySlug != null ? ' to $_communityDisplayName' : ''}! Go to your email to accept the invitation or login here with your credentials if already accepted.',
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      const SizedBox(height: 24),
+                      HOAppButton(
+                        label: 'Login',
+                        onPressed: _isLoading ? null : _handleLogin,
+                        isLoading: _isLoading,
+                      ),
+                      const SizedBox(height: 16),
+                      if (widget.inviteToken != null)
+                        HOAppButton(
+                          label: 'Create Account',
+                          onPressed: _isLoading
+                              ? null
+                              : () {
+                                  final path = widget.communitySlug != null
+                                      ? '/${widget.communitySlug}/signup?invite=${widget.inviteToken}'
+                                      : '/signup?invite=${widget.inviteToken}';
+                                  context.go(path);
+                                },
+                          isOutlined: true,
+                        )
+                      else
+                        TextButton(
+                          onPressed:
+                              _isLoading ? null : () => context.go('/signup'),
+                          child: const Text('Don\'t have an account? Sign up'),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),

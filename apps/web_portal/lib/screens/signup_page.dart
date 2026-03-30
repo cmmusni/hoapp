@@ -220,44 +220,46 @@ class _SignupPageState extends State<SignupPage> {
   Widget build(BuildContext context) {
     if (_signupComplete) {
       return Scaffold(
-        body: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.mark_email_read,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Check Your Email',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'We sent a confirmation email to ${_emailController.text}. Please click the link to verify your account, then log in.',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                HOAppButton(
-                  label: 'Go to Login',
-                  onPressed: () {
-                    final path = widget.communitySlug != null &&
-                            widget.inviteToken != null
-                        ? '/${widget.communitySlug}/login?invite=${widget.inviteToken}'
-                        : widget.inviteToken != null
-                            ? '/login?invite=${widget.inviteToken}'
-                            : '/login';
-                    context.go(path);
-                  },
-                ),
-              ],
+        body: SingleChildScrollView(
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.mark_email_read,
+                    size: 80,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Check Your Email',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'We sent a confirmation email to ${_emailController.text}. Please click the link to verify your account, then log in.',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  HOAppButton(
+                    label: 'Go to Login',
+                    onPressed: () {
+                      final path = widget.communitySlug != null &&
+                              widget.inviteToken != null
+                          ? '/${widget.communitySlug}/login?invite=${widget.inviteToken}'
+                          : widget.inviteToken != null
+                              ? '/login?invite=${widget.inviteToken}'
+                              : '/login';
+                      context.go(path);
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -267,215 +269,220 @@ class _SignupPageState extends State<SignupPage> {
     return Scaffold(
       body: Stack(
         children: [
-          Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 400),
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Image.asset(
-                      'assets/images/hoapp-logo.png',
-                      height: 120,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      widget.inviteToken != null
-                          ? 'Create Account to Join'
-                          : widget.communitySlug != null
-                              ? 'Join ${_formatCommunityName(widget.communitySlug!)} Community'
-                              : 'Create Account',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    if (widget.communitySlug != null &&
-                        widget.inviteToken == null) ...[
-                      const SizedBox(height: 8),
+          SingleChildScrollView(
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 400),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Image.asset(
+                        'assets/images/hoapp-logo.png',
+                        height: 120,
+                      ),
+                      const SizedBox(height: 24),
                       Text(
-                        'Sign up as a resident and join your unit',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
+                        widget.inviteToken != null
+                            ? 'Create Account to Join'
+                            : widget.communitySlug != null
+                                ? 'Join ${_formatCommunityName(widget.communitySlug!)} Community'
+                                : 'Create Account',
+                        style: Theme.of(context).textTheme.headlineMedium,
                         textAlign: TextAlign.center,
                       ),
-                    ],
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Name',
-                        prefixIcon: Icon(Icons.person),
+                      if (widget.communitySlug != null &&
+                          widget.inviteToken == null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Sign up as a resident and join your unit',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey.shade600,
+                                  ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                      const SizedBox(height: 32),
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          prefixIcon: Icon(Icons.person),
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your name';
+                          }
+                          return null;
+                        },
                       ),
-                      textCapitalization: TextCapitalization.words,
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: const Icon(Icons.email),
-                        suffixIcon: _emailLocked
-                            ? const Icon(Icons.lock_outline, size: 18)
-                            : null,
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: const Icon(Icons.email),
+                          suffixIcon: _emailLocked
+                              ? const Icon(Icons.lock_outline, size: 18)
+                              : null,
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        readOnly: _emailLocked,
+                        enabled: !_emailLocked,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          return null;
+                        },
                       ),
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      readOnly: _emailLocked,
-                      enabled: !_emailLocked,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Show unit number field only for community-specific signups (not invite-based)
-                    if (widget.communitySlug != null &&
-                        widget.inviteToken == null) ...[
-                      if (_loadingUnits)
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Loading available units...',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else if (_availableUnits.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.orange.shade200,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Colors.orange.shade700,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'No units available yet. Please contact your community admin.',
-                                  style: TextStyle(
-                                    color: Colors.orange.shade900,
-                                    fontSize: 13,
+                      const SizedBox(height: 16),
+                      // Show unit number field only for community-specific signups (not invite-based)
+                      if (widget.communitySlug != null &&
+                          widget.inviteToken == null) ...[
+                        if (_loadingUnits)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Loading available units...',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (_availableUnits.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.orange.shade200,
                               ),
-                            ],
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: Colors.orange.shade700,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'No units available yet. Please contact your community admin.',
+                                    style: TextStyle(
+                                      color: Colors.orange.shade900,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          DropdownButtonFormField<String>(
+                            value: _selectedUnit,
+                            decoration: const InputDecoration(
+                              labelText: 'Select Your Unit',
+                              prefixIcon: Icon(Icons.home),
+                              helperText: 'Choose your unit/lot number',
+                            ),
+                            items: _availableUnits.map((unit) {
+                              return DropdownMenuItem<String>(
+                                value: unit,
+                                child: Text(unit),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() => _selectedUnit = value);
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please select your unit number';
+                              }
+                              return null;
+                            },
                           ),
-                        )
-                      else
-                        DropdownButtonFormField<String>(
-                          value: _selectedUnit,
-                          decoration: const InputDecoration(
-                            labelText: 'Select Your Unit',
-                            prefixIcon: Icon(Icons.home),
-                            helperText: 'Choose your unit/lot number',
-                          ),
-                          items: _availableUnits.map((unit) {
-                            return DropdownMenuItem<String>(
-                              value: unit,
-                              child: Text(unit),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() => _selectedUnit = value);
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select your unit number';
-                            }
-                            return null;
-                          },
+                        const SizedBox(height: 16),
+                      ],
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: Icon(Icons.lock),
                         ),
+                        obscureText: true,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
+                        },
+                      ),
                       const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        decoration: const InputDecoration(
+                          labelText: 'Confirm Password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                        obscureText: true,
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => _handleSignup(),
+                        validator: (value) {
+                          if (value != _passwordController.text) {
+                            return 'Passwords do not match';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      HOAppButton(
+                        label: 'Sign Up',
+                        onPressed: _handleSignup,
+                        isLoading: _isLoading,
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          if (widget.inviteToken != null) {
+                            final path = widget.communitySlug != null
+                                ? '/${widget.communitySlug}/login?invite=${widget.inviteToken}'
+                                : '/login?invite=${widget.inviteToken}';
+                            context.go(path);
+                          } else {
+                            context.go('/login');
+                          }
+                        },
+                        child: const Text('Already have an account? Login'),
+                      ),
                     ],
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock),
-                      ),
-                      obscureText: true,
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _confirmPasswordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Confirm Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                      ),
-                      obscureText: true,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _handleSignup(),
-                      validator: (value) {
-                        if (value != _passwordController.text) {
-                          return 'Passwords do not match';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    HOAppButton(
-                      label: 'Sign Up',
-                      onPressed: _handleSignup,
-                      isLoading: _isLoading,
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {
-                        if (widget.inviteToken != null) {
-                          final path = widget.communitySlug != null
-                              ? '/${widget.communitySlug}/login?invite=${widget.inviteToken}'
-                              : '/login?invite=${widget.inviteToken}';
-                          context.go(path);
-                        } else {
-                          context.go('/login');
-                        }
-                      },
-                      child: const Text('Already have an account? Login'),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
