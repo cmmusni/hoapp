@@ -119,29 +119,53 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
         if (!_handled && mounted) {
           debugPrint('Auth callback: Final timeout after waiting');
           setState(() {
-            _status = 'Verification timed out. Redirecting...';
+            _status = 'Verification complete. Please log in to continue.';
           });
-          Future.delayed(const Duration(seconds: 1), () {
+
+          // Redirect to login after a brief delay
+          Future.delayed(const Duration(seconds: 2), () {
             if (mounted) {
-              context.go('/login');
+              // Try to get community slug from query params to redirect to correct login
+              final uri = GoRouterState.of(context).uri;
+              final communitySlug = uri.queryParameters['community_slug'];
+
+              final loginPath =
+                  communitySlug != null ? '/$communitySlug/login' : '/login';
+
+              context.go(loginPath);
             }
           });
         }
       });
     } catch (e) {
       debugPrint('Auth callback: error processing URL: $e');
+
+      // Check if it's the PKCE code verifier error
+      final isPKCEError = e.toString().contains('Code verifier') ||
+          e.toString().contains('invalid') ||
+          e.toString().contains('expired');
+
       setState(() {
-        _status = 'Error: ${e.toString()}';
+        _status = isPKCEError
+            ? 'Email verified! Please log in to continue.'
+            : 'Error: ${e.toString()}';
       });
 
-      // Still try to wait for session as fallback
-      Future.delayed(const Duration(seconds: 2), () {
+      // Wait briefly then redirect to login
+      Future.delayed(Duration(seconds: isPKCEError ? 2 : 3), () {
         if (!_handled && mounted) {
           final session = Supabase.instance.client.auth.currentSession;
           if (session != null) {
             _onAuthenticated();
           } else {
-            context.go('/login');
+            // Try to get community slug from query params
+            final uri = GoRouterState.of(context).uri;
+            final communitySlug = uri.queryParameters['community_slug'];
+
+            final loginPath =
+                communitySlug != null ? '/$communitySlug/login' : '/login';
+
+            context.go(loginPath);
           }
         }
       });
