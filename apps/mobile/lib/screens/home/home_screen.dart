@@ -14,7 +14,6 @@ import '../qr_scanner/qr_scanner_screen.dart';
 import 'tabs/announcements_tab.dart';
 import 'tabs/violations_tab.dart';
 import 'tabs/tickets_tab.dart';
-import '../chatbot/chatbot_screen.dart';
 
 const _brand = Color(0xff215e3f);
 
@@ -26,8 +25,6 @@ class _NavItem {
   final Widget Function() pageBuilder;
   final bool staffOnly;
   final bool adminOnly;
-  final bool guardOnly;
-  final bool maintenanceOnly;
 
   const _NavItem({
     required this.label,
@@ -36,8 +33,6 @@ class _NavItem {
     required this.pageBuilder,
     this.staffOnly = false,
     this.adminOnly = false,
-    this.guardOnly = false,
-    this.maintenanceOnly = false,
   });
 }
 
@@ -55,7 +50,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _pendingViolations = 0;
   int _openFeedback = 0;
   int _pendingBookings = 0;
-  int _lastBadgeVersion = 0;
 
   @override
   void initState() {
@@ -126,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.qr_code_scanner_outlined,
         selectedIcon: Icons.qr_code_scanner,
         pageBuilder: () => const QrScannerScreen(),
-        guardOnly: true,
+        staffOnly: true,
       ),
       _NavItem(
         label: 'Community Expenses',
@@ -153,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.people_outline,
         selectedIcon: Icons.people,
         pageBuilder: () => const shared.ManageUsersScreen(),
-        staffOnly: true,
+        adminOnly: true,
       ),
       _NavItem(
         label: 'Settings',
@@ -163,22 +157,16 @@ class _HomeScreenState extends State<HomeScreen> {
         adminOnly: true,
       ),
       _NavItem(
+        label: 'Notifications',
+        icon: Icons.notifications_outlined,
+        selectedIcon: Icons.notifications,
+        pageBuilder: () => const shared.NotificationsScreen(),
+      ),
+      _NavItem(
         label: 'Feedback',
         icon: Icons.feedback_outlined,
         selectedIcon: Icons.feedback,
         pageBuilder: () => const shared.FeedbackScreen(),
-      ),
-      _NavItem(
-        label: 'Help Assistant',
-        icon: Icons.support_agent_outlined,
-        selectedIcon: Icons.support_agent,
-        pageBuilder: () => ChatbotScreen(
-          currentPage: _selectedIndex < _buildNavItems().length
-              ? _buildNavItems()[_selectedIndex].label
-              : '',
-          userRole: context.read<AppState>().activeRole?.role.name,
-          onNavigate: (label) => _navigateToSection(label),
-        ),
       ),
     ];
   }
@@ -186,14 +174,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<_NavItem> _getVisibleItems(AppState appState) {
     final isStaff = appState.isStaff;
     final isAdmin = appState.isAdmin;
-    final isGuard = appState.isGuard;
-    final isMaintenance = appState.isMaintenance;
 
     return _buildNavItems().where((item) {
       if (item.adminOnly && !isAdmin) return false;
       if (item.staffOnly && !isStaff) return false;
-      if (item.guardOnly && !isGuard) return false;
-      if (item.maintenanceOnly && !isMaintenance) return false;
       return true;
     }).toList();
   }
@@ -250,12 +234,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final appState = context.watch<AppState>();
     final visibleItems = _getVisibleItems(appState);
 
-    // Refresh badge counts when requested by child screens
-    if (appState.badgeRefreshVersion != _lastBadgeVersion) {
-      _lastBadgeVersion = appState.badgeRefreshVersion;
-      _loadBadgeCounts();
-    }
-
     // Clamp selected index
     if (_selectedIndex >= visibleItems.length) {
       _selectedIndex = 0;
@@ -274,53 +252,28 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: _brand,
         foregroundColor: Colors.white,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: totalBadge > 0
-                  ? Badge(
-                      label: Text('$totalBadge'),
-                      child: const Icon(Icons.notifications_outlined),
-                    )
-                  : const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => Scaffold(
-                      appBar: AppBar(
-                        title: const Text('Notifications'),
-                        backgroundColor: _brand,
-                        foregroundColor: Colors.white,
-                      ),
-                      body: shared.NotificationsScreen(
-                        onNavigate: (section) {
-                          Navigator.of(context).pop();
-                          _navigateToSection(section);
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
+          if (totalBadge > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: Badge(
+                  label: Text('$totalBadge'),
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                onPressed: () {
+                  // Navigate to notifications
+                  final notifIndex = visibleItems
+                      .indexWhere((item) => item.label == 'Notifications');
+                  if (notifIndex >= 0) {
+                    setState(() => _selectedIndex = notifIndex);
+                  }
+                },
+              ),
             ),
-          ),
         ],
       ),
       drawer: _buildDrawer(context, appState, visibleItems),
-      body: Stack(
-        children: [
-          currentItem.pageBuilder(),
-          shared.ChatbotWidget(
-            currentPage: currentItem.label.toLowerCase(),
-            userRole: appState.activeRole?.role.name,
-            onNavigate: (route) {
-              // Map route suffix to drawer nav item label
-              final label = _routeToLabel(route);
-              if (label != null) _navigateToSection(label);
-            },
-          ),
-        ],
-      ),
+      body: currentItem.pageBuilder(),
     );
   }
 
@@ -556,34 +509,5 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         return 0;
     }
-  }
-
-  void _navigateToSection(String section) {
-    final appState = context.read<AppState>();
-    final visibleItems = _getVisibleItems(appState);
-    final index = visibleItems.indexWhere((item) => item.label == section);
-    if (index >= 0) {
-      setState(() => _selectedIndex = index);
-    }
-  }
-
-  String? _routeToLabel(String route) {
-    const map = {
-      '/announcements': 'Announcements',
-      '/violations': 'Violations',
-      '/tickets': 'Tickets',
-      '/amenities': 'Amenities',
-      '/billing': 'Billing',
-      '/households': 'Household',
-      '/pool-access': 'Pool Access',
-      '/security-pass': 'Security Pass',
-      '/notifications': 'Notifications',
-      '/feedback': 'Feedback',
-      '/expenses': 'Expenses',
-      '/registered-swimmers': 'Registered Swimmers',
-      '/manage-users': 'Manage Users',
-      '/settings': 'Settings',
-    };
-    return map[route];
   }
 }

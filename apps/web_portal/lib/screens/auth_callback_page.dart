@@ -250,9 +250,8 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
                   .eq('member_role', 'primary')
                   .maybeSingle();
 
-              // Determine member role: first person is primary, others are secondary
-              final memberRole =
-                  existingPrimary == null ? 'primary' : 'secondary';
+              // Determine member role: first person is primary, others are member
+              final memberRole = existingPrimary == null ? 'primary' : 'member';
 
               // Add user as household member
               await client.from('household_members').insert({

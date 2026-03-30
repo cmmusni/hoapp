@@ -25,6 +25,7 @@ class ManageUsersScreen extends StatefulWidget {
 class _ManageUsersScreenState extends State<ManageUsersScreen> {
   Future<List<UserRole>>? _rolesFuture;
   Map<String, UserProfile> _userProfiles = {};
+  Map<String, String> _userEmails = {};
   bool _isLoadingProfiles = false;
 
   @override
@@ -49,22 +50,63 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       final roles =
           await repo.getCommunityUserRoles(appState.activeCommunityId!);
       final profiles = <String, UserProfile>{};
-      for (final role in roles) {
+      final emails = <String, String>{};
+
+      // Bulk-fetch all profiles for this community in one query
+      try {
+        final allProfiles = await client
+            .from('profiles')
+            .select()
+            .eq('community_id', appState.activeCommunityId!);
+
+        for (final row in (allProfiles as List)) {
+          final profile = UserProfile.fromJson(row);
+          profiles[profile.userId] = profile;
+        }
+      } catch (_) {}
+
+      // For users with no name, try to get their email from accepted invites
+      final missingNameUserIds = roles
+          .where((r) {
+            final p = profiles[r.userId];
+            return p == null ||
+                (p.fullName == null || p.fullName!.isEmpty) &&
+                    (p.email == null || p.email!.isEmpty);
+          })
+          .map((r) => r.userId)
+          .toSet();
+
+      if (missingNameUserIds.isNotEmpty) {
         try {
-          final response = await client
-              .from('profiles')
-              .select()
-              .eq('user_id', role.userId)
+          final inviteRows = await client
+              .from('invites')
+              .select('email, accepted_at')
               .eq('community_id', appState.activeCommunityId!)
-              .maybeSingle();
-          if (response != null) {
-            profiles[role.userId] = UserProfile.fromJson(response);
+              .not('accepted_at', 'is', null);
+
+          // Build a set of invite emails for this community
+          final inviteEmails = <String>{};
+          for (final row in (inviteRows as List)) {
+            final email = row['email'] as String?;
+            if (email != null) inviteEmails.add(email);
+          }
+
+          // Try to match remaining users by querying their profile email
+          // from any community, or by their auth email
+          for (final uid in missingNameUserIds) {
+            // Check if profile has email
+            final p = profiles[uid];
+            if (p?.email != null && p!.email!.isNotEmpty) {
+              emails[uid] = p.email!;
+            }
           }
         } catch (_) {}
       }
+
       if (mounted) {
         setState(() {
           _userProfiles = profiles;
+          _userEmails = emails;
           _isLoadingProfiles = false;
         });
       }
@@ -123,6 +165,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     role: entry.key,
                     roles: entry.value,
                     profiles: _userProfiles,
+                    emails: _userEmails,
                     onEdit: _showEditRoleDialog,
                     onDelete: _handleDeleteUser,
                   ),
@@ -157,7 +200,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
   void _showEditRoleDialog(UserRole role) {
     Role? selectedRole = role.role;
-    final userName = _userProfiles[role.userId]?.fullName ?? 'this user';
+    final profile = _userProfiles[role.userId];
+    final userName = profile?.fullName ??
+        profile?.email ??
+        _userEmails[role.userId] ??
+        'this user';
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -262,7 +309,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
   }
 
   Future<void> _handleDeleteUser(UserRole role) async {
-    final userName = _userProfiles[role.userId]?.fullName ?? 'this user';
+    final profile = _userProfiles[role.userId];
+    final userName = profile?.fullName ??
+        profile?.email ??
+        _userEmails[role.userId] ??
+        'this user';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -354,6 +405,7 @@ class _RoleSection extends StatelessWidget {
   final Role role;
   final List<UserRole> roles;
   final Map<String, UserProfile> profiles;
+  final Map<String, String> emails;
   final void Function(UserRole) onEdit;
   final void Function(UserRole) onDelete;
 
@@ -361,6 +413,7 @@ class _RoleSection extends StatelessWidget {
     required this.role,
     required this.roles,
     required this.profiles,
+    required this.emails,
     required this.onEdit,
     required this.onDelete,
   });
@@ -400,7 +453,10 @@ class _RoleSection extends StatelessWidget {
         ),
         ...roles.map((r) {
           final profile = profiles[r.userId];
-          final name = profile?.fullName ?? 'Unknown User';
+          final name = profile?.fullName ??
+              profile?.email ??
+              emails[r.userId] ??
+              'Unknown User';
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
