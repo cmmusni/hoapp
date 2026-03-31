@@ -19,12 +19,11 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     with WidgetsBindingObserver {
   final _repo = SecurityPassRepository();
   final _tokenCtrl = TextEditingController();
-  MobileScannerController? _cameraController;
+  late MobileScannerController _cameraController;
 
   String _scanType = 'entry';
   _ScanMode _mode = _ScanMode.camera;
   bool _validating = false;
-  bool _cameraError = false;
   Map<String, dynamic>? _lastResult;
   String? _lastScannedToken;
 
@@ -32,50 +31,41 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initCamera();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Stop camera when app goes to background; restart when resumed.
-    if (_cameraController == null) return;
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      _cameraController?.stop();
-    } else if (state == AppLifecycleState.resumed &&
-        _mode == _ScanMode.camera &&
-        !_cameraError) {
-      _cameraController?.start();
-    }
-  }
-
-  void _initCamera() {
-    _cameraController?.dispose();
     _cameraController = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
       facing: CameraFacing.back,
       formats: [BarcodeFormat.qrCode],
     );
-    _cameraController!.start().catchError((_) {
-      if (mounted) {
-        setState(() {
-          _cameraError = true;
-          _mode = _ScanMode.manual;
-        });
-      }
+    debugPrint(
+        '[QR_SCANNER] Controller created, autoStart=${_cameraController.autoStart}');
+    _cameraController.start().then((_) {
+      debugPrint('[QR_SCANNER] Camera started successfully');
+    }).catchError((e) {
+      debugPrint('[QR_SCANNER] Camera start error: $e');
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _cameraController.stop();
+    } else if (state == AppLifecycleState.resumed &&
+        _mode == _ScanMode.camera) {
+      _cameraController.start();
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _cameraController?.stop();
-    _cameraController?.dispose();
+    _cameraController.dispose();
     _tokenCtrl.dispose();
     super.dispose();
   }
 
   void _onDetect(BarcodeCapture capture) {
+    debugPrint('[QR_SCANNER] onDetect: ${capture.barcodes.length} barcodes');
     if (_validating) return;
     final barcodes = capture.barcodes;
     if (barcodes.isEmpty) return;
@@ -254,44 +244,6 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   }
 
   Widget _buildCameraScanner() {
-    if (_cameraError) {
-      return Container(
-        width: double.infinity,
-        height: 300,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.videocam_off, size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            const Text('Camera not available',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black54)),
-            const SizedBox(height: 6),
-            Text('Grant camera permission or use Manual mode.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: () {
-                setState(() => _cameraError = false);
-                _cameraController?.dispose();
-                _initCamera();
-              },
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Retry Camera'),
-            ),
-          ],
-        ),
-      );
-    }
-
     return Column(
       children: [
         Container(
@@ -305,11 +257,56 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              if (_cameraController != null)
-                MobileScanner(
-                  controller: _cameraController!,
-                  onDetect: _onDetect,
-                ),
+              MobileScanner(
+                controller: _cameraController,
+                onDetect: _onDetect,
+                errorBuilder: (context, error) {
+                  debugPrint(
+                      '[QR_SCANNER] errorBuilder fired: code=${error.errorCode}, details=${error.errorDetails?.message}');
+                  return Container(
+                    color: Colors.grey.shade100,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.videocam_off,
+                              size: 48, color: Colors.grey.shade400),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Camera error: ${error.errorCode}',
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black54),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            error.errorDetails?.message ??
+                                'Grant camera permission in Settings.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 13, color: Colors.grey.shade600),
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton.icon(
+                            onPressed: () {
+                              _cameraController.dispose();
+                              _cameraController = MobileScannerController(
+                                detectionSpeed: DetectionSpeed.normal,
+                                facing: CameraFacing.back,
+                                formats: [BarcodeFormat.qrCode],
+                              );
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Retry Camera'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
               Center(
                 child: Container(
                   width: 200,

@@ -8,6 +8,9 @@ project 'Runner', {
   'Debug' => :debug,
   'Profile' => :release,
   'Release' => :release,
+  'Debug-elevehomes' => :debug,
+  'Profile-elevehomes' => :release,
+  'Release-elevehomes' => :release,
 }
 
 def flutter_root
