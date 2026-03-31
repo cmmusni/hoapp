@@ -6,6 +6,10 @@ class InvoiceLineItem {
   final Map<String, dynamic>? metadata;
   final int sortOrder;
   final DateTime createdAt;
+  final String? category;
+  final String? description;
+  final DateTime? periodStart;
+  final DateTime? periodEnd;
 
   InvoiceLineItem({
     required this.id,
@@ -15,6 +19,10 @@ class InvoiceLineItem {
     this.metadata,
     this.sortOrder = 0,
     required this.createdAt,
+    this.category,
+    this.description,
+    this.periodStart,
+    this.periodEnd,
   });
 
   factory InvoiceLineItem.fromJson(Map<String, dynamic> json) {
@@ -26,6 +34,14 @@ class InvoiceLineItem {
       metadata: json['metadata'] as Map<String, dynamic>?,
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
+      category: json['category'] as String?,
+      description: json['description'] as String?,
+      periodStart: json['period_start'] != null
+          ? DateTime.parse(json['period_start'] as String)
+          : null,
+      periodEnd: json['period_end'] != null
+          ? DateTime.parse(json['period_end'] as String)
+          : null,
     );
   }
 
@@ -37,5 +53,11 @@ class InvoiceLineItem {
         'metadata': metadata,
         'sort_order': sortOrder,
         'created_at': createdAt.toIso8601String(),
+        if (category != null) 'category': category,
+        if (description != null) 'description': description,
+        if (periodStart != null)
+          'period_start': periodStart!.toIso8601String().split('T').first,
+        if (periodEnd != null)
+          'period_end': periodEnd!.toIso8601String().split('T').first,
       };
 }

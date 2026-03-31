@@ -253,4 +253,18 @@ class PoolAccessRepository {
     }
     return map;
   }
+
+  /// Check if a unit's pool registration is locked (has swimmers).
+  /// Uses a SECURITY DEFINER function to bypass RLS.
+  /// Returns {locked: bool, next_editable_date: String?, can_edit: bool?}
+  Future<Map<String, dynamic>> getUnitPoolLock(
+    String communityId,
+    String unitId,
+  ) async {
+    final response = await _client.rpc('get_unit_pool_lock', params: {
+      'p_community_id': communityId,
+      'p_unit_id': unitId,
+    });
+    return Map<String, dynamic>.from(response as Map);
+  }
 }

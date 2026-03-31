@@ -35,6 +35,7 @@ class _PortalShellState extends State<PortalShell> {
   int _openFeedback = 0;
   int _pendingBookings = 0;
   int _newAnnouncements = 0;
+  String? _profileName;
 
   int get _totalNotifications =>
       _pendingPayments +
@@ -101,6 +102,21 @@ class _PortalShellState extends State<PortalShell> {
                   .eq('community_id', community.id)
                   .limit(1);
               appState.setHasUnit((memberRows as List).isNotEmpty);
+
+              // Load profile name from profiles table
+              try {
+                final profileRow = await Supabase.instance.client
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('user_id', userId)
+                    .eq('community_id', community.id)
+                    .maybeSingle();
+                if (profileRow != null && mounted) {
+                  setState(() {
+                    _profileName = profileRow['full_name'] as String?;
+                  });
+                }
+              } catch (_) {}
 
               // Load all communities user belongs to (for community switcher)
               try {
@@ -453,6 +469,10 @@ class _PortalShellState extends State<PortalShell> {
   Widget _buildUserDropdown(
       BuildContext context, dynamic user, AppState appState) {
     final email = user?.email ?? '';
+    final fullName =
+        _profileName ?? user?.userMetadata?['full_name'] as String?;
+    final displayName =
+        (fullName != null && fullName.isNotEmpty) ? fullName : email;
     final roleBadge = appState.activeRole != null
         ? _formatRole(appState.activeRole!.role)
         : null;
@@ -491,13 +511,23 @@ class _PortalShellState extends State<PortalShell> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                email,
+                displayName,
                 style: TextStyle(
                   color: Colors.grey.shade800,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (fullName != null && fullName.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  email,
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
               const SizedBox(height: 6),
               if (roleBadge != null)
                 Container(
@@ -595,16 +625,17 @@ class _PortalShellState extends State<PortalShell> {
           ),
         ),
         const PopupMenuDivider(),
-        const PopupMenuItem<String>(
-          value: 'switch_community',
-          child: Row(
-            children: [
-              Icon(Icons.swap_horiz, size: 18, color: Colors.blueGrey),
-              SizedBox(width: 8),
-              Text('Switch Community'),
-            ],
+        if (appState.userCommunities.length > 1)
+          const PopupMenuItem<String>(
+            value: 'switch_community',
+            child: Row(
+              children: [
+                Icon(Icons.swap_horiz, size: 18, color: Colors.blueGrey),
+                SizedBox(width: 8),
+                Text('Switch Community'),
+              ],
+            ),
           ),
-        ),
         if (appState.isPlatformAdmin) ...[
           const PopupMenuDivider(),
           PopupMenuItem<String>(
@@ -644,7 +675,7 @@ class _PortalShellState extends State<PortalShell> {
               radius: 16,
               backgroundColor: Colors.white24,
               child: Text(
-                email.isNotEmpty ? email[0].toUpperCase() : '?',
+                displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -664,7 +695,24 @@ class _PortalShellState extends State<PortalShell> {
     showDialog(
       context: context,
       builder: (_) => _ProfileDialog(communityId: appState.activeCommunityId!),
-    );
+    ).then((_) => _refreshProfileName(appState));
+  }
+
+  Future<void> _refreshProfileName(AppState appState) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final communityId = appState.activeCommunityId;
+    if (userId == null || communityId == null) return;
+    try {
+      final row = await Supabase.instance.client
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', userId)
+          .eq('community_id', communityId)
+          .maybeSingle();
+      if (row != null && mounted) {
+        setState(() => _profileName = row['full_name'] as String?);
+      }
+    } catch (_) {}
   }
 
   void _showChangePasswordDialog(BuildContext context) {
@@ -702,6 +750,10 @@ class _PortalShellState extends State<PortalShell> {
       String currentPath) {
     final hasUnit = appState.hasUnit || isStaff || isGuard;
     final email = user?.email ?? '';
+    final fullName =
+        _profileName ?? user?.userMetadata?['full_name'] as String?;
+    final displayName =
+        (fullName != null && fullName.isNotEmpty) ? fullName : email;
     final roleBadge = appState.activeRole != null && hasUnit
         ? _formatRole(appState.activeRole!.role)
         : _isCommunityLoaded
@@ -772,7 +824,7 @@ class _PortalShellState extends State<PortalShell> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            email,
+                            displayName,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,
@@ -1051,13 +1103,32 @@ class _PortalShellState extends State<PortalShell> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user!.email!,
+                      (_profileName?.isNotEmpty == true)
+                          ? _profileName!
+                          : (user!.userMetadata?['full_name'] as String?)
+                                      ?.isNotEmpty ==
+                                  true
+                              ? user!.userMetadata!['full_name'] as String
+                              : user!.email!,
                       style: TextStyle(
                         color: Colors.grey.shade800,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if ((_profileName?.isNotEmpty == true) ||
+                        (user!.userMetadata?['full_name'] as String?)
+                                ?.isNotEmpty ==
+                            true) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        user!.email!,
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     Row(
                       children: [

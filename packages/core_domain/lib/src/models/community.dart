@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'or_template_config.dart';
 
 part 'community.g.dart';
 
@@ -39,4 +40,14 @@ class Community {
 
   bool get isProfessional => plan == 'professional' || plan == 'enterprise';
   bool get isEnterprise => plan == 'enterprise';
+
+  /// OR template configuration from community settings.
+  /// Falls back to default detailed style if not configured.
+  ORTemplateConfig get orTemplate {
+    final raw = settings?['or_template'];
+    if (raw is Map<String, dynamic>) {
+      return ORTemplateConfig.fromJson(raw);
+    }
+    return ORTemplateConfig.defaultConfig;
+  }
 }

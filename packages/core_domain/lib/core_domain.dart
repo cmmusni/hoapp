@@ -1,6 +1,7 @@
 library core_domain;
 
 export 'src/models/community.dart';
+export 'src/models/or_template_config.dart';
 export 'src/models/user_profile.dart';
 export 'src/models/user_role.dart';
 export 'src/models/unit.dart';

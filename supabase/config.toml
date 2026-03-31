@@ -73,3 +73,6 @@ verify_jwt = false
 
 [functions.validate_pass]
 verify_jwt = false
+
+[functions.scan_invoice]
+verify_jwt = false

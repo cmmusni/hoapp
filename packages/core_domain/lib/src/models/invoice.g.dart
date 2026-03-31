@@ -25,6 +25,7 @@ Invoice _$InvoiceFromJson(Map<String, dynamic> json) => Invoice(
           ? null
           : DateTime.parse(json['period_end'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
+      createdBy: json['created_by'] as String?,
     );
 
 Map<String, dynamic> _$InvoiceToJson(Invoice instance) => <String, dynamic>{
@@ -42,6 +43,7 @@ Map<String, dynamic> _$InvoiceToJson(Invoice instance) => <String, dynamic>{
       'period_start': instance.periodStart?.toIso8601String(),
       'period_end': instance.periodEnd?.toIso8601String(),
       'created_at': instance.createdAt.toIso8601String(),
+      'created_by': instance.createdBy,
     };
 
 const _$InvoiceCategoryEnumMap = {

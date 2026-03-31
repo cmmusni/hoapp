@@ -52,53 +52,45 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       final profiles = <String, UserProfile>{};
       final emails = <String, String>{};
 
-      // Bulk-fetch all profiles for this community in one query
+      // Use server function to get all user emails and display names
       try {
-        final allProfiles = await client
-            .from('profiles')
-            .select()
-            .eq('community_id', appState.activeCommunityId!);
+        final result = await client.rpc('get_community_user_emails', params: {
+          'p_community_id': appState.activeCommunityId!,
+        });
 
-        for (final row in (allProfiles as List)) {
-          final profile = UserProfile.fromJson(row);
-          profiles[profile.userId] = profile;
-        }
-      } catch (_) {}
+        for (final row in (result as List)) {
+          final uid = row['user_id'] as String;
+          final email = row['email'] as String?;
+          final displayName = row['display_name'] as String?;
 
-      // For users with no name, try to get their email from accepted invites
-      final missingNameUserIds = roles
-          .where((r) {
-            final p = profiles[r.userId];
-            return p == null ||
-                (p.fullName == null || p.fullName!.isEmpty) &&
-                    (p.email == null || p.email!.isEmpty);
-          })
-          .map((r) => r.userId)
-          .toSet();
-
-      if (missingNameUserIds.isNotEmpty) {
-        try {
-          final inviteRows = await client
-              .from('invites')
-              .select('email, accepted_at')
-              .eq('community_id', appState.activeCommunityId!)
-              .not('accepted_at', 'is', null);
-
-          // Build a set of invite emails for this community
-          final inviteEmails = <String>{};
-          for (final row in (inviteRows as List)) {
-            final email = row['email'] as String?;
-            if (email != null) inviteEmails.add(email);
+          if (displayName != null && displayName.isNotEmpty) {
+            // Create a synthetic UserProfile so the UI can use it
+            profiles.putIfAbsent(
+              uid,
+              () => UserProfile(
+                userId: uid,
+                communityId: appState.activeCommunityId!,
+                fullName: displayName,
+                email: email,
+                createdAt: DateTime.now(),
+              ),
+            );
           }
+          if (email != null && email.isNotEmpty) {
+            emails[uid] = email;
+          }
+        }
+      } catch (_) {
+        // Fallback: bulk-fetch profiles table directly
+        try {
+          final allProfiles = await client
+              .from('profiles')
+              .select()
+              .eq('community_id', appState.activeCommunityId!);
 
-          // Try to match remaining users by querying their profile email
-          // from any community, or by their auth email
-          for (final uid in missingNameUserIds) {
-            // Check if profile has email
-            final p = profiles[uid];
-            if (p?.email != null && p!.email!.isNotEmpty) {
-              emails[uid] = p.email!;
-            }
+          for (final row in (allProfiles as List)) {
+            final profile = UserProfile.fromJson(row);
+            profiles[profile.userId] = profile;
           }
         } catch (_) {}
       }
@@ -367,7 +359,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () => Navigator.of(ctx).pop(true),
-            icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              size: 18,
+              color: Colors.white,
+            ),
             label: const Text('Remove',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(

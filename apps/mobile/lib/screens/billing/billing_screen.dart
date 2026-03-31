@@ -6,8 +6,93 @@ import 'package:core_ui/core_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:file_picker/file_picker.dart';
 
 const _brandColor = Color(0xff215e3f);
+
+String _unitLabel(Unit unit) {
+  final label = 'Unit ${unit.unitNumber}';
+  if (unit.unitType != null && unit.unitType!.isNotEmpty) {
+    return '$label (${unit.unitType})';
+  }
+  return label;
+}
+
+Widget _buildUnitAutocomplete({
+  required List<Unit> units,
+  required String? selectedUnitId,
+  required ValueChanged<String?> onSelected,
+  required String? Function(String?) validator,
+  Key? key,
+}) {
+  final initialUnit = selectedUnitId != null
+      ? units
+          .cast<Unit?>()
+          .firstWhere((u) => u!.id == selectedUnitId, orElse: () => null)
+      : null;
+
+  return Autocomplete<Unit>(
+    key: key,
+    initialValue: initialUnit != null
+        ? TextEditingValue(text: _unitLabel(initialUnit))
+        : TextEditingValue.empty,
+    displayStringForOption: _unitLabel,
+    optionsBuilder: (textEditingValue) {
+      if (textEditingValue.text.isEmpty) return units;
+      final query = textEditingValue.text.toLowerCase();
+      return units.where((unit) {
+        return unit.unitNo.toLowerCase().contains(query) ||
+            (unit.unitType?.toLowerCase().contains(query) ?? false);
+      });
+    },
+    onSelected: (unit) => onSelected(unit.id),
+    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+      return TextFormField(
+        controller: controller,
+        focusNode: focusNode,
+        decoration: InputDecoration(
+          labelText: 'Unit',
+          hintText: 'Type to search units...',
+          prefixIcon: const Icon(Icons.apartment, size: 20),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        validator: validator,
+        onChanged: (value) {
+          final match = units
+              .cast<Unit?>()
+              .firstWhere((u) => _unitLabel(u!) == value, orElse: () => null);
+          if (match == null) onSelected(null);
+        },
+      );
+    },
+    optionsViewBuilder: (context, onAutoSelected, options) {
+      return Align(
+        alignment: Alignment.topLeft,
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(12),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              itemCount: options.length,
+              itemBuilder: (context, index) {
+                final unit = options.elementAt(index);
+                return ListTile(
+                  leading: const Icon(Icons.apartment, size: 20),
+                  title: Text(_unitLabel(unit)),
+                  dense: true,
+                  onTap: () => onAutoSelected(unit),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -779,36 +864,59 @@ class _InvoiceDetailsSheetState extends State<_InvoiceDetailsSheet> {
                     if (items.isEmpty) return _buildTotalRow(currencyFormat);
                     return Column(
                       children: [
-                        ...items.map((item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
+                        ...items.map((item) => Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(item.label,
-                                            style:
-                                                const TextStyle(fontSize: 14)),
-                                        if (item.metadata != null &&
-                                            item.metadata!['detail'] != null)
-                                          Text(
-                                            item.metadata!['detail'] as String,
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey[500]),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          item.label,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                      ],
-                                    ),
+                                        ),
+                                      ),
+                                      Text(
+                                        currencyFormat.format(item.amount),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    currencyFormat.format(item.amount),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
+                                  if (item.description != null &&
+                                      item.description!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item.description!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
                                     ),
-                                  ),
+                                  ],
+                                  if (item.periodStart != null &&
+                                      item.periodEnd != null) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Period: ${dateFormat.format(item.periodStart!)} - ${dateFormat.format(item.periodEnd!)}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             )),
@@ -936,6 +1044,19 @@ class _InvoiceDetailsSheetState extends State<_InvoiceDetailsSheet> {
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _generateOR(context),
+                      icon: const Icon(Icons.receipt_long, size: 18),
+                      label: const Text('Generate OR'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _brandColor,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
                     child: TextButton.icon(
                       onPressed:
                           _isDeleting ? null : () => _confirmDelete(context),
@@ -1030,6 +1151,72 @@ class _InvoiceDetailsSheetState extends State<_InvoiceDetailsSheet> {
         setState(() => _isDeleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to delete: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _generateOR(BuildContext context) async {
+    try {
+      final repo = context.read<BillingRepository>();
+
+      // Load line items
+      final lineItems = await repo.getLineItems(widget.invoice.id);
+
+      // Load community
+      final communityRow = await Supabase.instance.client
+          .from('communities')
+          .select()
+          .eq('id', widget.invoice.communityId)
+          .single();
+      final community = Community.fromJson(communityRow);
+
+      // Load owner name: household_members → profiles (two-step, no FK)
+      String? ownerName;
+      try {
+        final hm = await Supabase.instance.client
+            .from('household_members')
+            .select('user_id')
+            .eq('unit_id', widget.invoice.unitId)
+            .eq('member_role', 'primary')
+            .maybeSingle();
+        final ownerId = hm?['user_id'] as String?;
+        if (ownerId != null) {
+          final profile = await Supabase.instance.client
+              .from('profiles')
+              .select('full_name')
+              .eq('user_id', ownerId)
+              .maybeSingle();
+          ownerName = profile?['full_name'] as String?;
+        }
+      } catch (_) {}
+
+      // Current user display name as "Prepared by"
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      final preparedBy = currentUser?.userMetadata?['full_name'] as String?;
+
+      final pdfService = PDFService();
+      final pdfBytes = await pdfService.generateOfficialReceipt(
+        community: community,
+        invoice: widget.invoice,
+        lineItems: lineItems,
+        unitNo: _unitNo ?? '-',
+        ownerName: ownerName,
+        preparedBy: preparedBy,
+        logoUrl: community.logoUrl,
+      );
+
+      await pdfService.sharePDF(
+        pdfBytes,
+        'OR-${widget.invoice.id.substring(0, 8).toUpperCase()}.pdf',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate OR: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -1421,22 +1608,20 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
-  final _descriptionController = TextEditingController();
 
-  InvoiceCategory _selectedCategory = InvoiceCategory.dues;
   String? _selectedUnitId;
   DateTime _dueDate = DateTime.now().add(const Duration(days: 30));
-  DateTime? _periodStart;
-  DateTime? _periodEnd;
   bool _isCreating = false;
+  bool _isScanning = false;
 
-  final List<_LineItemEntry> _lineItems = [];
+  final List<_CategoryEntry> _entries = [];
   Future<List<Unit>>? _unitsFuture;
 
   @override
   void initState() {
     super.initState();
     _loadUnits();
+    _addEntry();
   }
 
   void _loadUnits() {
@@ -1448,10 +1633,9 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
   }
 
   void _recalcTotal() {
-    if (_lineItems.isEmpty) return;
     double total = 0;
-    for (final item in _lineItems) {
-      total += double.tryParse(item.amountController.text) ?? 0;
+    for (final e in _entries) {
+      total += double.tryParse(e.amountController.text) ?? 0;
     }
     _amountController.text = total > 0 ? total.toStringAsFixed(2) : '';
   }
@@ -1460,12 +1644,31 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
   void dispose() {
     _amountController.dispose();
     _notesController.dispose();
-    _descriptionController.dispose();
-    for (final item in _lineItems) {
-      item.labelController.dispose();
-      item.amountController.dispose();
+    for (final e in _entries) {
+      e.descriptionController.dispose();
+      e.amountController.removeListener(_recalcTotal);
+      e.amountController.dispose();
     }
     super.dispose();
+  }
+
+  void _addEntry() {
+    final amtCtrl = TextEditingController();
+    amtCtrl.addListener(_recalcTotal);
+    setState(() {
+      _entries.add(_CategoryEntry(
+        descriptionController: TextEditingController(),
+        amountController: amtCtrl,
+      ));
+    });
+  }
+
+  void _removeEntry(int index) {
+    _entries[index].descriptionController.dispose();
+    _entries[index].amountController.removeListener(_recalcTotal);
+    _entries[index].amountController.dispose();
+    setState(() => _entries.removeAt(index));
+    _recalcTotal();
   }
 
   @override
@@ -1520,6 +1723,10 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
                   controller: scrollController,
                   padding: const EdgeInsets.all(16),
                   children: [
+                    // Scan invoice image button
+                    _buildScanInvoiceButton(),
+                    const SizedBox(height: 16),
+
                     // Unit selector
                     FutureBuilder<List<Unit>>(
                       future: _unitsFuture,
@@ -1535,163 +1742,69 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
                             style: TextStyle(color: Colors.red),
                           );
                         }
-                        return DropdownButtonFormField<String>(
-                          value: _selectedUnitId,
-                          decoration: InputDecoration(
-                            labelText: 'Unit',
-                            prefixIcon: const Icon(Icons.apartment, size: 20),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          items: units
-                              .map((unit) => DropdownMenuItem(
-                                    value: unit.id,
-                                    child: Text('Unit ${unit.unitNumber}'),
-                                  ))
-                              .toList(),
-                          onChanged: (value) =>
-                              setState(() => _selectedUnitId = value),
-                          validator: (v) => v == null ? 'Required' : null,
+                        return _buildUnitAutocomplete(
+                          units: units,
+                          selectedUnitId: _selectedUnitId,
+                          onSelected: (id) =>
+                              setState(() => _selectedUnitId = id),
+                          key: ValueKey(_selectedUnitId),
+                          validator: (value) {
+                            if (_selectedUnitId == null) return 'Required';
+                            return null;
+                          },
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    // Category chips
-                    Text('Category',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
-                        )),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: InvoiceCategory.values.map((category) {
-                        final isSelected = _selectedCategory == category;
-                        return ChoiceChip(
-                          label: Text(_chipLabel(category)),
-                          selected: isSelected,
-                          onSelected: (_) =>
-                              setState(() => _selectedCategory = category),
-                          selectedColor: _brandColor.withOpacity(0.15),
-                          labelStyle: TextStyle(
-                            color: isSelected ? _brandColor : Colors.grey[700],
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Description
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: InputDecoration(
-                        labelText: 'Description (Optional)',
-                        hintText: 'e.g., March 2026 Water Billing',
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Period dates
+                    // Billing Items header
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () async {
-                              final date = await showDatePicker(
-                                context: context,
-                                initialDate: _periodStart ??
-                                    DateTime.now()
-                                        .subtract(const Duration(days: 30)),
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime.now()
-                                    .add(const Duration(days: 365)),
-                              );
-                              if (date != null) {
-                                setState(() => _periodStart = date);
-                              }
-                            },
-                            child: InputDecorator(
-                              decoration: InputDecoration(
-                                labelText: 'Period Start',
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                                suffixIcon:
-                                    const Icon(Icons.calendar_today, size: 18),
-                              ),
-                              child: Text(
-                                _periodStart != null
-                                    ? dateFormat.format(_periodStart!)
-                                    : 'Optional',
-                                style: TextStyle(
-                                  color:
-                                      _periodStart != null ? null : Colors.grey,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () async {
-                              final date = await showDatePicker(
-                                context: context,
-                                initialDate: _periodEnd ?? DateTime.now(),
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime.now()
-                                    .add(const Duration(days: 365)),
-                              );
-                              if (date != null) {
-                                setState(() => _periodEnd = date);
-                              }
-                            },
-                            child: InputDecorator(
-                              decoration: InputDecoration(
-                                labelText: 'Period End',
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                                suffixIcon:
-                                    const Icon(Icons.calendar_today, size: 18),
-                              ),
-                              child: Text(
-                                _periodEnd != null
-                                    ? dateFormat.format(_periodEnd!)
-                                    : 'Optional',
-                                style: TextStyle(
-                                  color:
-                                      _periodEnd != null ? null : Colors.grey,
-                                ),
-                              ),
-                            ),
-                          ),
+                        Text('Billing Items',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800],
+                            )),
+                        TextButton.icon(
+                          onPressed: _addEntry,
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Add Item'),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+
+                    // Category entry cards
+                    for (var i = 0; i < _entries.length; i++)
+                      _buildEntryCard(i, dateFormat),
+
                     const SizedBox(height: 16),
 
-                    // Amount
+                    // Total (read-only)
                     TextFormField(
                       controller: _amountController,
+                      readOnly: true,
                       decoration: InputDecoration(
-                        labelText: 'Amount',
+                        labelText: 'Total',
                         prefixText: '₱ ',
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
                       ),
-                      keyboardType: TextInputType.number,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                       validator: (value) {
-                        if (value?.isEmpty ?? true) return 'Required';
+                        if (value?.isEmpty ?? true) {
+                          return 'Add at least one billing item';
+                        }
                         final amount = double.tryParse(value!);
                         if (amount == null || amount <= 0) {
-                          return 'Invalid amount';
+                          return 'Total must be > 0';
                         }
                         return null;
                       },
@@ -1708,9 +1821,7 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
                           lastDate:
                               DateTime.now().add(const Duration(days: 365)),
                         );
-                        if (date != null) {
-                          setState(() => _dueDate = date);
-                        }
+                        if (date != null) setState(() => _dueDate = date);
                       },
                       child: InputDecorator(
                         decoration: InputDecoration(
@@ -1723,69 +1834,6 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Line items
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Line Items',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
-                            )),
-                        TextButton.icon(
-                          onPressed: _addLineItem,
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Add Item'),
-                        ),
-                      ],
-                    ),
-                    for (var i = 0; i < _lineItems.length; i++)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: TextFormField(
-                                controller: _lineItems[i].labelController,
-                                decoration: InputDecoration(
-                                  hintText: 'Item label',
-                                  border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              flex: 2,
-                              child: TextFormField(
-                                controller: _lineItems[i].amountController,
-                                decoration: InputDecoration(
-                                  hintText: '0.00',
-                                  prefixText: '₱ ',
-                                  border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
-                                ),
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => _removeLineItem(i),
-                              icon: const Icon(Icons.close, size: 18),
-                              color: Colors.red[400],
-                            ),
-                          ],
-                        ),
-                      ),
-                    const SizedBox(height: 8),
 
                     // Notes
                     TextFormField(
@@ -1835,8 +1883,181 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
     );
   }
 
+  Widget _buildEntryCard(int index, DateFormat dateFormat) {
+    final entry = _entries[index];
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Text('Item ${index + 1}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[600],
+                    )),
+                const Spacer(),
+                if (_entries.length > 1)
+                  IconButton(
+                    onPressed: () => _removeEntry(index),
+                    icon: const Icon(Icons.close, size: 18),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    color: Colors.red[400],
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Category chips
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: InvoiceCategory.values.map((cat) {
+                final isSelected = entry.category == cat;
+                return ChoiceChip(
+                  label: Text(_chipLabel(cat)),
+                  selected: isSelected,
+                  onSelected: (_) => setState(() => entry.category = cat),
+                  selectedColor: _brandColor.withOpacity(0.15),
+                  labelStyle: TextStyle(
+                    fontSize: 12,
+                    color: isSelected ? _brandColor : Colors.grey[700],
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+            // Description
+            TextFormField(
+              controller: entry.descriptionController,
+              decoration: InputDecoration(
+                hintText: 'Description (Optional)',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 10),
+            // Period Start / End
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: entry.periodStart ??
+                            DateTime.now().subtract(const Duration(days: 30)),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (date != null) {
+                        setState(() => entry.periodStart = date);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Period Start',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        suffixIcon: const Icon(Icons.calendar_today, size: 16),
+                      ),
+                      child: Text(
+                        entry.periodStart != null
+                            ? dateFormat.format(entry.periodStart!)
+                            : 'Optional',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: entry.periodStart != null ? null : Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: entry.periodEnd ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (date != null) {
+                        setState(() => entry.periodEnd = date);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Period End',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        suffixIcon: const Icon(Icons.calendar_today, size: 16),
+                      ),
+                      child: Text(
+                        entry.periodEnd != null
+                            ? dateFormat.format(entry.periodEnd!)
+                            : 'Optional',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: entry.periodEnd != null ? null : Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Amount
+            TextFormField(
+              controller: entry.amountController,
+              decoration: InputDecoration(
+                hintText: 'Amount',
+                prefixText: '₱ ',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 13),
+              validator: (value) {
+                if (value?.isEmpty ?? true) return 'Required';
+                final amt = double.tryParse(value!);
+                if (amt == null || amt <= 0) return 'Invalid';
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _createInvoice() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_entries.isEmpty) return;
 
     setState(() => _isCreating = true);
 
@@ -1850,28 +2071,38 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
         metadata['notes'] = _notesController.text;
       }
 
+      // Build description from category labels
+      final categoryLabels =
+          _entries.map((e) => _chipLabel(e.category)).toSet().toList();
+      final description = categoryLabels.join(' + ');
+
+      // Use first entry's category as invoice-level category
+      final primaryCategory = _entries.first.category;
+
+      final lineItems = _entries
+          .map((e) => {
+                'label': _chipLabel(e.category),
+                'amount': double.tryParse(e.amountController.text) ?? 0,
+                'category': e.category.name,
+                if (e.descriptionController.text.isNotEmpty)
+                  'description': e.descriptionController.text.trim(),
+                if (e.periodStart != null)
+                  'period_start':
+                      e.periodStart!.toIso8601String().split('T').first,
+                if (e.periodEnd != null)
+                  'period_end': e.periodEnd!.toIso8601String().split('T').first,
+              })
+          .toList();
+
       await repo.createInvoice(
         communityId: appState.activeCommunityId!,
         unitId: _selectedUnitId!,
-        category: _selectedCategory,
+        category: primaryCategory,
         amount: amount,
         dueDate: _dueDate,
-        description: _descriptionController.text.isNotEmpty
-            ? _descriptionController.text.trim()
-            : null,
-        periodStart: _periodStart,
-        periodEnd: _periodEnd,
+        description: description,
         metadata: metadata.isNotEmpty ? metadata : null,
-        lineItems: _lineItems.isNotEmpty
-            ? _lineItems
-                .where((item) => item.labelController.text.isNotEmpty)
-                .map((item) => {
-                      'label': item.labelController.text.trim(),
-                      'amount':
-                          double.tryParse(item.amountController.text) ?? 0,
-                    })
-                .toList()
-            : null,
+        lineItems: lineItems,
       );
 
       if (mounted) {
@@ -1894,23 +2125,188 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
     }
   }
 
-  void _addLineItem() {
-    final amtCtrl = TextEditingController();
-    amtCtrl.addListener(_recalcTotal);
-    setState(() {
-      _lineItems.add(_LineItemEntry(
-        labelController: TextEditingController(),
-        amountController: amtCtrl,
-      ));
-    });
+  Widget _buildScanInvoiceButton() {
+    return GestureDetector(
+      onTap: _isScanning ? null : _scanImage,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _isScanning ? _brandColor : Colors.grey.shade300,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color:
+              _isScanning ? _brandColor.withOpacity(0.04) : Colors.grey.shade50,
+        ),
+        child: Column(
+          children: [
+            if (_isScanning) ...[
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(height: 8),
+              const Text('Analyzing invoice image...',
+                  style: TextStyle(fontSize: 13, color: Colors.grey)),
+            ] else ...[
+              const Icon(Icons.document_scanner_outlined,
+                  size: 28, color: _brandColor),
+              const SizedBox(height: 8),
+              const Text('Upload Invoice Image',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _brandColor,
+                  )),
+              const SizedBox(height: 4),
+              Text('Auto-fill form from an invoice photo',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
-  void _removeLineItem(int index) {
-    _lineItems[index].labelController.dispose();
-    _lineItems[index].amountController.removeListener(_recalcTotal);
-    _lineItems[index].amountController.dispose();
-    setState(() => _lineItems.removeAt(index));
-    _recalcTotal();
+  Future<void> _scanImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      if (file.bytes == null) return;
+
+      setState(() => _isScanning = true);
+
+      final repo = context.read<BillingRepository>();
+      final data = await repo.scanInvoiceImage(file.bytes!);
+
+      if (!mounted) return;
+
+      // Match unit_number from scan to loaded units
+      final scannedUnitNo = data['unit_number'] as String?;
+      String? matchedUnitId;
+      if (scannedUnitNo != null && _unitsFuture != null) {
+        final units = await _unitsFuture!;
+        final match = units.cast<Unit?>().firstWhere(
+              (u) => u!.unitNo.toLowerCase() == scannedUnitNo.toLowerCase(),
+              orElse: () => null,
+            );
+        matchedUnitId = match?.id;
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        // Clear existing entries
+        for (final e in _entries) {
+          e.descriptionController.dispose();
+          e.amountController.removeListener(_recalcTotal);
+          e.amountController.dispose();
+        }
+        _entries.clear();
+
+        final pStart = data['period_start'] as String?;
+        final pEnd = data['period_end'] as String?;
+        final lineItems = data['line_items'] as List<dynamic>?;
+
+        // If AI returned multiple line items, create a category entry for each
+        if (lineItems != null && lineItems.length > 1) {
+          for (final item in lineItems) {
+            final itemMap = item as Map<String, dynamic>;
+            final itemCat = itemMap['category'] as String?;
+            final itemLabel = itemMap['label'] as String? ?? '';
+            final itemAmount = itemMap['amount'] as num?;
+
+            final amtCtrl = TextEditingController(
+              text: itemAmount?.toDouble().toStringAsFixed(2) ?? '',
+            );
+            amtCtrl.addListener(_recalcTotal);
+
+            _entries.add(_CategoryEntry(
+              category: itemCat != null
+                  ? InvoiceCategory.values.firstWhere(
+                      (c) => c.name == itemCat,
+                      orElse: () => _inferCategory(itemLabel),
+                    )
+                  : _inferCategory(itemLabel),
+              descriptionController: TextEditingController(text: itemLabel),
+              amountController: amtCtrl,
+              periodStart: pStart != null ? DateTime.tryParse(pStart) : null,
+              periodEnd: pEnd != null ? DateTime.tryParse(pEnd) : null,
+            ));
+          }
+        } else {
+          // Single entry from top-level scan data
+          final cat = data['category'] as String?;
+          final amount = data['amount'] as num?;
+          final desc = data['description'] as String?;
+
+          final amtCtrl = TextEditingController(
+            text: amount?.toDouble().toStringAsFixed(2) ?? '',
+          );
+          amtCtrl.addListener(_recalcTotal);
+
+          _entries.add(_CategoryEntry(
+            category: cat != null
+                ? InvoiceCategory.values.firstWhere(
+                    (c) => c.name == cat,
+                    orElse: () => InvoiceCategory.other,
+                  )
+                : InvoiceCategory.dues,
+            descriptionController: TextEditingController(text: desc ?? ''),
+            amountController: amtCtrl,
+            periodStart: pStart != null ? DateTime.tryParse(pStart) : null,
+            periodEnd: pEnd != null ? DateTime.tryParse(pEnd) : null,
+          ));
+        }
+
+        if (data['due_date'] != null) {
+          _dueDate = DateTime.tryParse(data['due_date']) ?? _dueDate;
+        }
+        if (data['notes'] != null) {
+          _notesController.text = data['notes'];
+        }
+        if (matchedUnitId != null) {
+          _selectedUnitId = matchedUnitId;
+        }
+
+        _recalcTotal();
+        _isScanning = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invoice data extracted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isScanning = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scan failed: $e')),
+        );
+      }
+    }
+  }
+
+  InvoiceCategory _inferCategory(String label) {
+    final lower = label.toLowerCase();
+    if (lower.contains('water')) return InvoiceCategory.water;
+    if (lower.contains('dues')) return InvoiceCategory.dues;
+    if (lower.contains('amenity') ||
+        lower.contains('pool') ||
+        lower.contains('parking')) return InvoiceCategory.amenity;
+    if (lower.contains('insurance')) return InvoiceCategory.insurance;
+    return InvoiceCategory.other;
   }
 
   String _chipLabel(InvoiceCategory cat) {
@@ -1929,13 +2325,19 @@ class _CreateInvoiceSheetState extends State<_CreateInvoiceSheet> {
   }
 }
 
-class _LineItemEntry {
-  final TextEditingController labelController;
+class _CategoryEntry {
+  InvoiceCategory category;
+  final TextEditingController descriptionController;
   final TextEditingController amountController;
+  DateTime? periodStart;
+  DateTime? periodEnd;
 
-  _LineItemEntry({
-    required this.labelController,
+  _CategoryEntry({
+    this.category = InvoiceCategory.dues,
+    required this.descriptionController,
     required this.amountController,
+    this.periodStart,
+    this.periodEnd,
   });
 }
 

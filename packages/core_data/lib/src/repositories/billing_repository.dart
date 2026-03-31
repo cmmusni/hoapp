@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../supabase_client.dart';
@@ -128,6 +129,7 @@ class BillingRepository {
           'currency': 'PHP',
           'due_date': dueDate.toIso8601String(),
           'status': 'unpaid',
+          'created_by': _client.auth.currentUser?.id,
           if (sourceId != null) 'source_id': sourceId,
           if (description != null) 'description': description,
           if (periodStart != null)
@@ -153,6 +155,14 @@ class BillingRepository {
                 'sort_order': e.key,
                 if (e.value['metadata'] != null)
                   'metadata': e.value['metadata'],
+                if (e.value['category'] != null)
+                  'category': e.value['category'],
+                if (e.value['description'] != null)
+                  'description': e.value['description'],
+                if (e.value['period_start'] != null)
+                  'period_start': e.value['period_start'],
+                if (e.value['period_end'] != null)
+                  'period_end': e.value['period_end'],
               })
           .toList();
       await _client.from('invoice_line_items').insert(items);
@@ -290,5 +300,31 @@ class BillingRepository {
   /// Delete invoice (staff only)
   Future<void> deleteInvoice(String id) async {
     await _client.from('invoices').delete().eq('id', id);
+  }
+
+  /// Scan an invoice image using AI and extract structured data.
+  /// [imageBytes] - raw image bytes (JPEG/PNG)
+  /// Returns a map with: description, category, amount, line_items, due_date, period_start, period_end, notes
+  Future<Map<String, dynamic>> scanInvoiceImage(List<int> imageBytes) async {
+    final jwt = _client.auth.currentSession?.accessToken;
+    final base64Image = base64Encode(imageBytes);
+
+    final response = await _client.functions.invoke(
+      'scan_invoice',
+      headers: {
+        if (jwt != null) 'x-user-token': jwt,
+      },
+      body: {
+        'image_base64': base64Image,
+        if (jwt != null) '_jwt': jwt,
+      },
+    );
+
+    final data = response.data as Map<String, dynamic>;
+    if (data['ok'] != true) {
+      throw Exception(data['error'] ?? 'Failed to scan invoice');
+    }
+
+    return data['data'] as Map<String, dynamic>;
   }
 }

@@ -399,13 +399,29 @@ class _UnitDetailBodyState extends State<_UnitDetailBody> {
                                 ),
                             ],
                           ),
-                          trailing: canManage &&
-                                  !isCurrentUser &&
-                                  member.memberRole != MemberRole.primary
-                              ? IconButton(
-                                  icon: Icon(Icons.remove_circle_outline,
-                                      color: Colors.red[400]),
-                                  onPressed: () => _confirmRemoveMember(member),
+                          trailing: canManage
+                              ? PopupMenuButton<String>(
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(
+                                      value: 'edit_name',
+                                      child: Text('Edit Name'),
+                                    ),
+                                    if (!isCurrentUser &&
+                                        member.memberRole != MemberRole.primary)
+                                      const PopupMenuItem(
+                                        value: 'remove',
+                                        child: Text('Remove',
+                                            style:
+                                                TextStyle(color: Colors.red)),
+                                      ),
+                                  ],
+                                  onSelected: (value) {
+                                    if (value == 'edit_name') {
+                                      _showEditNameSheet(member);
+                                    } else if (value == 'remove') {
+                                      _confirmRemoveMember(member);
+                                    }
+                                  },
                                 )
                               : Chip(
                                   label: Text(
@@ -526,6 +542,23 @@ class _UnitDetailBodyState extends State<_UnitDetailBody> {
         }
       }
     }
+  }
+
+  void _showEditNameSheet(HouseholdMember member) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: _EditNameSheet(
+          member: member,
+          onUpdated: _loadMembers,
+        ),
+      ),
+    );
   }
 
   void _showAddMemberSheet() {
@@ -784,6 +817,158 @@ class _AddMemberSheetState extends State<_AddMemberSheet> {
           SnackBar(content: Text('$name added to Unit ${widget.unit.unitNo}')),
         );
         widget.onAdded();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+}
+
+// ============ EDIT NAME BOTTOM SHEET ============
+
+class _EditNameSheet extends StatefulWidget {
+  final HouseholdMember member;
+  final VoidCallback onUpdated;
+
+  const _EditNameSheet({required this.member, required this.onUpdated});
+
+  @override
+  State<_EditNameSheet> createState() => _EditNameSheetState();
+}
+
+class _EditNameSheetState extends State<_EditNameSheet> {
+  late final TextEditingController _nameCtrl;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(
+        text: widget.member.displayName != 'Unknown'
+            ? widget.member.displayName
+            : '');
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _brand.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child:
+                      const Icon(Icons.edit_rounded, color: _brand, size: 24),
+                ),
+                const SizedBox(width: 14),
+                const Text('Edit Name',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _nameCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: 'Full Name',
+                prefixIcon: const Icon(Icons.person_outline, size: 20),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _brand, width: 1.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _handleUpdate,
+                icon: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save_rounded),
+                label: const Text('Update Name',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _brand,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleUpdate() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a name')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final repo = context.read<HouseholdRepository>();
+      await repo.updateHouseholdMember(
+        id: widget.member.id,
+        memberName: name,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Name updated successfully')),
+        );
+        widget.onUpdated();
       }
     } catch (e) {
       if (mounted) {

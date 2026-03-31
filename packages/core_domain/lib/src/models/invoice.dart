@@ -61,6 +61,9 @@ class Invoice {
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
+  @JsonKey(name: 'created_by')
+  final String? createdBy;
+
   Invoice({
     required this.id,
     required this.communityId,
@@ -76,6 +79,7 @@ class Invoice {
     this.periodStart,
     this.periodEnd,
     required this.createdAt,
+    this.createdBy,
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) =>

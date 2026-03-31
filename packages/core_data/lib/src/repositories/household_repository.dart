@@ -156,6 +156,7 @@ class HouseholdRepository {
     required String id,
     MemberRole? memberRole,
     String? relationship,
+    String? memberName,
   }) async {
     final updates = <String, dynamic>{};
 
@@ -164,6 +165,9 @@ class HouseholdRepository {
     }
     if (relationship != null) {
       updates['relationship'] = relationship;
+    }
+    if (memberName != null) {
+      updates['member_name'] = memberName;
     }
 
     if (updates.isEmpty) return;

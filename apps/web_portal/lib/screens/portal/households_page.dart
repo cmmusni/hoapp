@@ -287,7 +287,7 @@ class _UnitListState extends State<_UnitList> {
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: widget.onRefresh,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh, color: Colors.white),
               label: const Text('Retry',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
@@ -428,6 +428,7 @@ class _HouseholdDetail extends StatefulWidget {
 
 class _HouseholdDetailState extends State<_HouseholdDetail> {
   Future<List<HouseholdMember>>? _membersFuture;
+  bool _isPrimary = false;
 
   @override
   void initState() {
@@ -445,8 +446,18 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
 
   void _loadMembers() {
     final repo = context.read<HouseholdRepository>();
+    final userId = SupabaseClientManager.instance.auth.currentUser?.id;
     setState(() {
-      _membersFuture = repo.getHouseholdMembers(widget.unit.id);
+      _membersFuture = repo.getHouseholdMembers(widget.unit.id).then((members) {
+        if (mounted) {
+          setState(() {
+            _isPrimary = members.any(
+              (m) => m.userId == userId && m.memberRole == MemberRole.primary,
+            );
+          });
+        }
+        return members;
+      });
     });
   }
 
@@ -454,6 +465,7 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isStaff = appState.isStaff;
+    final canManage = isStaff || _isPrimary;
 
     return Scaffold(
       body: Column(
@@ -528,7 +540,8 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             onPressed: _loadMembers,
-                            icon: const Icon(Icons.refresh),
+                            icon:
+                                const Icon(Icons.refresh, color: Colors.white),
                             label: const Text('Retry',
                                 style: TextStyle(
                                     fontSize: 15, fontWeight: FontWeight.w600)),
@@ -559,7 +572,7 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
                             'No household members yet',
                             style: TextStyle(fontSize: 18),
                           ),
-                          if (isStaff) ...[
+                          if (canManage) ...[
                             const SizedBox(height: 8),
                             Text(
                               'Add members to this unit',
@@ -578,7 +591,7 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
                       final member = members[index];
                       return _MemberCard(
                         member: member,
-                        isStaff: isStaff,
+                        canManage: canManage,
                         onRefresh: _loadMembers,
                       );
                     },
@@ -589,7 +602,7 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
           ),
         ],
       ),
-      floatingActionButton: isStaff
+      floatingActionButton: canManage
           ? FloatingActionButton.extended(
               onPressed: () => _showAddMemberDialog(context),
               icon: const Icon(Icons.person_add),
@@ -724,6 +737,7 @@ class _HouseholdDetailPage extends StatefulWidget {
 
 class _HouseholdDetailPageState extends State<_HouseholdDetailPage> {
   Future<List<HouseholdMember>>? _membersFuture;
+  bool _isPrimary = false;
 
   @override
   void initState() {
@@ -733,8 +747,18 @@ class _HouseholdDetailPageState extends State<_HouseholdDetailPage> {
 
   void _loadMembers() {
     final repo = context.read<HouseholdRepository>();
+    final userId = SupabaseClientManager.instance.auth.currentUser?.id;
     setState(() {
-      _membersFuture = repo.getHouseholdMembers(widget.unit.id);
+      _membersFuture = repo.getHouseholdMembers(widget.unit.id).then((members) {
+        if (mounted) {
+          setState(() {
+            _isPrimary = members.any(
+              (m) => m.userId == userId && m.memberRole == MemberRole.primary,
+            );
+          });
+        }
+        return members;
+      });
     });
   }
 
@@ -742,6 +766,7 @@ class _HouseholdDetailPageState extends State<_HouseholdDetailPage> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isStaff = appState.isStaff;
+    final canManage = isStaff || _isPrimary;
 
     return Scaffold(
       appBar: AppBar(
@@ -751,7 +776,7 @@ class _HouseholdDetailPageState extends State<_HouseholdDetailPage> {
         ),
         title: Text('Unit ${widget.unit.unitNumber}'),
         actions: [
-          if (isStaff)
+          if (canManage)
             IconButton(
               onPressed: () => _showAddMemberDialog(context),
               icon: const Icon(Icons.person_add),
@@ -779,7 +804,7 @@ class _HouseholdDetailPageState extends State<_HouseholdDetailPage> {
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: _loadMembers,
-                      icon: const Icon(Icons.refresh),
+                      icon: const Icon(Icons.refresh, color: Colors.white),
                       label: const Text('Retry',
                           style: TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600)),
@@ -818,7 +843,7 @@ class _HouseholdDetailPageState extends State<_HouseholdDetailPage> {
                 final member = members[index];
                 return _MemberCard(
                   member: member,
-                  isStaff: isStaff,
+                  canManage: canManage,
                   onRefresh: _loadMembers,
                 );
               },
@@ -844,12 +869,12 @@ class _HouseholdDetailPageState extends State<_HouseholdDetailPage> {
 
 class _MemberCard extends StatelessWidget {
   final HouseholdMember member;
-  final bool isStaff;
+  final bool canManage;
   final VoidCallback onRefresh;
 
   const _MemberCard({
     required this.member,
-    required this.isStaff,
+    required this.canManage,
     required this.onRefresh,
   });
 
@@ -933,9 +958,13 @@ class _MemberCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (isStaff)
+            if (canManage)
               PopupMenuButton(
                 itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit_name',
+                    child: Text('Edit Name'),
+                  ),
                   const PopupMenuItem(
                     value: 'edit',
                     child: Text('Edit Role'),
@@ -951,7 +980,9 @@ class _MemberCard extends StatelessWidget {
                   ),
                 ],
                 onSelected: (value) {
-                  if (value == 'edit') {
+                  if (value == 'edit_name') {
+                    _showEditNameDialog(context);
+                  } else if (value == 'edit') {
                     _showEditMemberDialog(context);
                   } else if (value == 'invite') {
                     _inviteMember(context);
@@ -962,6 +993,16 @@ class _MemberCard extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEditNameDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _EditNameDialog(
+        member: member,
+        onUpdated: onRefresh,
       ),
     );
   }
@@ -1162,7 +1203,7 @@ class _InviteMemberDialogState extends State<_InviteMemberDialog> {
                     height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.send_rounded),
+                : const Icon(Icons.send_rounded, color: Colors.white),
             label: Text(_isInviting ? 'Sending...' : 'Send Invite',
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
@@ -1425,8 +1466,7 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Theme.of(context).colorScheme.onPrimary))
-                : Icon(Icons.add_home_outlined,
-                    color: Theme.of(context).colorScheme.onPrimary),
+                : const Icon(Icons.add_home_outlined, color: Colors.white),
             label: Text(_isCreating ? 'Creating...' : 'Create',
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
@@ -1625,7 +1665,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
           Icon(Icons.person_add_outlined,
               color: Theme.of(context).colorScheme.primary, size: 24),
           const SizedBox(width: 12),
-          const Text('Add Household Member',
+          const Text('Add Member',
               style: TextStyle(fontWeight: FontWeight.w600)),
           const Spacer(),
           IconButton(
@@ -1851,7 +1891,10 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                     height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.person_add_outlined),
+                : const Icon(
+                    Icons.person_add_outlined,
+                    color: Colors.white,
+                  ),
             label: Text(_isAdding ? 'Adding...' : 'Add',
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
@@ -2079,6 +2122,142 @@ class _EditMemberDialogState extends State<_EditMemberDialog> {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Member updated successfully')),
+        );
+        widget.onUpdated();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUpdating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+}
+
+// ============ EDIT NAME DIALOG ============
+
+class _EditNameDialog extends StatefulWidget {
+  final HouseholdMember member;
+  final VoidCallback onUpdated;
+
+  const _EditNameDialog({required this.member, required this.onUpdated});
+
+  @override
+  State<_EditNameDialog> createState() => _EditNameDialogState();
+}
+
+class _EditNameDialogState extends State<_EditNameDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  bool _isUpdating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+        text: widget.member.displayName != 'Unknown'
+            ? widget.member.displayName
+            : '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Icon(Icons.edit_outlined,
+              color: Theme.of(context).colorScheme.primary, size: 24),
+          const SizedBox(width: 12),
+          const Text('Edit Name',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _nameController,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            labelText: 'Full Name',
+            prefixIcon: const Icon(Icons.person_outline, size: 20),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary, width: 1.5),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty)
+              return 'Name is required';
+            return null;
+          },
+        ),
+      ),
+      actions: [
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isUpdating ? null : _updateName,
+            icon: _isUpdating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.save_rounded, color: Colors.white),
+            label: Text(_isUpdating ? 'Updating...' : 'Update',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _updateName() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isUpdating = true);
+
+    try {
+      final repo = context.read<HouseholdRepository>();
+      await repo.updateHouseholdMember(
+        id: widget.member.id,
+        memberName: _nameController.text.trim(),
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Name updated successfully')),
         );
         widget.onUpdated();
       }

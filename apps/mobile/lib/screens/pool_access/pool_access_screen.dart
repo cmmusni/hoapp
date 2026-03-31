@@ -130,6 +130,30 @@ class _ResidentViewState extends State<_ResidentView> {
 
     final maxPaxMap = await repo.getMaxPaxByUnitType(communityId);
 
+    // Check if unit already has a registration with swimmers (unit-level lock)
+    // Uses SECURITY DEFINER function to bypass RLS
+    bool unitLocked = false;
+    DateTime? unitLockDate;
+    List<String> unitSwimmerNames = [];
+    if (unitId != null) {
+      final lockInfo = await repo.getUnitPoolLock(communityId, unitId);
+      final isLocked = lockInfo['locked'] == true;
+      final canEdit = lockInfo['can_edit'] as bool? ?? false;
+      // Lock the unit only during the 90-day window (not after it expires)
+      if (isLocked && !canEdit) {
+        unitLocked = true;
+        final nextDate = lockInfo['next_editable_date'] as String?;
+        unitLockDate = nextDate != null ? DateTime.tryParse(nextDate) : null;
+        final swimmers = lockInfo['swimmers'];
+        if (swimmers is List) {
+          unitSwimmerNames = swimmers
+              .map((s) => (s is Map ? s['full_name'] as String? : null) ?? '')
+              .where((n) => n.isNotEmpty)
+              .toList();
+        }
+      }
+    }
+
     return _ResidentData(
       registration: registration,
       swimmers: swimmers,
@@ -142,6 +166,9 @@ class _ResidentViewState extends State<_ResidentView> {
       profileOccupantType: profileOccupantType,
       unitMemberNames: unitMemberNames,
       maxPaxMap: maxPaxMap,
+      unitLocked: unitLocked,
+      unitLockDate: unitLockDate,
+      unitSwimmerNames: unitSwimmerNames,
     );
   }
 
@@ -175,6 +202,9 @@ class _ResidentViewState extends State<_ResidentView> {
             }
 
             final data = snapshot.data!;
+            if (data.registration == null && data.unitLocked) {
+              return _buildUnitLocked(data);
+            }
             if (data.registration == null) {
               return _buildNoRegistration(data);
             }
@@ -183,6 +213,96 @@ class _ResidentViewState extends State<_ResidentView> {
         ),
       ),
     );
+  }
+
+  Widget _buildUnitLocked(_ResidentData data) {
+    final dateFormat = DateFormat('MMM dd, yyyy');
+    return LayoutBuilder(builder: (context, constraints) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.lock_outline,
+                      size: 64, color: Colors.orange),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Pool Registration Locked',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Your unit already has registered swimmers.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 15, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.lock_outline,
+                          size: 20, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Text(
+                        data.unitLockDate != null
+                            ? 'Editing locked until ${dateFormat.format(data.unitLockDate!)}'
+                            : 'Editing is currently locked',
+                        style:
+                            const TextStyle(fontSize: 13, color: Colors.orange),
+                      ),
+                    ],
+                  ),
+                ),
+                if (data.unitSwimmerNames.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Registered Swimmers',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...data.unitSwimmerNames.map((name) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.person_outline,
+                                size: 18, color: Colors.orange),
+                            const SizedBox(width: 8),
+                            Text(name, style: const TextStyle(fontSize: 14)),
+                          ],
+                        ),
+                      )),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildNoRegistration(_ResidentData data) {
@@ -353,8 +473,8 @@ class _ResidentViewState extends State<_ResidentView> {
           const SizedBox(height: 8),
         ],
 
-        // 3-month edit lock
-        if (!reg.canEdit) ...[
+        // Edit lock (unit-level or 3-month rule)
+        if (data.unitLocked || !reg.canEdit) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -368,7 +488,9 @@ class _ResidentViewState extends State<_ResidentView> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Edits locked until ${dateFormat.format(reg.nextEditableDate)}',
+                    data.unitLocked && data.unitLockDate != null
+                        ? 'Editing locked until ${dateFormat.format(data.unitLockDate!)}'
+                        : 'Edits locked until ${dateFormat.format(reg.nextEditableDate)}',
                     style: const TextStyle(fontSize: 13, color: Colors.orange),
                   ),
                 ),
@@ -378,7 +500,7 @@ class _ResidentViewState extends State<_ResidentView> {
         ],
 
         // Edit button
-        if (reg.canEdit) ...[
+        if (!data.unitLocked && reg.canEdit) ...[
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -466,6 +588,9 @@ class _ResidentData {
   final OccupantType? profileOccupantType;
   final List<String> unitMemberNames;
   final Map<String, int> maxPaxMap;
+  final bool unitLocked;
+  final DateTime? unitLockDate;
+  final List<String> unitSwimmerNames;
 
   _ResidentData({
     this.registration,
@@ -479,6 +604,9 @@ class _ResidentData {
     this.profileOccupantType,
     this.unitMemberNames = const [],
     this.maxPaxMap = const {},
+    this.unitLocked = false,
+    this.unitLockDate,
+    this.unitSwimmerNames = const [],
   });
 }
 
