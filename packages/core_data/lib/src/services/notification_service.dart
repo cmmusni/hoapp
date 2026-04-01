@@ -28,10 +28,13 @@ class NotificationService {
       if (targetUserIds != null) body['target_user_ids'] = targetUserIds;
       if (data != null) body['data'] = data;
 
-      await _client.functions.invoke(
+      print('NotificationService: sending to $communityId — "$heading"');
+      final response = await _client.functions.invoke(
         'send_notification',
         body: body,
       );
+      print(
+          'NotificationService: response status ${response.status}, data: ${response.data}');
     } catch (e) {
       // Don't throw — notification failure shouldn't break the primary action.
       print('NotificationService.send error: $e');

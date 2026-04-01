@@ -53,7 +53,7 @@ serve(async (req) => {
     if (!heading?.trim()) return errorResponse('heading is required', 400)
     if (!content?.trim()) return errorResponse('content is required', 400)
 
-    // Verify the caller is staff/admin in this community
+    // Verify the caller belongs to this community
     const { data: roleRow } = await supabase
       .from('user_roles')
       .select('role')
@@ -61,9 +61,8 @@ serve(async (req) => {
       .eq('community_id', community_id)
       .maybeSingle()
 
-    const staffRoles = ['admin', 'staff', 'superadmin']
-    if (!roleRow || !staffRoles.includes(roleRow.role)) {
-      return errorResponse('Only staff/admin can send notifications', 403)
+    if (!roleRow) {
+      return errorResponse('User does not belong to this community', 403)
     }
 
     // Build OneSignal payload
@@ -85,10 +84,8 @@ serve(async (req) => {
       osPayload.include_aliases = { external_id: target_user_ids }
       osPayload.target_channel = 'push'
     } else {
-      // Send to all subscribers tagged with this community_id
-      osPayload.filters = [
-        { field: 'tag', key: 'community_id', relation: '=', value: community_id },
-      ]
+      // Send to all subscribed users in the app
+      osPayload.included_segments = ['Subscribed Users']
     }
 
     if (url) {

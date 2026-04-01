@@ -246,8 +246,12 @@ class _PortalShellState extends State<PortalShell> {
     try {
       final appState = context.read<AppState>();
       final user = context.read<AuthRepository>().currentUser;
-      if (user == null) return;
+      if (user == null) {
+        print('OneSignal: skipped — no user');
+        return;
+      }
 
+      print('OneSignal: registering user ${user.id}');
       OneSignalWeb.loginUser(user.id);
       final tags = <String, String>{};
       if (appState.activeCommunityId != null) {
@@ -257,6 +261,7 @@ class _PortalShellState extends State<PortalShell> {
         tags['role'] = appState.activeRole!.role.name;
       }
       if (tags.isNotEmpty) {
+        print('OneSignal: setting tags $tags');
         OneSignalWeb.setTags(tags);
       }
     } catch (e) {
