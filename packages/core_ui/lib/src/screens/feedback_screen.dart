@@ -131,7 +131,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             ),
           // Category dropdown
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: -4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: DropdownButtonFormField<String>(
               value: _filterCategory,
               icon: const Icon(Icons.keyboard_arrow_down_rounded),
@@ -227,11 +227,19 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showSubmitSheet(context),
-        child: const Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: screenSizeOf(context) == ScreenSize.mobile
+          ? FloatingActionButton(
+              onPressed: () => _showSubmitSheet(context),
+              child: const Icon(Icons.add),
+            )
+          : FloatingActionButton.extended(
+              onPressed: () => _showSubmitSheet(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Submit Feedback'),
+            ),
+      floatingActionButtonLocation: screenSizeOf(context) == ScreenSize.mobile
+          ? FloatingActionButtonLocation.endFloat
+          : FloatingActionButtonLocation.centerFloat,
     );
   }
 

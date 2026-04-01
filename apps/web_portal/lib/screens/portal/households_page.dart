@@ -254,12 +254,24 @@ class _UnitListState extends State<_UnitList> {
             ],
           ),
           floatingActionButton: isStaff
-              ? FloatingActionButton.extended(
-                  onPressed: () => _showCreateUnitDialog(context, units),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Unit'),
-                )
+              ? screenSizeOf(context) == ScreenSize.mobile
+                  ? FloatingActionButton(
+                      onPressed: () => _showCreateUnitDialog(context, units),
+                      child: const Icon(Icons.add, color: Colors.white),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                    )
+                  : FloatingActionButton.extended(
+                      onPressed: () => _showCreateUnitDialog(context, units),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: const Text('Add Unit',
+                          style: TextStyle(color: Colors.white)),
+                    )
               : null,
+          floatingActionButtonLocation:
+              screenSizeOf(context) == ScreenSize.mobile
+                  ? FloatingActionButtonLocation.endFloat
+                  : FloatingActionButtonLocation.centerFloat,
         );
       },
     );
@@ -603,13 +615,23 @@ class _HouseholdDetailState extends State<_HouseholdDetail> {
         ],
       ),
       floatingActionButton: canManage
-          ? FloatingActionButton.extended(
-              onPressed: () => _showAddMemberDialog(context),
-              icon: const Icon(Icons.person_add),
-              label: const Text('Add Member'),
-            )
+          ? screenSizeOf(context) == ScreenSize.mobile
+              ? FloatingActionButton(
+                  onPressed: () => _showAddMemberDialog(context),
+                  child: const Icon(Icons.add, color: Colors.white),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                )
+              : FloatingActionButton.extended(
+                  onPressed: () => _showAddMemberDialog(context),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text('Add Member',
+                      style: TextStyle(color: Colors.white)),
+                )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButtonLocation: screenSizeOf(context) == ScreenSize.mobile
+          ? FloatingActionButtonLocation.endFloat
+          : FloatingActionButtonLocation.centerFloat,
     );
   }
 

@@ -180,11 +180,20 @@ class _TicketList extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('New Ticket'),
-      ),
+      floatingActionButton: MediaQuery.of(context).size.width > 800
+          ? FloatingActionButton.extended(
+              onPressed: () => _showCreateDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('New Ticket'),
+            )
+          : FloatingActionButton(
+              onPressed: () => _showCreateDialog(context),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+      floatingActionButtonLocation: MediaQuery.of(context).size.width > 800
+          ? FloatingActionButtonLocation.centerFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -452,7 +461,8 @@ class _TicketDetailState extends State<_TicketDetail> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.primary, width: 1.5),
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 1.5),
                         ),
                       ),
                       maxLines: null,

@@ -529,12 +529,29 @@ class _PortalShellState extends State<PortalShell> {
           );
         }
 
-        // Mobile layout with drawer
+        // Mobile layout with drawer + bottom nav
+        final slug = widget.communitySlug;
+        final sidebarColor = _getSidebarColor(appState);
+
+        // Determine which bottom nav tab is active based on current route
+        int? activeBottomTab;
+        if (currentPath.contains('/announcements')) {
+          activeBottomTab = 0;
+        } else if (currentPath.contains('/billing')) {
+          activeBottomTab = 1;
+        } else if (currentPath.contains('/households')) {
+          activeBottomTab = 2; // mapped to center FAB
+        } else if (currentPath.contains('/security-pass')) {
+          activeBottomTab = 3;
+        } else if (currentPath.contains('/notifications')) {
+          activeBottomTab = 4;
+        }
+
         return Scaffold(
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(70),
             child: AppBar(
-              backgroundColor: _getSidebarColor(appState),
+              backgroundColor: sidebarColor,
               foregroundColor: Colors.white,
               toolbarHeight: 70,
               title: Column(
@@ -552,6 +569,23 @@ class _PortalShellState extends State<PortalShell> {
               ),
               centerTitle: true,
               actions: [
+                // Notification bell
+                if (isDesktop) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(right: 2),
+                    child: IconButton(
+                      icon: Badge(
+                        isLabelVisible: _totalNotifications > 0,
+                        label: Text('$_totalNotifications',
+                            style: const TextStyle(
+                                fontSize: 9, fontWeight: FontWeight.bold)),
+                        backgroundColor: Colors.red.shade400,
+                        child: const Icon(Icons.notifications_outlined),
+                      ),
+                      onPressed: () => context.go('/$slug/notifications'),
+                    ),
+                  )
+                ],
                 _buildUserDropdown(context, user, appState),
               ],
             ),
@@ -573,16 +607,133 @@ class _PortalShellState extends State<PortalShell> {
                       appState.activeCommunity?.name ?? widget.communitySlug,
                   onDismiss: _dismissTour,
                 ),
-              if (_isCommunityLoaded)
-                PortalChatbot(
-                  communitySlug: widget.communitySlug,
-                  currentPath: currentPath,
-                  userRole: appState.activeRole?.role.name,
-                ),
             ],
           ),
+          bottomNavigationBar: _buildMobileBottomNav(
+              context, appState, slug, activeBottomTab, sidebarColor),
+          floatingActionButton: _buildMobileCenterFab(
+              context, appState, slug, currentPath, sidebarColor),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
         );
       },
+    );
+  }
+
+  Widget _buildMobileBottomNav(
+    BuildContext context,
+    AppState appState,
+    String slug,
+    int? activeTab,
+    Color primary,
+  ) {
+    Widget navIcon(IconData icon, IconData selectedIcon, String label,
+        int tabIndex, int badge, String route) {
+      final isActive = activeTab == tabIndex;
+      return InkWell(
+        onTap: () => context.go('/$slug/$route'),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Badge(
+                isLabelVisible: badge > 0,
+                label: Text('$badge',
+                    style: const TextStyle(
+                        fontSize: 9, fontWeight: FontWeight.bold)),
+                backgroundColor: Colors.red.shade400,
+                child: Icon(
+                  isActive ? selectedIcon : icon,
+                  size: 20,
+                  color: isActive ? Colors.white : Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  color: isActive ? Colors.white : Colors.white70,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8,
+      elevation: 8,
+      color: primary,
+      surfaceTintColor: Colors.transparent,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Expanded(
+              child: navIcon(Icons.campaign_outlined, Icons.campaign, 'News', 0,
+                  _newAnnouncements, 'announcements')),
+          Expanded(
+              child: navIcon(
+                  Icons.family_restroom_outlined,
+                  Icons.family_restroom,
+                  appState.isResident ? 'My Household' : 'Households',
+                  1,
+                  0,
+                  'households')),
+          const SizedBox(width: 48), // space for FAB
+          Expanded(
+              child: navIcon(Icons.qr_code_2_outlined, Icons.qr_code_2,
+                  'Security', 3, 0, 'security-pass')),
+          Expanded(
+              child: navIcon(Icons.notifications_outlined, Icons.notifications,
+                  'Notifications', 4, _totalNotifications, 'notifications')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileCenterFab(
+    BuildContext context,
+    AppState appState,
+    String slug,
+    String currentPath,
+    Color primary,
+  ) {
+    final isBillingActive = currentPath.contains('/billing');
+
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: FloatingActionButton(
+        elevation: isBillingActive ? 2 : 6,
+        backgroundColor: primary,
+        shape: const CircleBorder(),
+        onPressed: () => context.go('/$slug/billing'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isBillingActive ? Icons.payment : Icons.payment_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(height: 2),
+            const Text(
+              'Billing',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -989,7 +1140,7 @@ class _PortalShellState extends State<PortalShell> {
                           _buildSidebarItem(
                               context,
                               'Announcements',
-                              Icons.announcement_outlined,
+                              Icons.campaign_outlined,
                               '/announcements',
                               currentPath,
                               badge: _newAnnouncements),
@@ -1179,241 +1330,388 @@ class _PortalShellState extends State<PortalShell> {
       bool isPro,
       String currentPath) {
     final hasUnit = appState.hasUnit || isStaff || isGuard;
+    final primary = _getSidebarColor(appState);
+    final communityName = appState.activeCommunity?.name ?? '';
+    final email = user?.email ?? '';
+    final roleLabel = appState.activeRole != null
+        ? _formatRole(appState.activeRole!.role)
+        : '';
+
     return Drawer(
       backgroundColor: Colors.white,
-      child: ListTileTheme(
-        tileColor: Colors.white,
-        child: ListView(
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                image: appState.activeCommunity?.logoUrl == null
-                    ? const DecorationImage(
-                        image:
-                            AssetImage('assets/images/hoapp-logo-with-bg.png'),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-                color: appState.activeCommunity?.logoUrl != null
-                    ? Colors.white
-                    : null,
-              ),
-              child: appState.activeCommunity?.logoUrl != null
-                  ? Center(
-                      child: Image.network(
-                        appState.activeCommunity!.logoUrl!,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Image.asset(
-                          'assets/images/hoapp-logo.png',
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+      child: Column(
+        children: [
+          // ── Green gradient header (matches native mobile) ──
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 20,
+              bottom: 20,
+              left: 20,
+              right: 20,
             ),
-            if (user?.email != null)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  primary,
+                  primary.withValues(alpha: 0.85),
+                ],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      (_profileName?.isNotEmpty == true)
-                          ? _profileName!
-                          : (user!.userMetadata?['full_name'] as String?)
-                                      ?.isNotEmpty ==
-                                  true
-                              ? user!.userMetadata!['full_name'] as String
-                              : user!.email!,
-                      style: TextStyle(
-                        color: Colors.grey.shade800,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            width: 2),
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.white,
+                        child: appState.activeCommunity?.logoUrl != null
+                            ? ClipOval(
+                                child: Image.network(
+                                  appState.activeCommunity!.logoUrl!,
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Text(
+                                    communityName.isNotEmpty
+                                        ? communityName[0].toUpperCase()
+                                        : 'H',
+                                    style: TextStyle(
+                                      color: primary,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                communityName.isNotEmpty
+                                    ? communityName[0].toUpperCase()
+                                    : 'H',
+                                style: TextStyle(
+                                  color: primary,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
-                    if ((_profileName?.isNotEmpty == true) ||
-                        (user!.userMetadata?['full_name'] as String?)
-                                ?.isNotEmpty ==
-                            true) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        user!.email!,
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 12,
+                    const Spacer(),
+                    if (roleLabel.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          roleLabel,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        if (appState.activeRole != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _formatRole(appState.activeRole!.role),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      appState.activeCommunity?.name ?? '',
-                      style:
-                          TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                    ),
                   ],
                 ),
-              ),
-            const Divider(height: 1),
-            if (!_isCommunityLoaded)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                const SizedBox(height: 16),
+                Text(
+                  communityName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              )
-            else ...[
-              _buildMenuItem(context, 'Announcements', Icons.announcement,
-                  '/${widget.communitySlug}/announcements', currentPath,
-                  badge: _newAnnouncements),
-              if (isResident && hasUnit) ...[
-                _buildMenuItem(context, 'My Household', Icons.family_restroom,
-                    '/${widget.communitySlug}/households', currentPath),
+                const SizedBox(height: 4),
+                Text(
+                  email,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 13,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
-              _buildMenuItem(context, 'Billing & Payments', Icons.payment,
-                  '/${widget.communitySlug}/billing', currentPath,
-                  badge: _pendingPayments),
-              _buildMenuItem(context, 'Tickets', Icons.support,
-                  '/${widget.communitySlug}/tickets', currentPath,
-                  badge: _openTickets),
-              _buildMenuItem(context, 'Violations', Icons.report,
-                  '/${widget.communitySlug}/violations', currentPath,
-                  badge: _pendingViolations),
-              _buildMenuItem(context, 'Amenities', Icons.pool,
-                  '/${widget.communitySlug}/amenities', currentPath,
-                  badge: _pendingBookings),
-              if (isPro && (hasUnit || isStaff)) ...[
-                if (!isGuard && !isMaintenance)
-                  _buildMenuItem(context, 'Pool Access', Icons.accessibility,
-                      '/${widget.communitySlug}/pool-access', currentPath),
-                if (!isResident)
-                  _buildMenuItem(
+            ),
+          ),
+
+          // ── Navigation items ──
+          if (!_isCommunityLoaded)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                children: [
+                  _buildDrawerItem(
                       context,
-                      'Registered Swimmers',
+                      'Announcements',
+                      Icons.campaign_outlined,
+                      Icons.campaign,
+                      '/${widget.communitySlug}/announcements',
+                      currentPath,
+                      primary,
+                      badge: _newAnnouncements),
+                  if (isResident && hasUnit)
+                    _buildDrawerItem(
+                        context,
+                        'My Household',
+                        Icons.family_restroom_outlined,
+                        Icons.family_restroom,
+                        '/${widget.communitySlug}/households',
+                        currentPath,
+                        primary),
+                  _buildDrawerItem(
+                      context,
+                      'Billing & Payments',
+                      Icons.payment_outlined,
+                      Icons.payment,
+                      '/${widget.communitySlug}/billing',
+                      currentPath,
+                      primary,
+                      badge: _pendingPayments),
+                  _buildDrawerItem(
+                      context,
+                      'Tickets',
+                      Icons.support_outlined,
+                      Icons.support,
+                      '/${widget.communitySlug}/tickets',
+                      currentPath,
+                      primary,
+                      badge: _openTickets),
+                  _buildDrawerItem(
+                      context,
+                      'Violations',
+                      Icons.report_outlined,
+                      Icons.report,
+                      '/${widget.communitySlug}/violations',
+                      currentPath,
+                      primary,
+                      badge: _pendingViolations),
+                  _buildDrawerItem(
+                      context,
+                      'Amenities',
+                      Icons.pool_outlined,
                       Icons.pool,
-                      '/${widget.communitySlug}/registered-swimmers',
-                      currentPath),
-              ],
-              if (isPro && (hasUnit || isStaff))
-                _buildMenuItem(context, 'Security Pass', Icons.badge,
-                    '/${widget.communitySlug}/security-pass', currentPath),
-              if ((isGuard || isMaintenance) && isPro)
-                _buildMenuItem(
-                    context,
-                    'QR Pass Scanner',
-                    Icons.qr_code_scanner,
-                    '/${widget.communitySlug}/qr-scanner',
-                    currentPath),
-              if (!isGuard && !isMaintenance && (hasUnit || isStaff)) ...[
-                _buildMenuItem(
-                    context,
-                    'Community Expenses',
-                    Icons.account_balance_wallet,
-                    '/${widget.communitySlug}/expenses',
-                    currentPath),
-                _buildMenuItem(context, 'Financial Reports', Icons.analytics,
-                    '/${widget.communitySlug}/financial-reports', currentPath),
-              ],
-              if (isStaff) ...[
-                const Divider(),
-                _buildMenuItem(context, 'Households', Icons.family_restroom,
-                    '/${widget.communitySlug}/households', currentPath),
-              ],
-              if (isAdmin) ...[
-                _buildMenuItem(context, 'Manage Users', Icons.people,
-                    '/${widget.communitySlug}/manage-users', currentPath),
-                const Divider(),
-                _buildMenuItem(context, 'Settings', Icons.settings,
-                    '/${widget.communitySlug}/settings', currentPath),
-              ],
-              _buildMenuItem(context, 'Feedback', Icons.feedback,
-                  '/${widget.communitySlug}/feedback', currentPath,
-                  badge: _openFeedback),
-            ],
-          ],
-        ),
+                      '/${widget.communitySlug}/amenities',
+                      currentPath,
+                      primary,
+                      badge: _pendingBookings),
+                  if (isPro && (hasUnit || isStaff)) ...[
+                    if (!isGuard && !isMaintenance)
+                      _buildDrawerItem(
+                          context,
+                          'Pool Access',
+                          Icons.accessibility_outlined,
+                          Icons.accessibility,
+                          '/${widget.communitySlug}/pool-access',
+                          currentPath,
+                          primary),
+                    if (!isResident)
+                      _buildDrawerItem(
+                          context,
+                          'Registered Swimmers',
+                          Icons.pool_outlined,
+                          Icons.pool,
+                          '/${widget.communitySlug}/registered-swimmers',
+                          currentPath,
+                          primary),
+                  ],
+                  if (isPro && (hasUnit || isStaff))
+                    _buildDrawerItem(
+                        context,
+                        'Security Pass',
+                        Icons.badge_outlined,
+                        Icons.badge,
+                        '/${widget.communitySlug}/security-pass',
+                        currentPath,
+                        primary),
+                  if ((isGuard || isMaintenance) && isPro)
+                    _buildDrawerItem(
+                        context,
+                        'QR Pass Scanner',
+                        Icons.qr_code_scanner_outlined,
+                        Icons.qr_code_scanner,
+                        '/${widget.communitySlug}/qr-scanner',
+                        currentPath,
+                        primary),
+                  if (!isGuard && !isMaintenance && (hasUnit || isStaff)) ...[
+                    _buildDrawerItem(
+                        context,
+                        'Community Expenses',
+                        Icons.account_balance_wallet_outlined,
+                        Icons.account_balance_wallet,
+                        '/${widget.communitySlug}/expenses',
+                        currentPath,
+                        primary),
+                    _buildDrawerItem(
+                        context,
+                        'Financial Reports',
+                        Icons.analytics_outlined,
+                        Icons.analytics,
+                        '/${widget.communitySlug}/financial-reports',
+                        currentPath,
+                        primary),
+                  ],
+                  if (isStaff) ...[
+                    _buildSectionDivider('STAFF'),
+                    _buildDrawerItem(
+                        context,
+                        'Households',
+                        Icons.family_restroom_outlined,
+                        Icons.family_restroom,
+                        '/${widget.communitySlug}/households',
+                        currentPath,
+                        primary),
+                  ],
+                  if (isAdmin) ...[
+                    _buildSectionDivider('ADMIN'),
+                    _buildDrawerItem(
+                        context,
+                        'Manage Users',
+                        Icons.people_outlined,
+                        Icons.people,
+                        '/${widget.communitySlug}/manage-users',
+                        currentPath,
+                        primary),
+                    _buildDrawerItem(
+                        context,
+                        'Settings',
+                        Icons.settings_outlined,
+                        Icons.settings,
+                        '/${widget.communitySlug}/settings',
+                        currentPath,
+                        primary),
+                  ],
+                  _buildDrawerItem(
+                      context,
+                      'Feedback',
+                      Icons.feedback_outlined,
+                      Icons.feedback,
+                      '/${widget.communitySlug}/feedback',
+                      currentPath,
+                      primary,
+                      badge: _openFeedback),
+                ],
+              ),
+            ),
+
+          // ── Sign Out ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade200),
+                ),
+              ),
+              child: ListTile(
+                leading: Icon(Icons.logout_rounded,
+                    color: Colors.red.shade400, size: 22),
+                title: Text('Sign Out',
+                    style: TextStyle(
+                        color: Colors.red.shade400,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  OneSignalWeb.logoutUser();
+                  await context.read<AuthRepository>().signOut();
+                  if (context.mounted) context.go('/login');
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, String title, IconData icon,
-      String route, String currentPath,
+  Widget _buildDrawerItem(BuildContext context, String title, IconData icon,
+      IconData selectedIcon, String route, String currentPath, Color primary,
       {int badge = 0}) {
     final routeSegment = route.split('/').last;
     final pathSegments = currentPath.split('/');
     final isActive = pathSegments.contains(routeSegment);
-    return ListTile(
-      leading: Icon(icon,
-          color: isActive ? Theme.of(context).colorScheme.primary : null),
-      title: Text(
-        title,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: isActive ? primary.withValues(alpha: 0.1) : Colors.transparent,
+      ),
+      child: ListTile(
+        dense: true,
+        leading: Icon(
+          isActive ? selectedIcon : icon,
+          color: isActive ? primary : Colors.grey.shade600,
+          size: 22,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+            color: isActive ? primary : Colors.grey.shade800,
+            fontSize: 14,
+          ),
+        ),
+        trailing: badge > 0
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade400,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  badge > 99 ? '99+' : '$badge',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600),
+                ),
+              )
+            : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop();
+          context.go(route);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionDivider(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, top: 12, bottom: 4),
+      child: Text(
+        label,
         style: TextStyle(
-          fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-          color: isActive ? Theme.of(context).colorScheme.primary : null,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.grey.shade400,
+          letterSpacing: 1.2,
         ),
       ),
-      trailing: badge > 0
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.redAccent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                badge > 99 ? '99+' : '$badge',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            )
-          : null,
-      tileColor: isActive
-          ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
-          : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      onTap: () {
-        Navigator.of(context).pop();
-        context.go(route);
-      },
     );
   }
 

@@ -231,10 +231,10 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Labels of the bottom nav items — used to map indices to the drawer items.
   static const _bottomNavLabels = [
     'Announcements',
-    'Billing & Payments',
-    'My Household', // placeholder — center FAB handles this
-    'Violations',
-    'Tickets',
+    'My Household',
+    'Billing & Payments', // placeholder — center FAB handles this
+    'Security Pass',
+    'Notifications',
   ];
 
   /// Resolve the currently displayed nav item.
@@ -271,34 +271,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(currentItem.label),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: IconButton(
-              icon: Badge(
-                isLabelVisible: totalBadge > 0,
-                label: Text(
-                  '$totalBadge',
-                  style: const TextStyle(
-                      fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: Colors.red.shade400,
-                child: const Icon(Icons.notifications_outlined),
-              ),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => Scaffold(
-                      appBar: AppBar(title: const Text('Notifications')),
-                      body: const shared.NotificationsScreen(),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 4),
-        ],
       ),
       drawer: _buildDrawer(context, appState, visibleItems),
       body: currentItem.pageBuilder(),
@@ -329,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () => _selectBottomTab(tabIndex, visibleItems),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -341,18 +313,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: Colors.red.shade400,
                 child: Icon(
                   isActive ? selectedIcon : icon,
-                  size: 24,
-                  color: isActive ? primary : Colors.grey.shade500,
+                  size: 20,
+                  color: isActive ? Colors.white : Colors.white70,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive ? primary : Colors.grey.shade500,
+                  color: isActive ? Colors.white : Colors.white70,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -364,28 +337,29 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const CircularNotchedRectangle(),
       notchMargin: 8,
       elevation: 8,
-      color: Colors.transparent,
+      color: primary,
       surfaceTintColor: Colors.transparent,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/bottom-navigation-background.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            navIcon(Icons.campaign_outlined, Icons.campaign, 'News', 0, 0),
-            navIcon(Icons.payment_outlined, Icons.payment, 'Billing', 1,
-                appState.isStaff ? _pendingPayments : 0),
-            const SizedBox(width: 48), // space for FAB
-            navIcon(Icons.report_outlined, Icons.report, 'Violations', 3,
-                appState.isStaff ? _pendingViolations : 0),
-            navIcon(Icons.support_outlined, Icons.support, 'Tickets', 4,
-                appState.isStaff ? _openTickets : 0),
-          ],
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Expanded(
+              child: navIcon(
+                  Icons.campaign_outlined, Icons.campaign, 'News', 0, 0)),
+          Expanded(
+              child: navIcon(
+                  Icons.family_restroom_outlined,
+                  Icons.family_restroom,
+                  appState.isResident ? 'My Household' : 'Households',
+                  1,
+                  0)),
+          const SizedBox(width: 48), // space for FAB
+          Expanded(
+              child: navIcon(
+                  Icons.qr_code_2_outlined, Icons.qr_code_2, 'Security', 3, 0)),
+          Expanded(
+              child: navIcon(Icons.notifications_outlined, Icons.notifications,
+                  'Notifications', 4, 0)),
+        ],
       ),
     );
   }
@@ -396,20 +370,19 @@ class _HomeScreenState extends State<HomeScreen> {
     List<_NavItem> visibleItems,
     Color primary,
   ) {
-    final isHouseholdActive =
-        visibleItems[_selectedIndex].label == 'My Household' ||
-            visibleItems[_selectedIndex].label == 'Households';
+    final isBillingActive =
+        visibleItems[_selectedIndex].label == 'Billing & Payments';
 
     return SizedBox(
       width: 64,
       height: 64,
       child: FloatingActionButton(
-        elevation: isHouseholdActive ? 2 : 6,
+        elevation: isBillingActive ? 2 : 6,
         backgroundColor: primary,
         shape: const CircleBorder(),
         onPressed: () {
-          final label = appState.isResident ? 'My Household' : 'Households';
-          final idx = visibleItems.indexWhere((item) => item.label == label);
+          final idx = visibleItems
+              .indexWhere((item) => item.label == 'Billing & Payments');
           if (idx >= 0) {
             setState(() {
               _selectedIndex = idx;
@@ -421,11 +394,17 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isHouseholdActive
-                  ? Icons.family_restroom
-                  : Icons.family_restroom_outlined,
+              isBillingActive ? Icons.payment : Icons.payment_outlined,
               color: Colors.white,
-              size: 26,
+              size: 24,
+            ),
+            const SizedBox(height: 2),
+            const Text(
+              'Billing',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -489,13 +468,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: CircleAvatar(
                         radius: 28,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        backgroundImage: appState.activeCommunity?.logoUrl !=
-                                null
-                            ? NetworkImage(appState.activeCommunity!.logoUrl!)
-                            : null,
-                        child: appState.activeCommunity?.logoUrl == null
-                            ? Text(
+                        backgroundColor: Colors.white,
+                        child: appState.activeCommunity?.logoUrl != null
+                            ? ClipOval(
+                                child: Image.network(
+                                  appState.activeCommunity!.logoUrl!,
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Text(
+                                    communityName.isNotEmpty
+                                        ? communityName[0].toUpperCase()
+                                        : 'H',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Text(
                                 communityName.isNotEmpty
                                     ? communityName[0].toUpperCase()
                                     : 'H',
@@ -504,8 +497,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                 ),
-                              )
-                            : null,
+                              ),
                       ),
                     ),
                     const Spacer(),

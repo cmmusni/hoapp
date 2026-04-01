@@ -194,29 +194,35 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
         ],
       ),
       floatingActionButton: isStaff
-          ? FloatingActionButton(
-              onPressed: () => _showCreateAmenityDialog(),
-              child: const Icon(Icons.add),
-            )
-          : FloatingActionButton.extended(
-              onPressed: () {
-                final amenities = _amenitiesFuture;
-                if (amenities != null) {
-                  amenities.then((list) {
-                    if (list.isNotEmpty) {
-                      _showRequestBookingDialog(list);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('No amenities available')),
-                      );
+          ? MediaQuery.of(context).size.width > 800
+              ? FloatingActionButton.extended(
+                  onPressed: () {
+                    final amenities = _amenitiesFuture;
+                    if (amenities != null) {
+                      amenities.then((list) {
+                        if (list.isNotEmpty) {
+                          _showRequestBookingDialog(list);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('No amenities available')),
+                          );
+                        }
+                      });
                     }
-                  });
-                }
-              },
-              icon: const Icon(Icons.event_available),
-              label: const Text('Request Booking'),
-            ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+                  },
+                  icon: const Icon(Icons.event_available),
+                  label: const Text('Request Booking'),
+                )
+              : FloatingActionButton(
+                  onPressed: () => _showCreateAmenityDialog(),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: const Icon(Icons.add, color: Colors.white),
+                )
+          : null,
+      floatingActionButtonLocation: MediaQuery.of(context).size.width > 800
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -347,7 +353,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
 
   Widget _buildApproveButton(AmenityBooking booking) {
     return IconButton(
-      icon: Icon(Icons.check_circle_outline, color: Theme.of(context).colorScheme.primary),
+      icon: Icon(Icons.check_circle_outline,
+          color: Theme.of(context).colorScheme.primary),
       tooltip: 'Approve booking',
       onPressed: () => _approveBooking(booking),
       iconSize: 22,
@@ -861,7 +868,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                  color: Theme.of(context).colorScheme.primary, width: 1.5),
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 1.5),
                             ),
                           ),
                           items: amenities.map((a) {
@@ -894,7 +902,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                           child: Row(
                             children: [
                               Icon(Icons.pool,
-                                  size: 18, color: Theme.of(context).colorScheme.primary),
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.primary),
                               const SizedBox(width: 10),
                               Text(selectedAmenity?.name ?? '',
                                   style: const TextStyle(
@@ -963,7 +972,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                  color: Theme.of(context).colorScheme.primary, width: 1.5),
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 1.5),
                             ),
                           ),
                           items: userUnits.map((u) {
@@ -1072,11 +1082,15 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                               child: Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
                                       .withValues(alpha: 0.06),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                      color: Theme.of(context).colorScheme.primary
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
                                           .withValues(alpha: 0.2)),
                                 ),
                                 child: Column(
@@ -1085,12 +1099,17 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                                     Row(
                                       children: [
                                         Icon(Icons.payments_outlined,
-                                            size: 14, color: Theme.of(context).colorScheme.primary),
+                                            size: 14,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary),
                                         const SizedBox(width: 6),
                                         Text('Rate',
                                             style: TextStyle(
                                                 fontSize: 11,
-                                                color: Theme.of(context).colorScheme.primary
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
                                                     .withValues(alpha: 0.7),
                                                 fontWeight: FontWeight.w500)),
                                       ],
@@ -1101,7 +1120,9 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                       ),
                                     ),
                                   ],
@@ -1126,7 +1147,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.primary, width: 1.5),
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 1.5),
                           ),
                           hintText: 'Any special requests...',
                         ),
@@ -1194,8 +1216,10 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor:
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                      disabledBackgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.4),
                       disabledForegroundColor: Colors.white70,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -1269,7 +1293,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                 ),
@@ -1289,7 +1314,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -1310,7 +1336,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                 ),
@@ -1330,7 +1357,8 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                 ),

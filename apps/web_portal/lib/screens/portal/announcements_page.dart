@@ -196,13 +196,21 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         },
       ),
       floatingActionButton: isStaff
-          ? FloatingActionButton.extended(
-              onPressed: () => _showCreateDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('New Announcement'),
-            )
+          ? MediaQuery.of(context).size.width > 800
+              ? FloatingActionButton.extended(
+                  onPressed: () => _showCreateDialog(context),
+                  icon: const Icon(Icons.add),
+                  label: const Text('New Announcement'),
+                )
+              : FloatingActionButton(
+                  onPressed: () => _showCreateDialog(context),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: const Icon(Icons.add, color: Colors.white),
+                )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: MediaQuery.of(context).size.width > 800
+          ? FloatingActionButtonLocation.centerFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 

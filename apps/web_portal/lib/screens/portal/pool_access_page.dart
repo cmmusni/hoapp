@@ -1775,12 +1775,20 @@ class _StaffViewState extends State<_StaffView> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openStaffRegistration,
-        icon: const Icon(Icons.person_add),
-        label: const Text('Register Swimmers'),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: MediaQuery.of(context).size.width > 800
+          ? FloatingActionButton.extended(
+              onPressed: _openStaffRegistration,
+              icon: const Icon(Icons.add),
+              label: const Text('Register Swimmer'),
+            )
+          : FloatingActionButton(
+              onPressed: _openStaffRegistration,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+      floatingActionButtonLocation: MediaQuery.of(context).size.width > 800
+          ? FloatingActionButtonLocation.centerFloat
+          : FloatingActionButtonLocation.endFloat,
       body: RefreshIndicator(
         onRefresh: () async => _loadRegistrations(),
         child: FutureBuilder<List<PoolAccessRegistration>>(

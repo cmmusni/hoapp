@@ -1,3 +1,4 @@
+import 'package:core_ui/src/adaptive/adaptive_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
@@ -167,11 +168,22 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showInviteDialog(),
-        child: const Icon(Icons.person_add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: screenSizeOf(context) == ScreenSize.mobile
+          ? FloatingActionButton(
+              onPressed: () => _showInviteDialog(),
+              child: const Icon(Icons.person_add, color: Colors.white),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            )
+          : FloatingActionButton.extended(
+              onPressed: () => _showInviteDialog(),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('Invite User',
+                  style: TextStyle(color: Colors.white)),
+            ),
+      floatingActionButtonLocation: screenSizeOf(context) == ScreenSize.mobile
+          ? FloatingActionButtonLocation.endFloat
+          : FloatingActionButtonLocation.centerFloat,
     );
   }
 

@@ -444,14 +444,10 @@ class _UnitDetailBodyState extends State<_UnitDetailBody> {
         if (canManage)
           Positioned(
             bottom: 16,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: FloatingActionButton.extended(
-                onPressed: _showAddMemberSheet,
-                icon: const Icon(Icons.person_add),
-                label: const Text('Add Member'),
-              ),
+            right: 16,
+            child: FloatingActionButton(
+              onPressed: _showAddMemberSheet,
+              child: const Icon(Icons.person_add),
             ),
           ),
       ],

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:intl/intl.dart';
 
-
 class RegisteredSwimmersPage extends StatefulWidget {
   const RegisteredSwimmersPage({super.key});
 
@@ -111,29 +110,32 @@ class _RegisteredSwimmersPageState extends State<RegisteredSwimmersPage> {
                 if (!_loading && _error == null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        _buildStatChip(
-                          Icons.people,
-                          '${_allSwimmers.length}',
-                          'Total Swimmers',
-                          Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildStatChip(
-                          Icons.check_circle_outline,
-                          '${_allSwimmers.where((s) => (s['pool_access_registrations'] as Map?)?['approved'] == true).length}',
-                          'Approved',
-                          Colors.green,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildStatChip(
-                          Icons.pending_outlined,
-                          '${_allSwimmers.where((s) => (s['pool_access_registrations'] as Map?)?['approved'] != true).length}',
-                          'Pending',
-                          Colors.orange,
-                        ),
-                      ],
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildStatChip(
+                            Icons.people,
+                            '${_allSwimmers.length}',
+                            'Total Swimmers',
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          _buildStatChip(
+                            Icons.check_circle_outline,
+                            '${_allSwimmers.where((s) => (s['pool_access_registrations'] as Map?)?['approved'] == true).length}',
+                            'Approved',
+                            Colors.green,
+                          ),
+                          const SizedBox(width: 12),
+                          _buildStatChip(
+                            Icons.pending_outlined,
+                            '${_allSwimmers.where((s) => (s['pool_access_registrations'] as Map?)?['approved'] != true).length}',
+                            'Pending',
+                            Colors.orange,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 Row(
@@ -143,7 +145,7 @@ class _RegisteredSwimmersPageState extends State<RegisteredSwimmersPage> {
                         controller: _searchController,
                         onChanged: (_) => _applyFilters(),
                         decoration: InputDecoration(
-                          hintText: 'Search by swimmer or registrant name...',
+                          hintText: 'Search...',
                           prefixIcon: const Icon(Icons.search),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
@@ -162,24 +164,26 @@ class _RegisteredSwimmersPageState extends State<RegisteredSwimmersPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(value: 'all', label: Text('All')),
-                        ButtonSegment(
-                            value: 'approved', label: Text('Approved')),
-                        ButtonSegment(value: 'pending', label: Text('Pending')),
-                      ],
-                      selected: {_statusFilter},
-                      onSelectionChanged: (val) {
-                        _statusFilter = val.first;
-                        _applyFilters();
-                      },
-                      style: ButtonStyle(
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: 'all', label: Text('All')),
+                      ButtonSegment(value: 'approved', label: Text('Approved')),
+                      ButtonSegment(value: 'pending', label: Text('Pending')),
+                    ],
+                    selected: {_statusFilter},
+                    onSelectionChanged: (val) {
+                      _statusFilter = val.first;
+                      _applyFilters();
+                    },
+                    style: ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -301,7 +305,9 @@ class _RegisteredSwimmersPageState extends State<RegisteredSwimmersPage> {
                   : Colors.orange.withOpacity(0.1),
               child: Icon(
                 Icons.pool,
-                color: approved ? Theme.of(context).colorScheme.primary : Colors.orange,
+                color: approved
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.orange,
               ),
             ),
             title: Row(
@@ -336,9 +342,12 @@ class _RegisteredSwimmersPageState extends State<RegisteredSwimmersPage> {
                     Icon(Icons.person_outline,
                         size: 14, color: Colors.grey[500]),
                     const SizedBox(width: 4),
-                    Text(
-                      'Registered by: $registrantName',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    Flexible(
+                      child: Text(
+                        'Registered by: $registrantName',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),

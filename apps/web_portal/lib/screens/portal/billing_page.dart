@@ -287,13 +287,21 @@ class _BillingPageState extends State<BillingPage>
         ],
       ),
       floatingActionButton: isStaff
-          ? FloatingActionButton.extended(
-              onPressed: () => _showCreateInvoiceDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Create Invoice'),
-            )
+          ? MediaQuery.of(context).size.width > 800
+              ? FloatingActionButton.extended(
+                  onPressed: () => _showCreateInvoiceDialog(context),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create Invoice'),
+                )
+              : FloatingActionButton(
+                  onPressed: () => _showCreateInvoiceDialog(context),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: const Icon(Icons.add, color: Colors.white),
+                )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: MediaQuery.of(context).size.width > 800
+          ? FloatingActionButtonLocation.centerFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 

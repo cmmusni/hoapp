@@ -205,12 +205,20 @@ class _ExpensesPageState extends State<ExpensesPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateExpenseDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Expense'),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: MediaQuery.of(context).size.width > 800
+          ? FloatingActionButton.extended(
+              onPressed: () => _showCreateExpenseDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Expense'),
+            )
+          : FloatingActionButton(
+              onPressed: () => _showCreateExpenseDialog(context),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+      floatingActionButtonLocation: MediaQuery.of(context).size.width > 800
+          ? FloatingActionButtonLocation.centerFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 

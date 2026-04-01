@@ -221,7 +221,7 @@ class _AmenitiesScreenState extends State<AmenitiesScreen> {
                 onPressed: () => _showCreateAmenitySheet(),
                 child: const Icon(Icons.add),
               )
-            : FloatingActionButton.extended(
+            : FloatingActionButton(
                 onPressed: () {
                   if (_cachedAmenities.isNotEmpty) {
                     _showBookingSheet(_cachedAmenities.first, _cachedAmenities);
@@ -231,13 +231,11 @@ class _AmenitiesScreenState extends State<AmenitiesScreen> {
                     );
                   }
                 },
-                icon: const Icon(Icons.event_available),
-                label: const Text('Request Booking'),
                 backgroundColor: _brand,
                 foregroundColor: Colors.white,
+                child: const Icon(Icons.event_available),
               ),
-        floatingActionButtonLocation:
-            FloatingActionButtonLocation.centerDocked);
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat);
   }
 
   // ─── Amenity Details Bottom Sheet ──────────────────────────────────

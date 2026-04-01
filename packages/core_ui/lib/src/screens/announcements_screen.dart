@@ -122,10 +122,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   ),
           ),
           floatingActionButton: isStaff
-              ? FloatingActionButton.extended(
+              ? FloatingActionButton(
                   onPressed: () => _showCreateSheet(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('New Announcement'),
+                  child: const Icon(Icons.add),
                   backgroundColor: _brand,
                   foregroundColor: Colors.white,
                 )
