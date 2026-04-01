@@ -255,12 +255,12 @@ class _BillingScreenState extends State<BillingScreen>
         ],
       ),
       floatingActionButton: isStaff
-          ? FloatingActionButton.extended(
+          ? FloatingActionButton(
               onPressed: () => _showCreateInvoiceDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Create Invoice'),
+              child: const Icon(Icons.add),
             )
           : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

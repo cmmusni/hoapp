@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:html' as html;
 
-
 class AnnouncementsPage extends StatefulWidget {
   const AnnouncementsPage({super.key});
 
@@ -816,8 +815,9 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                   validator: (value) {
@@ -842,8 +842,9 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                   maxLines: 5,
@@ -858,12 +859,18 @@ class _CreateAnnouncementDialogState extends State<_CreateAnnouncementDialog> {
                 Container(
                   decoration: BoxDecoration(
                     color: _pinned
-                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.06)
+                        ? Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.06)
                         : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _pinned
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
+                          ? Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.2)
                           : Colors.grey.shade200,
                     ),
                   ),
@@ -1153,8 +1160,9 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                   validator: (value) {
@@ -1179,8 +1187,9 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                   maxLines: 5,
@@ -1195,12 +1204,18 @@ class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
                 Container(
                   decoration: BoxDecoration(
                     color: _pinned
-                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.06)
+                        ? Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.06)
                         : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _pinned
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
+                          ? Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.2)
                           : Colors.grey.shade200,
                     ),
                   ),

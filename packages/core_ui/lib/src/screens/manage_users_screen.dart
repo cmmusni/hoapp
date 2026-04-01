@@ -167,12 +167,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _showInviteDialog(),
-        icon: const Icon(Icons.person_add),
-        label: const Text('Invite User'),
+        child: const Icon(Icons.person_add),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

@@ -67,44 +67,110 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // Status filter chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: Row(children: [
-              _buildFilterChip('All', 'all'),
-              _buildFilterChip('Open', 'open'),
-              if (isStaff) ...[
-                _buildFilterChip('In Review', 'in_review'),
-                _buildFilterChip('Planned', 'planned'),
-              ],
-              _buildFilterChip('Resolved', 'resolved'),
-              _buildFilterChip('Closed', 'closed'),
-            ]),
-          ),
-          // Category dropdown
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Row(children: [
-              const Text('Category: ', style: TextStyle(fontSize: 13)),
-              DropdownButton<String>(
-                value: _filterCategory,
-                isDense: true,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
-                items: const [
-                  DropdownMenuItem(value: 'all', child: Text('All Categories')),
-                  DropdownMenuItem(value: 'bug', child: Text('Bug Report')),
-                  DropdownMenuItem(
-                      value: 'feature_request', child: Text('Feature Request')),
-                  DropdownMenuItem(
-                      value: 'improvement', child: Text('Improvement')),
-                  DropdownMenuItem(value: 'general', child: Text('General')),
+          // Status filter
+          if (screenSizeOf(context) == ScreenSize.mobile)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              child: DropdownButtonFormField<String>(
+                value: _filterStatus,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                decoration: InputDecoration(
+                  prefixIcon: Icon(Icons.filter_list_rounded,
+                      size: 20, color: Colors.grey.shade600),
+                  labelText: 'Filter by status',
+                  labelStyle: TextStyle(color: Colors.grey.shade600),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                items: [
+                  _dropdownItem('All', 'all', Icons.list_rounded),
+                  _dropdownItem('Open', 'open', Icons.lock_open_rounded),
+                  if (isStaff) ...[
+                    _dropdownItem(
+                        'In Review', 'in_review', Icons.rate_review_rounded),
+                    _dropdownItem('Planned', 'planned', Icons.schedule_rounded),
+                  ],
+                  _dropdownItem('Resolved', 'resolved',
+                      Icons.check_circle_outline_rounded),
+                  _dropdownItem('Closed', 'closed', Icons.lock_rounded),
                 ],
                 onChanged: (v) {
-                  if (v != null) setState(() => _filterCategory = v);
+                  if (v != null) setState(() => _filterStatus = v);
                 },
               ),
-            ]),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+              child: Row(children: [
+                _buildFilterChip('All', 'all'),
+                _buildFilterChip('Open', 'open'),
+                if (isStaff) ...[
+                  _buildFilterChip('In Review', 'in_review'),
+                  _buildFilterChip('Planned', 'planned'),
+                ],
+                _buildFilterChip('Resolved', 'resolved'),
+                _buildFilterChip('Closed', 'closed'),
+              ]),
+            ),
+          // Category dropdown
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: -4),
+            child: DropdownButtonFormField<String>(
+              value: _filterCategory,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.category_rounded,
+                    size: 20, color: Colors.grey.shade600),
+                labelText: 'Category',
+                labelStyle: TextStyle(color: Colors.grey.shade600),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _brand, width: 1.5),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              ),
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+              items: [
+                _dropdownItem('All Categories', 'all', Icons.list_rounded),
+                _dropdownItem('Bug Report', 'bug', Icons.bug_report_rounded),
+                _dropdownItem('Feature Request', 'feature_request',
+                    Icons.lightbulb_rounded),
+                _dropdownItem(
+                    'Improvement', 'improvement', Icons.trending_up_rounded),
+                _dropdownItem('General', 'general', Icons.chat_rounded),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _filterCategory = v);
+              },
+            ),
           ),
           const Divider(height: 1),
           // Content
@@ -161,25 +227,48 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _showSubmitSheet(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Submit Feedback'),
+        child: const Icon(Icons.add),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   Widget _buildFilterChip(String label, String value) {
     final isSelected = _filterStatus == value;
+    final isMobile = screenSizeOf(context) == ScreenSize.mobile;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: isMobile ? 0 : 8),
       child: FilterChip(
-        label: Text(label),
+        label: Text(label, style: TextStyle(fontSize: isMobile ? 12 : null)),
         selected: isSelected,
-        selectedColor: _brand.withValues(alpha: 0.15),
-        checkmarkColor: _brand,
+        showCheckmark: !isMobile,
+        visualDensity: isMobile ? VisualDensity.compact : null,
+        materialTapTargetSize:
+            isMobile ? MaterialTapTargetSize.shrinkWrap : null,
+        padding: isMobile ? const EdgeInsets.symmetric(horizontal: 4) : null,
+        labelStyle:
+            TextStyle(color: isSelected ? Colors.white : Colors.grey[700]),
+        backgroundColor: Colors.grey[200],
+        selectedColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.75),
+        checkmarkColor: Colors.white,
         onSelected: (_) => setState(() => _filterStatus = value),
+      ),
+    );
+  }
+
+  DropdownMenuItem<String> _dropdownItem(
+      String label, String value, IconData icon) {
+    return DropdownMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.grey.shade600),
+          const SizedBox(width: 10),
+          Text(label),
+        ],
       ),
     );
   }
@@ -262,10 +351,12 @@ class _FeedbackCard extends StatelessWidget {
               if (imageUrl != null && imageUrl.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Row(children: [
-                  Icon(Icons.image_outlined, size: 14, color: Colors.blue.shade400),
+                  Icon(Icons.image_outlined,
+                      size: 14, color: Colors.blue.shade400),
                   const SizedBox(width: 4),
                   Text('Image attached',
-                      style: TextStyle(fontSize: 12, color: Colors.blue.shade400)),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.blue.shade400)),
                 ]),
               ],
               if (createdAt != null) ...[

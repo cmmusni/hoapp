@@ -96,6 +96,19 @@
   <!-- Preconnect to Supabase for performance -->
   <link rel="preconnect" href="https://rdkpxdgxepybuswyirrs.supabase.co">
   <link rel="dns-prefetch" href="https://rdkpxdgxepybuswyirrs.supabase.co">
+
+  <!-- OneSignal Web Push SDK -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "be65b68a-a00d-487f-97b4-90815b5db693",
+        notifyButton: { enable: true },
+        allowLocalhostAsSecureOrigin: true,
+      });
+    });
+  </script>
 </head>
 <body>
   <!-- SEO: Noscript fallback for crawlers -->

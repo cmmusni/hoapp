@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import '../adaptive/adaptive_layout.dart';
 
 const _brand = Color(0xff215e3f);
 
@@ -252,20 +253,68 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       body: Column(
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(12),
-            child: Row(children: [
-              _chip('All', 'all'),
-              _chip('Announcements', 'announcement'),
-              _chip('Violations', 'violation'),
-              _chip('Tickets', 'ticket'),
-              _chip('Payments', 'payment'),
-              _chip('Invoices', 'invoice'),
-              _chip('Bookings', 'booking'),
-              _chip('Feedback', 'feedback'),
-            ]),
-          ),
+          if (screenSizeOf(context) == ScreenSize.mobile)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              child: DropdownButtonFormField<String>(
+                value: _filter,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                decoration: InputDecoration(
+                  prefixIcon: Icon(Icons.filter_list_rounded,
+                      size: 20, color: Colors.grey.shade600),
+                  labelText: 'Filter by type',
+                  labelStyle: TextStyle(color: Colors.grey.shade600),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                items: [
+                  _dropdownItem('All', 'all', Icons.list_rounded),
+                  _dropdownItem(
+                      'Announcements', 'announcement', Icons.campaign_rounded),
+                  _dropdownItem(
+                      'Violations', 'violation', Icons.report_rounded),
+                  _dropdownItem('Tickets', 'ticket', Icons.support_rounded),
+                  _dropdownItem('Payments', 'payment', Icons.payment_rounded),
+                  _dropdownItem(
+                      'Invoices', 'invoice', Icons.receipt_long_rounded),
+                  _dropdownItem('Bookings', 'booking', Icons.event_rounded),
+                  _dropdownItem('Feedback', 'feedback', Icons.feedback_rounded),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _filter = v);
+                },
+              ),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.all(12),
+              child: Row(children: [
+                _chip('All', 'all'),
+                _chip('Announcements', 'announcement'),
+                _chip('Violations', 'violation'),
+                _chip('Tickets', 'ticket'),
+                _chip('Payments', 'payment'),
+                _chip('Invoices', 'invoice'),
+                _chip('Bookings', 'booking'),
+                _chip('Feedback', 'feedback'),
+              ]),
+            ),
           const Divider(height: 1),
           Expanded(
             child: _loading
@@ -298,14 +347,38 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _chip(String label, String value) {
     final isSelected = _filter == value;
+    final isMobile = screenSizeOf(context) == ScreenSize.mobile;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: isMobile ? 0 : 8),
       child: FilterChip(
-        label: Text(label),
+        label: Text(label, style: TextStyle(fontSize: isMobile ? 12 : null)),
         selected: isSelected,
-        selectedColor: _brand.withValues(alpha: 0.15),
-        checkmarkColor: _brand,
+        showCheckmark: !isMobile,
+        visualDensity: isMobile ? VisualDensity.compact : null,
+        materialTapTargetSize:
+            isMobile ? MaterialTapTargetSize.shrinkWrap : null,
+        padding: isMobile ? const EdgeInsets.symmetric(horizontal: 4) : null,
+        labelStyle:
+            TextStyle(color: isSelected ? Colors.white : Colors.grey[700]),
+        backgroundColor: Colors.grey[200],
+        selectedColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.75),
+        checkmarkColor: Colors.white,
         onSelected: (_) => setState(() => _filter = value),
+      ),
+    );
+  }
+
+  DropdownMenuItem<String> _dropdownItem(
+      String label, String value, IconData icon) {
+    return DropdownMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.grey.shade600),
+          const SizedBox(width: 10),
+          Text(label),
+        ],
       ),
     );
   }

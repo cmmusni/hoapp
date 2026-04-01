@@ -602,61 +602,75 @@ class _ExpenseIncomeChartScreenState extends State<ExpenseIncomeChartScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: WidgetStatePropertyAll(Colors.grey.shade100),
-          columnSpacing: 16,
-          dataRowMinHeight: 36,
-          dataRowMaxHeight: 44,
-          columns: const [
-            DataColumn(
-                label: Text('Month',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 12))),
-            DataColumn(
-                label: Text('Income',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                numeric: true),
-            DataColumn(
-                label: Text('Expenses',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                numeric: true),
-            DataColumn(
-                label: Text('Net',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                numeric: true),
-          ],
-          rows: _monthlyData.map((m) {
-            final net = m.income - m.expense;
-            return DataRow(cells: [
-              DataCell(Text(m.fullLabel, style: const TextStyle(fontSize: 12))),
-              DataCell(Text(
-                _currencyFormat.format(m.income),
-                style: TextStyle(color: Colors.green.shade700, fontSize: 12),
-              )),
-              DataCell(Text(
-                _currencyFormat.format(m.expense),
-                style: TextStyle(color: Colors.red.shade700, fontSize: 12),
-              )),
-              DataCell(Text(
-                '${net >= 0 ? '+' : ''}${_currencyFormat.format(net)}',
-                style: TextStyle(
-                  color:
-                      net >= 0 ? Colors.blue.shade700 : Colors.orange.shade700,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              )),
-            ]);
-          }).toList(),
-        ),
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: DataTable(
+                headingRowColor: WidgetStatePropertyAll(Colors.grey.shade50),
+                columnSpacing: 12,
+                horizontalMargin: 16,
+                dataRowMinHeight: 48,
+                dataRowMaxHeight: 56,
+                columns: const [
+                  DataColumn(
+                      label: Text('Month',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 13))),
+                  DataColumn(
+                      label: Text('Income',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 13)),
+                      numeric: true),
+                  DataColumn(
+                      label: Text('Expenses',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 13)),
+                      numeric: true),
+                  DataColumn(
+                      label: Text('Net',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 13)),
+                      numeric: true),
+                ],
+                rows: _monthlyData.map((m) {
+                  final net = m.income - m.expense;
+                  return DataRow(cells: [
+                    DataCell(Text(m.fullLabel,
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w500))),
+                    DataCell(Text(
+                      _currencyFormat.format(m.income),
+                      style:
+                          TextStyle(color: Colors.green.shade700, fontSize: 13),
+                    )),
+                    DataCell(Text(
+                      _currencyFormat.format(m.expense),
+                      style:
+                          TextStyle(color: Colors.red.shade700, fontSize: 13),
+                    )),
+                    DataCell(Text(
+                      '${net >= 0 ? '+' : ''}${_currencyFormat.format(net)}',
+                      style: TextStyle(
+                        color: net >= 0
+                            ? Colors.blue.shade700
+                            : Colors.orange.shade700,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    )),
+                  ]);
+                }).toList(),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

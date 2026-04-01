@@ -64,13 +64,23 @@ class _TicketsTabState extends State<TicketsTab> {
           final tickets = snapshot.data ?? [];
 
           if (tickets.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.support_agent, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No support tickets'),
+                  Icon(Icons.support_agent,
+                      size: 64,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.3)),
+                  const SizedBox(height: 16),
+                  Text('No support tickets',
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.5))),
                 ],
               ),
             );
@@ -96,26 +106,40 @@ class _TicketsTabState extends State<TicketsTab> {
                       _loadTickets();
                     },
                     leading: CircleAvatar(
-                      backgroundColor: _getStatusColor(ticket.status),
+                      backgroundColor:
+                          _getStatusColor(ticket.status).withValues(alpha: 0.2),
                       child: Icon(
                         _getStatusIcon(ticket.status),
-                        color: Colors.white,
+                        color: _getStatusColor(ticket.status),
                         size: 20,
                       ),
                     ),
                     title: Text('${ticket.type.name.toUpperCase()} Ticket'),
                     subtitle: Text(
                       _formatDate(ticket.createdAt),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.5)),
                     ),
-                    trailing: Chip(
-                      label: Text(
-                        _getStatusLabel(ticket.status),
-                        style: const TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.bold),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(ticket.status)
+                            .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      backgroundColor:
-                          _getStatusColor(ticket.status).withOpacity(0.2),
+                      child: Text(
+                        _getStatusLabel(ticket.status),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: _getStatusColor(ticket.status),
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -124,11 +148,11 @@ class _TicketsTabState extends State<TicketsTab> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateTicketSheet(context),
-        icon: const Icon(Icons.add),
-        label: const Text('New Ticket'),
+        child: const Icon(Icons.add),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

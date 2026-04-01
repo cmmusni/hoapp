@@ -65,15 +65,59 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           ),
           if (_showChart) _ExpenseTrendChart(currencyFormat: _currencyFormat),
           // Category filter chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(children: [
-              _categoryChip('All', null),
-              ...ExpenseCategory.values
-                  .map((c) => _categoryChip(_categoryLabel(c), c)),
-            ]),
-          ),
+          if (screenSizeOf(context) == ScreenSize.mobile)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              child: DropdownButtonFormField<ExpenseCategory?>(
+                value: _filterCategory,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                decoration: InputDecoration(
+                  prefixIcon: Icon(Icons.filter_list_rounded,
+                      size: 20, color: Colors.grey.shade600),
+                  labelText: 'Filter by category',
+                  labelStyle: TextStyle(color: Colors.grey.shade600),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                items: [
+                  _expenseDropdownItem('All', null, Icons.list_rounded),
+                  ...ExpenseCategory.values.map((c) => _expenseDropdownItem(
+                        _categoryLabel(c),
+                        c,
+                        _categoryIcon(c),
+                      )),
+                ],
+                onChanged: (v) {
+                  setState(() => _filterCategory = v);
+                  _loadExpenses();
+                },
+              ),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(children: [
+                _categoryChip('All', null),
+                ...ExpenseCategory.values
+                    .map((c) => _categoryChip(_categoryLabel(c), c)),
+              ]),
+            ),
           const Divider(height: 1),
           // Expense list
           Expanded(
@@ -170,19 +214,29 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               label: const Text('Add Expense'),
             )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   Widget _categoryChip(String label, ExpenseCategory? category) {
     final isSelected = _filterCategory == category;
+    final isMobile = screenSizeOf(context) == ScreenSize.mobile;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: isMobile ? 0 : 8),
       child: FilterChip(
-        label: Text(label),
+        label: Text(label, style: TextStyle(fontSize: isMobile ? 12 : null)),
         selected: isSelected,
-        selectedColor: _brand.withValues(alpha: 0.15),
-        checkmarkColor: _brand,
+        showCheckmark: !isMobile,
+        visualDensity: isMobile ? VisualDensity.compact : null,
+        materialTapTargetSize:
+            isMobile ? MaterialTapTargetSize.shrinkWrap : null,
+        padding: isMobile ? const EdgeInsets.symmetric(horizontal: 4) : null,
+        labelStyle:
+            TextStyle(color: isSelected ? Colors.white : Colors.grey[700]),
+        backgroundColor: Colors.grey[200],
+        selectedColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.75),
+        checkmarkColor: Colors.white,
         onSelected: (_) {
           setState(() => _filterCategory = category);
           _loadExpenses();
@@ -193,6 +247,32 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
   String _categoryLabel(ExpenseCategory cat) =>
       cat.name[0].toUpperCase() + cat.name.substring(1);
+
+  IconData _categoryIcon(ExpenseCategory cat) => switch (cat) {
+        ExpenseCategory.maintenance => Icons.build_rounded,
+        ExpenseCategory.utilities => Icons.electrical_services_rounded,
+        ExpenseCategory.supplies => Icons.inventory_rounded,
+        ExpenseCategory.services => Icons.miscellaneous_services_rounded,
+        ExpenseCategory.repairs => Icons.handyman_rounded,
+        ExpenseCategory.salaries => Icons.people_rounded,
+        ExpenseCategory.insurance => Icons.shield_rounded,
+        ExpenseCategory.taxes => Icons.account_balance_rounded,
+        ExpenseCategory.other => Icons.category_rounded,
+      };
+
+  DropdownMenuItem<ExpenseCategory?> _expenseDropdownItem(
+      String label, ExpenseCategory? value, IconData icon) {
+    return DropdownMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.grey.shade600),
+          const SizedBox(width: 10),
+          Text(label),
+        ],
+      ),
+    );
+  }
 
   void _showCreateExpenseSheet(BuildContext context, {Expense? existing}) {
     showModalBottomSheet(

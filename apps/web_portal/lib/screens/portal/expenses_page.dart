@@ -152,7 +152,8 @@ class _ExpensesPageState extends State<ExpensesPage> {
                                 style: TextStyle(
                                     fontSize: 15, fontWeight: FontWeight.w600)),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
@@ -503,7 +504,9 @@ class _FilterBar extends StatelessWidget {
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[700],
+        color: isSelected
+            ? Theme.of(context).colorScheme.primary
+            : Colors.grey[700],
       ),
     );
   }
@@ -1218,7 +1221,10 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                             horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.1)
                               : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
@@ -1261,7 +1267,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                   validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
@@ -1282,7 +1289,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -1311,7 +1319,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                 ),
@@ -1411,7 +1420,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary, width: 1.5),
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5),
                     ),
                   ),
                   maxLines: 3,

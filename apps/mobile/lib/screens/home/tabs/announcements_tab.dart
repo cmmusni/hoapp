@@ -98,10 +98,19 @@ class _AnnouncementsTabState extends State<AnnouncementsTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.announcement_outlined,
-                size: 64, color: Colors.grey),
+            Icon(Icons.announcement_outlined,
+                size: 64,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.3)),
             const SizedBox(height: 16),
-            const Text('No announcements yet'),
+            Text('No announcements yet',
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.5))),
             if (isStaff) ...[
               const SizedBox(height: 16),
               ElevatedButton.icon(
@@ -136,7 +145,7 @@ class _AnnouncementsTabState extends State<AnnouncementsTab> {
               child: const Icon(Icons.add),
             )
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -518,13 +527,10 @@ class _AnnouncementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -540,7 +546,7 @@ class _AnnouncementCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
+                      color: Colors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -563,9 +569,10 @@ class _AnnouncementCard extends StatelessWidget {
                 ),
               Text(
                 announcement.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -588,7 +595,10 @@ class _AnnouncementCard extends StatelessWidget {
               Text(
                 announcement.body,
                 style: TextStyle(
-                    color: Colors.grey[600], fontSize: 14, height: 1.4),
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontSize: 14,
+                  height: 1.4,
+                ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -596,12 +606,15 @@ class _AnnouncementCard extends StatelessWidget {
               Row(
                 children: [
                   Icon(Icons.access_time_rounded,
-                      size: 13, color: Colors.grey[400]),
+                      size: 13,
+                      color: colorScheme.onSurface.withValues(alpha: 0.4)),
                   const SizedBox(width: 4),
                   Text(
                     _formatDate(
                         announcement.publishAt ?? announcement.createdAt),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.4)),
                   ),
                   if (announcement.attachmentUrl != null &&
                       announcement.attachmentUrl!.isNotEmpty) ...[

@@ -83,9 +83,18 @@ class _HOAppMobileState extends State<HOAppMobile> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final community = appState.activeCommunity;
+    Color? brandColor;
+    if (community != null) {
+      final hex = community.primaryColor;
+      brandColor = Color(int.parse(hex.replaceFirst('#', '0xff')));
+    }
+
     return MaterialApp(
-      title: AppConfig.appName,
-      theme: AppTheme.defaultTheme,
+      title:
+          community != null ? '${community.name} — HOApp' : AppConfig.appName,
+      theme: AppTheme.buildTheme(primaryColor: brandColor),
       debugShowCheckedModeBanner: false,
       navigatorKey: _navigatorKey,
       home: const SplashScreen(),

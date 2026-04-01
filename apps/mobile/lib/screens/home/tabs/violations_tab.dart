@@ -39,18 +39,48 @@ class _ViolationsTabState extends State<ViolationsTab> {
     return Scaffold(
       body: Column(
         children: [
-          // Filter chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                _buildFilterChip('All', 'all'),
-                _buildFilterChip('New', 'new'),
-                _buildFilterChip('Under Review', 'under_review'),
-                _buildFilterChip('Resolved', 'resolved'),
-                _buildFilterChip('Dismissed', 'dismissed'),
+          // Filter
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            child: DropdownButtonFormField<String>(
+              value: _filterStatus,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.filter_list_rounded,
+                    size: 20, color: Colors.grey.shade600),
+                labelText: 'Filter by status',
+                labelStyle: TextStyle(color: Colors.grey.shade600),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary, width: 1.5),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              ),
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+              items: [
+                _dropdownItem('All', 'all', Icons.list_rounded),
+                _dropdownItem('New', 'new', Icons.fiber_new_rounded),
+                _dropdownItem('Under Review', 'under_review',
+                    Icons.hourglass_top_rounded),
+                _dropdownItem(
+                    'Resolved', 'resolved', Icons.check_circle_outline_rounded),
+                _dropdownItem('Dismissed', 'dismissed', Icons.cancel_outlined),
               ],
+              onChanged: (v) {
+                if (v != null) setState(() => _filterStatus = v);
+              },
             ),
           ),
           Expanded(
@@ -86,14 +116,23 @@ class _ViolationsTabState extends State<ViolationsTab> {
                 }).toList();
 
                 if (violations.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.check_circle_outline,
-                            size: 64, color: Color(0xff215e3f)),
-                        SizedBox(height: 16),
-                        Text('No violations found'),
+                            size: 64,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.5)),
+                        const SizedBox(height: 16),
+                        Text('No violations found',
+                            style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.5))),
                       ],
                     ),
                   );
@@ -110,10 +149,11 @@ class _ViolationsTabState extends State<ViolationsTab> {
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: _getStatusColor(violation.status),
+                            backgroundColor: _getStatusColor(violation.status)
+                                .withValues(alpha: 0.2),
                             child: Icon(
                               _getStatusIcon(violation.status),
-                              color: Colors.white,
+                              color: _getStatusColor(violation.status),
                               size: 20,
                             ),
                           ),
@@ -121,16 +161,28 @@ class _ViolationsTabState extends State<ViolationsTab> {
                           subtitle: Text(
                             _formatDate(violation.createdAt),
                             style: TextStyle(
-                                fontSize: 12, color: Colors.grey[600]),
+                                fontSize: 12,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.5)),
                           ),
-                          trailing: Chip(
-                            label: Text(
-                              _getStatusLabel(violation.status),
-                              style: const TextStyle(
-                                  fontSize: 11, fontWeight: FontWeight.bold),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(violation.status)
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                            backgroundColor: _getStatusColor(violation.status)
-                                .withOpacity(0.2),
+                            child: Text(
+                              _getStatusLabel(violation.status),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: _getStatusColor(violation.status),
+                              ),
+                            ),
                           ),
                           onTap: () => _showViolationDetails(violation),
                         ),
@@ -143,25 +195,24 @@ class _ViolationsTabState extends State<ViolationsTab> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _showReportDialog(),
-        icon: const Icon(Icons.report),
-        label: const Text('Report'),
+        child: const Icon(Icons.add),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  Widget _buildFilterChip(String label, String value) {
-    final isSelected = _filterStatus == value;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(label),
-        selected: isSelected,
-        selectedColor: const Color(0xff215e3f).withOpacity(0.15),
-        checkmarkColor: const Color(0xff215e3f),
-        onSelected: (_) => setState(() => _filterStatus = value),
+  DropdownMenuItem<String> _dropdownItem(
+      String label, String value, IconData icon) {
+    return DropdownMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.grey.shade600),
+          const SizedBox(width: 10),
+          Text(label),
+        ],
       ),
     );
   }

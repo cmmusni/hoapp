@@ -1236,13 +1236,13 @@ class _StaffViewState extends State<_StaffView> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: _openStaffRegistration,
         backgroundColor: _brand,
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.person_add),
-        label: const Text('Register'),
+        child: const Icon(Icons.person_add),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: RefreshIndicator(
         onRefresh: () async => _loadRegistrations(),
         child: FutureBuilder<List<PoolAccessRegistration>>(

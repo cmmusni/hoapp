@@ -7,6 +7,7 @@ import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'onboarding_tour.dart';
 import 'chatbot/chatbot_widget.dart';
+import '../../core/onesignal_web.dart';
 
 class PortalShell extends StatefulWidget {
   final String communitySlug;
@@ -145,7 +146,31 @@ class _PortalShellState extends State<PortalShell> {
         setState(() => _isCommunityLoaded = true);
         _checkTour();
         _loadBadgeCounts();
+        _registerOneSignal();
       }
+    }
+  }
+
+  /// Register the current user with OneSignal for web push notifications.
+  void _registerOneSignal() {
+    try {
+      final appState = context.read<AppState>();
+      final user = context.read<AuthRepository>().currentUser;
+      if (user == null) return;
+
+      OneSignalWeb.loginUser(user.id);
+      final tags = <String, String>{};
+      if (appState.activeCommunityId != null) {
+        tags['community_id'] = appState.activeCommunityId!;
+      }
+      if (appState.activeRole != null) {
+        tags['role'] = appState.activeRole!.role.name;
+      }
+      if (tags.isNotEmpty) {
+        OneSignalWeb.setTags(tags);
+      }
+    } catch (e) {
+      print('OneSignal registration error: $e');
     }
   }
 
@@ -304,7 +329,7 @@ class _PortalShellState extends State<PortalShell> {
     } else if (currentPath.contains('/financial-reports')) {
       pageTitle = 'Financial Reports';
     } else if (currentPath.contains('/expenses')) {
-      pageTitle = 'Expense Tracker';
+      pageTitle = 'Community Expenses';
     } else if (currentPath.contains('/registered-swimmers')) {
       pageTitle = 'Registered Swimmers';
     } else if (currentPath.contains('/pool-access')) {
@@ -500,6 +525,7 @@ class _PortalShellState extends State<PortalShell> {
         } else if (value == 'switch_community') {
           if (context.mounted) context.go('/select-community');
         } else if (value == 'signout') {
+          OneSignalWeb.logoutUser();
           await context.read<AuthRepository>().signOut();
           if (context.mounted) context.go('/login');
         }

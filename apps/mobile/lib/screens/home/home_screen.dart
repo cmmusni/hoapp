@@ -15,8 +15,6 @@ import 'tabs/announcements_tab.dart';
 import 'tabs/violations_tab.dart';
 import 'tabs/tickets_tab.dart';
 
-const _brand = Color(0xff215e3f);
-
 /// Navigation item for the drawer menu.
 class _NavItem {
   final String label;
@@ -176,6 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final isAdmin = appState.isAdmin;
 
     return _buildNavItems().where((item) {
+      if (item.label == 'Notifications') return false; // handled by AppBar bell
       if (item.adminOnly && !isAdmin) return false;
       if (item.staffOnly && !isStaff) return false;
       return true;
@@ -229,14 +228,37 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {}
   }
 
+  /// Labels of the bottom nav items — used to map indices to the drawer items.
+  static const _bottomNavLabels = [
+    'Announcements',
+    'Billing & Payments',
+    'My Household', // placeholder — center FAB handles this
+    'Violations',
+    'Tickets',
+  ];
+
+  /// Resolve the currently displayed nav item.
+  /// If _selectedIndex matches a bottom-nav label, use that; otherwise use
+  /// the drawer-selected item stored in _drawerItemIndex.
+  int? _drawerItemIndex;
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final visibleItems = _getVisibleItems(appState);
+    final primary = Theme.of(context).colorScheme.primary;
 
     // Clamp selected index
     if (_selectedIndex >= visibleItems.length) {
       _selectedIndex = 0;
+    }
+
+    // Determine which bottom nav tab is active (null if showing a drawer page)
+    int? activeBottomTab;
+    if (_drawerItemIndex == null) {
+      final label = visibleItems[_selectedIndex].label;
+      final idx = _bottomNavLabels.indexOf(label);
+      activeBottomTab = idx >= 0 ? idx : null;
     }
 
     final currentItem = visibleItems[_selectedIndex];
@@ -249,236 +271,443 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(currentItem.label),
-        backgroundColor: _brand,
-        foregroundColor: Colors.white,
         actions: [
-          if (totalBadge > 0)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: Badge(
-                  label: Text('$totalBadge'),
-                  child: const Icon(Icons.notifications_outlined),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: IconButton(
+              icon: Badge(
+                isLabelVisible: totalBadge > 0,
+                label: Text(
+                  '$totalBadge',
+                  style: const TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.bold),
                 ),
-                onPressed: () {
-                  // Navigate to notifications
-                  final notifIndex = visibleItems
-                      .indexWhere((item) => item.label == 'Notifications');
-                  if (notifIndex >= 0) {
-                    setState(() => _selectedIndex = notifIndex);
-                  }
-                },
+                backgroundColor: Colors.red.shade400,
+                child: const Icon(Icons.notifications_outlined),
               ),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(title: const Text('Notifications')),
+                      body: const shared.NotificationsScreen(),
+                    ),
+                  ),
+                );
+              },
             ),
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       drawer: _buildDrawer(context, appState, visibleItems),
       body: currentItem.pageBuilder(),
+      bottomNavigationBar: _buildBottomNavBar(
+        context,
+        appState,
+        visibleItems,
+        activeBottomTab,
+        primary,
+      ),
+      floatingActionButton:
+          _buildCenterFab(context, appState, visibleItems, primary),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
+  }
+
+  Widget _buildBottomNavBar(
+    BuildContext context,
+    AppState appState,
+    List<_NavItem> visibleItems,
+    int? activeTab,
+    Color primary,
+  ) {
+    Widget navIcon(IconData icon, IconData selectedIcon, String label,
+        int tabIndex, int badge) {
+      final isActive = activeTab == tabIndex;
+      return InkWell(
+        onTap: () => _selectBottomTab(tabIndex, visibleItems),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Badge(
+                isLabelVisible: badge > 0,
+                label: Text('$badge',
+                    style: const TextStyle(
+                        fontSize: 9, fontWeight: FontWeight.bold)),
+                backgroundColor: Colors.red.shade400,
+                child: Icon(
+                  isActive ? selectedIcon : icon,
+                  size: 24,
+                  color: isActive ? primary : Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  color: isActive ? primary : Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8,
+      elevation: 8,
+      color: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/bottom-navigation-background.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            navIcon(Icons.campaign_outlined, Icons.campaign, 'News', 0, 0),
+            navIcon(Icons.payment_outlined, Icons.payment, 'Billing', 1,
+                appState.isStaff ? _pendingPayments : 0),
+            const SizedBox(width: 48), // space for FAB
+            navIcon(Icons.report_outlined, Icons.report, 'Violations', 3,
+                appState.isStaff ? _pendingViolations : 0),
+            navIcon(Icons.support_outlined, Icons.support, 'Tickets', 4,
+                appState.isStaff ? _openTickets : 0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCenterFab(
+    BuildContext context,
+    AppState appState,
+    List<_NavItem> visibleItems,
+    Color primary,
+  ) {
+    final isHouseholdActive =
+        visibleItems[_selectedIndex].label == 'My Household' ||
+            visibleItems[_selectedIndex].label == 'Households';
+
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: FloatingActionButton(
+        elevation: isHouseholdActive ? 2 : 6,
+        backgroundColor: primary,
+        shape: const CircleBorder(),
+        onPressed: () {
+          final label = appState.isResident ? 'My Household' : 'Households';
+          final idx = visibleItems.indexWhere((item) => item.label == label);
+          if (idx >= 0) {
+            setState(() {
+              _selectedIndex = idx;
+              _drawerItemIndex = null;
+            });
+          }
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isHouseholdActive
+                  ? Icons.family_restroom
+                  : Icons.family_restroom_outlined,
+              color: Colors.white,
+              size: 26,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _selectBottomTab(int tabIndex, List<_NavItem> visibleItems) {
+    final label = _bottomNavLabels[tabIndex];
+    final idx = visibleItems.indexWhere((item) => item.label == label);
+    if (idx >= 0) {
+      setState(() {
+        _selectedIndex = idx;
+        _drawerItemIndex = null;
+      });
+    }
   }
 
   Widget _buildDrawer(
       BuildContext context, AppState appState, List<_NavItem> visibleItems) {
+    final email = Supabase.instance.client.auth.currentUser?.email ?? '';
+    final roleLabel = _getRoleLabel(appState);
+    final communityName = appState.activeCommunity?.name ?? 'HOApp';
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Drawer(
       child: Column(
         children: [
+          // Profile header
           Container(
             width: double.infinity,
-            color: Colors.white,
-            padding: const EdgeInsets.only(top: 48, bottom: 16),
-            child: Center(
-              child: appState.activeCommunity?.logoUrl != null
-                  ? Image.network(
-                      appState.activeCommunity!.logoUrl!,
-                      height: 140,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        'assets/images/hoapp-logo-with-bg.png',
-                        height: 140,
-                        fit: BoxFit.contain,
-                      ),
-                    )
-                  : Image.asset(
-                      'assets/images/hoapp-logo-with-bg.png',
-                      height: 140,
-                      fit: BoxFit.contain,
-                    ),
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 20,
+              bottom: 20,
+              left: 20,
+              right: 20,
             ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: SizedBox(
-              width: double.infinity,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    Supabase.instance.client.auth.currentUser?.email ?? '',
-                    style: const TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _brand.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _getRoleLabel(appState),
-                      style: TextStyle(
-                        color: _brand,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    appState.activeCommunity?.name ?? 'HOApp',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 13,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  primary,
+                  primary.withValues(alpha: 0.85),
                 ],
               ),
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Avatar + Notifications
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            width: 2),
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        backgroundImage: appState.activeCommunity?.logoUrl !=
+                                null
+                            ? NetworkImage(appState.activeCommunity!.logoUrl!)
+                            : null,
+                        child: appState.activeCommunity?.logoUrl == null
+                            ? Text(
+                                communityName.isNotEmpty
+                                    ? communityName[0].toUpperCase()
+                                    : 'H',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        roleLabel,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  communityName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  email,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 13,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-          const Divider(height: 1),
+          // Navigation items
           Expanded(
             child: ListView.builder(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
               itemCount: visibleItems.length,
               itemBuilder: (context, index) {
                 final item = visibleItems[index];
                 final isSelected = index == _selectedIndex;
                 final badge = _getBadgeForItem(item.label);
 
-                // Add section dividers
+                // Section dividers
                 Widget? divider;
                 if (item.staffOnly &&
                     index > 0 &&
                     !visibleItems[index - 1].staffOnly &&
                     !visibleItems[index - 1].adminOnly) {
-                  divider = const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(child: Divider()),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('STAFF',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w600)),
-                        ),
-                        Expanded(child: Divider()),
-                      ],
-                    ),
-                  );
+                  divider = _buildSectionLabel('STAFF');
                 } else if (item.adminOnly &&
                     index > 0 &&
                     !visibleItems[index - 1].adminOnly) {
-                  divider = const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(child: Divider()),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('ADMIN',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w600)),
-                        ),
-                        Expanded(child: Divider()),
-                      ],
-                    ),
-                  );
+                  divider = _buildSectionLabel('ADMIN');
                 }
 
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (divider != null) divider,
-                    ListTile(
-                      leading: Icon(
-                        isSelected ? item.selectedIcon : item.icon,
-                        color: isSelected ? _brand : null,
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: isSelected
+                            ? primary.withValues(alpha: 0.1)
+                            : Colors.transparent,
                       ),
-                      title: Text(
-                        item.label,
-                        style: TextStyle(
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color: isSelected ? _brand : null,
+                      child: ListTile(
+                        dense: true,
+                        leading: Icon(
+                          isSelected ? item.selectedIcon : item.icon,
+                          color: isSelected ? primary : Colors.grey.shade600,
+                          size: 22,
                         ),
+                        title: Text(
+                          item.label,
+                          style: TextStyle(
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                            color: isSelected ? primary : Colors.grey.shade800,
+                            fontSize: 14,
+                          ),
+                        ),
+                        trailing: badge > 0
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade400,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '$badge',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              )
+                            : null,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        onTap: () {
+                          setState(() {
+                            _selectedIndex = index;
+                            _drawerItemIndex = null;
+                          });
+                          Navigator.of(context).pop();
+                          _loadBadgeCounts();
+                        },
                       ),
-                      trailing: badge > 0
-                          ? Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$badge',
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 12),
-                              ),
-                            )
-                          : null,
-                      selected: isSelected,
-                      selectedTileColor: _brand.withOpacity(0.08),
-                      onTap: () {
-                        setState(() => _selectedIndex = index);
-                        Navigator.of(context).pop(); // close drawer
-                        _loadBadgeCounts(); // refresh counts on nav
-                      },
                     ),
                   ],
                 );
               },
             ),
           ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
-            onTap: () async {
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Sign Out?'),
-                  content: const Text('Are you sure you want to sign out?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(false),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(true),
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('Sign Out'),
-                    ),
-                  ],
+          // Sign out
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade200),
                 ),
-              );
-              if (confirmed == true && context.mounted) {
-                await context.read<AuthRepository>().signOut();
-                if (context.mounted) {
-                  Navigator.of(context).pushReplacementNamed('/login');
-                }
-              }
-            },
+              ),
+              child: ListTile(
+                leading: Icon(Icons.logout_rounded,
+                    color: Colors.red.shade400, size: 22),
+                title: Text('Sign Out',
+                    style: TextStyle(
+                        color: Colors.red.shade400,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Sign Out?'),
+                      content: const Text('Are you sure you want to sign out?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.red.shade400),
+                          child: const Text('Sign Out'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true && context.mounted) {
+                    await context.read<AuthRepository>().signOut();
+                    if (context.mounted) {
+                      Navigator.of(context).pushReplacementNamed('/login');
+                    }
+                  }
+                },
+              ),
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Colors.grey.shade300)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          Expanded(child: Divider(color: Colors.grey.shade300)),
         ],
       ),
     );
