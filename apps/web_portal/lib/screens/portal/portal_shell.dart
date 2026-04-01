@@ -38,6 +38,9 @@ class _PortalShellState extends State<PortalShell> {
   int _newAnnouncements = 0;
   String? _profileName;
 
+  /// Realtime channel for badge-count auto-refresh.
+  RealtimeChannel? _badgeChannel;
+
   int get _totalNotifications =>
       _pendingPayments +
       _openTickets +
@@ -50,6 +53,12 @@ class _PortalShellState extends State<PortalShell> {
   void initState() {
     super.initState();
     _loadCommunity();
+  }
+
+  @override
+  void dispose() {
+    _badgeChannel?.unsubscribe();
+    super.dispose();
   }
 
   @override
@@ -147,8 +156,89 @@ class _PortalShellState extends State<PortalShell> {
         _checkTour();
         _loadBadgeCounts();
         _registerOneSignal();
+        _subscribeToBadgeUpdates();
       }
     }
+  }
+
+  /// Subscribe to Realtime changes on tables that drive badge counts so the
+  /// UI updates automatically without a manual browser refresh.
+  void _subscribeToBadgeUpdates() {
+    final appState = context.read<AppState>();
+    final communityId = appState.activeCommunityId;
+    if (communityId == null) return;
+
+    final client = Supabase.instance.client;
+
+    _badgeChannel = client
+        .channel('badge-counts')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'violations',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'community_id',
+            value: communityId,
+          ),
+          callback: (_) => _loadBadgeCounts(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'tickets',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'community_id',
+            value: communityId,
+          ),
+          callback: (_) => _loadBadgeCounts(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'payments',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'community_id',
+            value: communityId,
+          ),
+          callback: (_) => _loadBadgeCounts(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'feedback',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'community_id',
+            value: communityId,
+          ),
+          callback: (_) => _loadBadgeCounts(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'amenity_bookings',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'community_id',
+            value: communityId,
+          ),
+          callback: (_) => _loadBadgeCounts(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'announcements',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'community_id',
+            value: communityId,
+          ),
+          callback: (_) => _loadBadgeCounts(),
+        )
+        .subscribe();
   }
 
   /// Register the current user with OneSignal for web push notifications.

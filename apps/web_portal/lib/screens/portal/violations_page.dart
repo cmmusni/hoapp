@@ -788,12 +788,21 @@ class _ReportViolationDialogState extends State<_ReportViolationDialog> {
     try {
       final repo = context.read<ViolationRepository>();
 
+      final title = _titleController.text.trim();
       await repo.createViolation(
         communityId: appState.activeCommunityId!,
-        title: _titleController.text.trim(),
+        title: title,
         body: _bodyController.text.trim(),
         attachmentUrls:
             _uploadedImageUrls.isNotEmpty ? _uploadedImageUrls : null,
+      );
+
+      // Send push notification to community staff
+      NotificationService().send(
+        communityId: appState.activeCommunityId!,
+        heading: 'New Violation Reported',
+        content: title,
+        data: {'type': 'violation'},
       );
 
       if (mounted) {

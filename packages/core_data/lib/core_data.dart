@@ -27,3 +27,4 @@ export 'src/repositories/security_pass_repository.dart';
 // Services
 export 'src/services/storage_service.dart';
 export 'src/services/realtime_service.dart';
+export 'src/services/notification_service.dart';
