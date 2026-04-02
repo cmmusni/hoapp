@@ -5,8 +5,6 @@ import 'package:intl/intl.dart';
 import '../adaptive/adaptive_layout.dart';
 import '../widgets/file_upload_widget.dart';
 
-const _brand = Color(0xff215e3f);
-
 /// Shared feedback screen — adaptive for web and mobile.
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -63,6 +61,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isStaff = appState.isStaff;
+    final brand = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       body: Column(
@@ -91,7 +90,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                    borderSide: BorderSide(color: brand, width: 1.5),
                   ),
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -152,7 +151,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _brand, width: 1.5),
+                  borderSide: BorderSide(color: brand, width: 1.5),
                 ),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -230,12 +229,15 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       floatingActionButton: screenSizeOf(context) == ScreenSize.mobile
           ? FloatingActionButton(
               onPressed: () => _showSubmitSheet(context),
-              child: const Icon(Icons.add),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: const Icon(Icons.add, color: Colors.white),
             )
           : FloatingActionButton.extended(
               onPressed: () => _showSubmitSheet(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Submit Feedback'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('Submit Feedback',
+                  style: TextStyle(color: Colors.white)),
             ),
       floatingActionButtonLocation: screenSizeOf(context) == ScreenSize.mobile
           ? FloatingActionButtonLocation.endFloat
@@ -308,6 +310,7 @@ class _FeedbackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brand = Theme.of(context).colorScheme.primary;
     final category = item['category'] as String? ?? 'general';
     final status = item['status'] as String? ?? 'open';
     final subject = item['subject'] as String? ?? 'No subject';
@@ -340,7 +343,8 @@ class _FeedbackCard extends StatelessWidget {
                 Chip(
                   label: Text(status.toUpperCase(),
                       style: const TextStyle(fontSize: 10)),
-                  backgroundColor: _statusColor(status).withValues(alpha: 0.15),
+                  backgroundColor:
+                      _statusColor(status, brand).withValues(alpha: 0.15),
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -380,6 +384,7 @@ class _FeedbackCard extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context) {
+    final brand = Theme.of(context).colorScheme.primary;
     final adminNotes = item['admin_notes'] as String?;
     final description = item['description'] as String? ?? '';
     final imageUrl = item['image_url'] as String?;
@@ -434,9 +439,9 @@ class _FeedbackCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _brand.withValues(alpha: 0.05),
+                  color: brand.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _brand.withValues(alpha: 0.2)),
+                  border: Border.all(color: brand.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,11 +485,11 @@ class _FeedbackCard extends StatelessWidget {
         _ => Colors.grey,
       };
 
-  Color _statusColor(String s) => switch (s) {
+  Color _statusColor(String s, Color brand) => switch (s) {
         'open' => Colors.orange,
         'in_review' => Colors.blue,
         'planned' => Colors.purple,
-        'resolved' => _brand,
+        'resolved' => brand,
         _ => Colors.grey,
       };
 }
@@ -520,6 +525,7 @@ class _AdminActionsState extends State<_AdminActions> {
 
   @override
   Widget build(BuildContext context) {
+    final brand = Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -540,7 +546,7 @@ class _AdminActionsState extends State<_AdminActions> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _brand, width: 1.5),
+                borderSide: BorderSide(color: brand, width: 1.5),
               )),
           items: const [
             DropdownMenuItem(value: 'open', child: Text('Open')),
@@ -567,7 +573,7 @@ class _AdminActionsState extends State<_AdminActions> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: _brand, width: 1.5),
+              borderSide: BorderSide(color: brand, width: 1.5),
             ),
             alignLabelWithHint: true,
           ),
@@ -587,7 +593,7 @@ class _AdminActionsState extends State<_AdminActions> {
               label: const Text('Save Changes',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: _brand,
+                  backgroundColor: brand,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12))),
@@ -680,6 +686,7 @@ class _SubmitFeedbackSheetState extends State<_SubmitFeedbackSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final brand = Theme.of(context).colorScheme.primary;
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -712,7 +719,7 @@ class _SubmitFeedbackSheetState extends State<_SubmitFeedbackSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _brand, width: 1.5),
+                    borderSide: BorderSide(color: brand, width: 1.5),
                   )),
             ),
             const SizedBox(height: 12),
@@ -730,7 +737,7 @@ class _SubmitFeedbackSheetState extends State<_SubmitFeedbackSheet> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _brand, width: 1.5),
+                  borderSide: BorderSide(color: brand, width: 1.5),
                 ),
                 alignLabelWithHint: true,
               ),
@@ -759,12 +766,12 @@ class _SubmitFeedbackSheetState extends State<_SubmitFeedbackSheet> {
                         width: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.send_rounded),
+                    : const Icon(Icons.send_rounded, color: Colors.white),
                 label: const Text('Submit',
                     style:
                         TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: _brand,
+                    backgroundColor: brand,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12))),
@@ -777,10 +784,11 @@ class _SubmitFeedbackSheetState extends State<_SubmitFeedbackSheet> {
   }
 
   Widget _catChip(String label, String value) {
+    final brand = Theme.of(context).colorScheme.primary;
     return ChoiceChip(
       label: Text(label),
       selected: _category == value,
-      selectedColor: _brand.withValues(alpha: 0.15),
+      selectedColor: brand.withValues(alpha: 0.15),
       onSelected: (_) => setState(() => _category = value),
     );
   }

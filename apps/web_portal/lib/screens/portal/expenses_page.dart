@@ -208,8 +208,10 @@ class _ExpensesPageState extends State<ExpensesPage> {
       floatingActionButton: MediaQuery.of(context).size.width > 800
           ? FloatingActionButton.extended(
               onPressed: () => _showCreateExpenseDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Expense'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('Add Expense',
+                  style: TextStyle(color: Colors.white)),
             )
           : FloatingActionButton(
               onPressed: () => _showCreateExpenseDialog(context),
@@ -1452,7 +1454,8 @@ class _CreateExpenseDialogState extends State<_CreateExpenseDialog> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
                 : Icon(
-                    _isEditing ? Icons.save_rounded : Icons.add_circle_outline),
+                    _isEditing ? Icons.save_rounded : Icons.add_circle_outline,
+                    color: Colors.white),
             label: Text(
               _isSubmitting
                   ? (_isEditing ? 'Saving...' : 'Adding...')

@@ -107,6 +107,7 @@ class _BillingScreenState extends State<BillingScreen>
   int _myPendingCount = 0;
   int _allPendingCount = 0;
   bool _showChart = true;
+  int _refreshKey = 0;
 
   @override
   void initState() {
@@ -237,10 +238,12 @@ class _BillingScreenState extends State<BillingScreen>
                     controller: _tabController,
                     children: [
                       _InvoiceListView(
+                        key: ValueKey('my_$_refreshKey'),
                         showMyInvoices: true,
                         onRefresh: _loadTabBadges,
                       ),
                       _InvoiceListView(
+                        key: ValueKey('all_$_refreshKey'),
                         showMyInvoices: false,
                         onRefresh: _loadTabBadges,
                       ),
@@ -248,6 +251,7 @@ class _BillingScreenState extends State<BillingScreen>
                     ],
                   )
                 : _InvoiceListView(
+                    key: ValueKey('my_$_refreshKey'),
                     showMyInvoices: true,
                     onRefresh: () async {},
                   ),
@@ -271,8 +275,7 @@ class _BillingScreenState extends State<BillingScreen>
       builder: (context) => _CreateInvoiceSheet(
         onCreated: () {
           _loadTabBadges();
-          // Force rebuild of tab views
-          setState(() {});
+          setState(() => _refreshKey++);
         },
       ),
     );
@@ -286,6 +289,7 @@ class _InvoiceListView extends StatefulWidget {
   final VoidCallback onRefresh;
 
   const _InvoiceListView({
+    super.key,
     required this.showMyInvoices,
     required this.onRefresh,
   });

@@ -155,8 +155,10 @@ class _ViolationsPageState extends State<ViolationsPage> {
       floatingActionButton: MediaQuery.of(context).size.width > 800
           ? FloatingActionButton.extended(
               onPressed: () => _showReportDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Report Violation'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('Report Violation',
+                  style: TextStyle(color: Colors.white)),
             )
           : FloatingActionButton(
               onPressed: () => _showReportDialog(context),
@@ -765,7 +767,7 @@ class _ReportViolationDialogState extends State<_ReportViolationDialog> {
                     height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.report_outlined),
+                : const Icon(Icons.report_outlined, color: Colors.white),
             label: const Text('Submit Report',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(

@@ -117,6 +117,7 @@ class _BillingPageState extends State<BillingPage>
   int _myPendingCount = 0;
   int _allPendingCount = 0;
   int _dueRecurringCount = 0;
+  int _refreshKey = 0;
 
   @override
   void initState() {
@@ -271,8 +272,12 @@ class _BillingPageState extends State<BillingPage>
                 ? TabBarView(
                     controller: _tabController,
                     children: [
-                      const _InvoiceListView(showMyInvoices: true),
-                      const _InvoiceListView(showMyInvoices: false),
+                      _InvoiceListView(
+                          key: ValueKey('my_$_refreshKey'),
+                          showMyInvoices: true),
+                      _InvoiceListView(
+                          key: ValueKey('all_$_refreshKey'),
+                          showMyInvoices: false),
                       _RecurringBillingView(
                         onInvoicesGenerated: () {
                           _loadTabBadges();
@@ -282,7 +287,8 @@ class _BillingPageState extends State<BillingPage>
                       const _IncomeTrackerView(),
                     ],
                   )
-                : const _InvoiceListView(showMyInvoices: true),
+                : _InvoiceListView(
+                    key: ValueKey('my_$_refreshKey'), showMyInvoices: true),
           ),
         ],
       ),
@@ -290,8 +296,10 @@ class _BillingPageState extends State<BillingPage>
           ? MediaQuery.of(context).size.width > 800
               ? FloatingActionButton.extended(
                   onPressed: () => _showCreateInvoiceDialog(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Create Invoice'),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text('Create Invoice',
+                      style: TextStyle(color: Colors.white)),
                 )
               : FloatingActionButton(
                   onPressed: () => _showCreateInvoiceDialog(context),
@@ -308,7 +316,12 @@ class _BillingPageState extends State<BillingPage>
   void _showCreateInvoiceDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => const _CreateInvoiceDialog(),
+      builder: (context) => _CreateInvoiceDialog(
+        onCreated: () {
+          _loadTabBadges();
+          setState(() => _refreshKey++);
+        },
+      ),
     );
   }
 }
@@ -585,7 +598,7 @@ class _MonthlyData {
 class _InvoiceListView extends StatefulWidget {
   final bool showMyInvoices;
 
-  const _InvoiceListView({required this.showMyInvoices});
+  const _InvoiceListView({super.key, required this.showMyInvoices});
 
   @override
   State<_InvoiceListView> createState() => _InvoiceListViewState();
@@ -2448,7 +2461,8 @@ class _PaymentSubmissionDialogState extends State<_PaymentSubmissionDialog> {
 }
 
 class _CreateInvoiceDialog extends StatefulWidget {
-  const _CreateInvoiceDialog();
+  final VoidCallback? onCreated;
+  const _CreateInvoiceDialog({this.onCreated});
 
   @override
   State<_CreateInvoiceDialog> createState() => _CreateInvoiceDialogState();
@@ -3014,6 +3028,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
 
       if (mounted) {
         Navigator.of(context).pop();
+        widget.onCreated?.call();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invoice created successfully')),
         );

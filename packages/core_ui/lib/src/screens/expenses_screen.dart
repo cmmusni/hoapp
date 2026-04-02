@@ -208,10 +208,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         ],
       ),
       floatingActionButton: isStaff
-          ? FloatingActionButton.extended(
+          ? FloatingActionButton(
               onPressed: () => _showCreateExpenseSheet(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Expense'),
+              child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -1052,12 +1051,16 @@ class _CreateExpenseSheetState extends State<_CreateExpenseSheet> {
                         width: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : Icon(_isEditing
-                        ? Icons.save_rounded
-                        : Icons.add_circle_outline),
+                    : Icon(
+                        _isEditing
+                            ? Icons.save_rounded
+                            : Icons.add_circle_outline,
+                        color: Colors.white),
                 label: Text(_isEditing ? 'Update' : 'Add Expense',
                     style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600)),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                     backgroundColor: _brand,
                     foregroundColor: Colors.white,

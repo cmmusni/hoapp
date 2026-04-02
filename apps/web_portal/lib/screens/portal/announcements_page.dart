@@ -199,8 +199,10 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           ? MediaQuery.of(context).size.width > 800
               ? FloatingActionButton.extended(
                   onPressed: () => _showCreateDialog(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('New Announcement'),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text('New Announcement',
+                      style: TextStyle(color: Colors.white)),
                 )
               : FloatingActionButton(
                   onPressed: () => _showCreateDialog(context),

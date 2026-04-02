@@ -211,8 +211,10 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                       });
                     }
                   },
-                  icon: const Icon(Icons.event_available),
-                  label: const Text('Request Booking'),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  icon: const Icon(Icons.event_available, color: Colors.white),
+                  label: const Text('Request Booking',
+                      style: TextStyle(color: Colors.white)),
                 )
               : FloatingActionButton(
                   onPressed: () => _showCreateAmenityDialog(),
@@ -1209,7 +1211,7 @@ class _AmenitiesPageState extends State<AmenitiesPage> {
                             height: 20,
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.send_rounded),
+                        : const Icon(Icons.send_rounded, color: Colors.white),
                     label: Text(isLoading ? 'Submitting...' : 'Submit Request',
                         style: const TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w600)),

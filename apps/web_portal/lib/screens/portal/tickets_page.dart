@@ -183,8 +183,10 @@ class _TicketList extends StatelessWidget {
       floatingActionButton: MediaQuery.of(context).size.width > 800
           ? FloatingActionButton.extended(
               onPressed: () => _showCreateDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('New Ticket'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('New Ticket',
+                  style: TextStyle(color: Colors.white)),
             )
           : FloatingActionButton(
               onPressed: () => _showCreateDialog(context),
@@ -694,7 +696,8 @@ class _CreateTicketDialogState extends State<_CreateTicketDialog> {
                     height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.confirmation_num_outlined),
+                : const Icon(Icons.confirmation_num_outlined,
+                    color: Colors.white),
             label: const Text('Create Ticket',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             style: ElevatedButton.styleFrom(

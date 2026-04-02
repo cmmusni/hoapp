@@ -1778,8 +1778,10 @@ class _StaffViewState extends State<_StaffView> {
       floatingActionButton: MediaQuery.of(context).size.width > 800
           ? FloatingActionButton.extended(
               onPressed: _openStaffRegistration,
-              icon: const Icon(Icons.add),
-              label: const Text('Register Swimmer'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('Register Swimmer',
+                  style: TextStyle(color: Colors.white)),
             )
           : FloatingActionButton(
               onPressed: _openStaffRegistration,
