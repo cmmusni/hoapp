@@ -1086,22 +1086,11 @@ class _PortalShellState extends State<PortalShell> {
                   ],
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 6),
-                child: appState.activeCommunity?.logoUrl != null
-                    ? Image.network(
-                        appState.activeCommunity!.logoUrl!,
-                        fit: BoxFit.contain,
-                        height: 72,
-                        errorBuilder: (_, __, ___) => Image.asset(
-                          'assets/images/hoapp-logo.png',
-                          fit: BoxFit.contain,
-                          height: 72,
-                        ),
-                      )
-                    : Image.asset(
-                        'assets/images/hoapp-logo.png',
-                        fit: BoxFit.contain,
-                        height: 72,
-                      ),
+                child: Image.asset(
+                  'assets/images/hoapp-logo.png',
+                  fit: BoxFit.contain,
+                  height: 72,
+                ),
               ),
               // User header
               Container(
@@ -1505,31 +1494,14 @@ class _PortalShellState extends State<PortalShell> {
                       child: CircleAvatar(
                         radius: 28,
                         backgroundColor: Colors.white,
-                        child: appState.activeCommunity?.logoUrl != null
-                            ? ClipOval(
-                                child: Image.network(
-                                  appState.activeCommunity!.logoUrl!,
-                                  width: 56,
-                                  height: 56,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => ClipOval(
-                                    child: Image.asset(
-                                      'assets/images/hoapp-icon.png',
-                                      width: 56,
-                                      height: 56,
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : ClipOval(
-                                child: Image.asset(
-                                  'assets/images/hoapp-icon.png',
-                                  width: 56,
-                                  height: 56,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/hoapp-icon.png',
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
                     ),
                     const Spacer(),
