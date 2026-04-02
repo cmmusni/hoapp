@@ -41,8 +41,14 @@ class AppState extends ChangeNotifier {
   bool get isMaintenance => activeRole?.role == Role.maintenance;
 
   /// Plan-based feature access
-  bool get isProfessional => _activeCommunity?.isProfessional ?? false;
-  bool get isEnterprise => _activeCommunity?.isEnterprise ?? false;
+  bool get isProfessional =>
+      (_activeCommunity?.isProfessional ?? false) &&
+      !(_activeCommunity?.isPlanExpired ?? false);
+  bool get isEnterprise =>
+      (_activeCommunity?.isEnterprise ?? false) &&
+      !(_activeCommunity?.isPlanExpired ?? false);
+  bool get isPlanExpired => _activeCommunity?.isPlanExpired ?? false;
+  bool get isPlanExpiringSoon => _activeCommunity?.isPlanExpiringSoon ?? false;
 
   Future<void> setActiveCommunity(String communityId, String slug) async {
     _activeCommunityId = communityId;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Shown after a successful PayMongo plan upgrade payment.
+/// Shown after a successful PayMongo plan upgrade or renewal payment.
 class UpgradeSuccessPage extends StatelessWidget {
   const UpgradeSuccessPage({super.key});
 
@@ -10,6 +10,8 @@ class UpgradeSuccessPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = const Color(0xFF2E5C3F);
     final session = Supabase.instance.client.auth.currentSession;
+    final uri = GoRouterState.of(context).uri;
+    final isRenewal = uri.queryParameters['renewal'] == 'true';
 
     return Scaffold(
       body: Center(
@@ -29,9 +31,9 @@ class UpgradeSuccessPage extends StatelessWidget {
                     Icon(Icons.check_circle_outline, color: primary, size: 64),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Payment Successful!',
-                style: TextStyle(
+              Text(
+                isRenewal ? 'Renewal Successful!' : 'Payment Successful!',
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1F2937),
@@ -39,10 +41,13 @@ class UpgradeSuccessPage extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Your community has been upgraded to the Professional plan. '
-                'All premium features are now available.',
-                style: TextStyle(
+              Text(
+                isRenewal
+                    ? 'Your Professional plan has been renewed for another 30 days. '
+                        'All premium features will continue uninterrupted.'
+                    : 'Your community has been upgraded to the Professional plan. '
+                        'All premium features are now available.',
+                style: const TextStyle(
                   fontSize: 15,
                   color: Color(0xFF6B7280),
                   height: 1.5,

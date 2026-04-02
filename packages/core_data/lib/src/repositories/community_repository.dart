@@ -480,9 +480,14 @@ class CommunityRepository {
   Future<void> updateCommunityPlan({
     required String communityId,
     required String plan,
+    DateTime? planExpiresAt,
   }) async {
-    await _client
-        .from('communities')
-        .update({'plan': plan}).eq('id', communityId);
+    final updates = <String, dynamic>{'plan': plan};
+    if (plan == 'starter') {
+      updates['plan_expires_at'] = null;
+    } else if (planExpiresAt != null) {
+      updates['plan_expires_at'] = planExpiresAt.toIso8601String();
+    }
+    await _client.from('communities').update(updates).eq('id', communityId);
   }
 }

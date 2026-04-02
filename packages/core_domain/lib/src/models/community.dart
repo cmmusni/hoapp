@@ -12,6 +12,9 @@ class Community {
   final Map<String, dynamic>? settings;
   final String plan; // 'starter', 'professional', 'enterprise'
 
+  @JsonKey(name: 'plan_expires_at')
+  final DateTime? planExpiresAt;
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
@@ -22,6 +25,7 @@ class Community {
     this.address,
     this.settings,
     this.plan = 'starter',
+    this.planExpiresAt,
     required this.createdAt,
   });
 
@@ -40,6 +44,19 @@ class Community {
 
   bool get isProfessional => plan == 'professional' || plan == 'enterprise';
   bool get isEnterprise => plan == 'enterprise';
+
+  /// Whether the plan is expiring within 7 days.
+  bool get isPlanExpiringSoon =>
+      planExpiresAt != null &&
+      planExpiresAt!.difference(DateTime.now()).inDays <= 7 &&
+      planExpiresAt!.isAfter(DateTime.now());
+
+  /// Whether the plan has expired (but may still be in grace period).
+  bool get isPlanExpired =>
+      planExpiresAt != null && planExpiresAt!.isBefore(DateTime.now());
+
+  /// Days remaining until plan expires (negative if expired).
+  int? get daysUntilExpiry => planExpiresAt?.difference(DateTime.now()).inDays;
 
   /// OR template configuration from community settings.
   /// Falls back to default detailed style if not configured.

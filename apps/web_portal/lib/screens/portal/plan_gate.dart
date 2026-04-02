@@ -4,7 +4,8 @@ import 'package:core_data/core_data.dart';
 import 'package:go_router/go_router.dart';
 
 /// Wraps a page that requires a Professional (or higher) plan.
-/// Shows an upgrade prompt if the community is on the Starter plan.
+/// Shows an upgrade prompt if the community is on the Starter plan,
+/// or a renewal prompt if the plan has expired.
 class PlanGate extends StatelessWidget {
   final Widget child;
   final String feature;
@@ -14,10 +15,16 @@ class PlanGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-    if (appState.isProfessional) return child;
+    final community = appState.activeCommunity;
+
+    // Allow access if professional/enterprise and not expired
+    if (appState.isProfessional && !(community?.isPlanExpired ?? false)) {
+      return child;
+    }
 
     final isAdmin = appState.isAdmin;
     final slug = appState.activeCommunitySlug;
+    final isExpired = community?.isPlanExpired ?? false;
 
     return Scaffold(
       body: Center(
@@ -29,16 +36,24 @@ class PlanGate extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                  color: isExpired
+                      ? Colors.orange.withOpacity(0.08)
+                      : Theme.of(context).colorScheme.primary.withOpacity(0.08),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.lock_outline,
-                    size: 56, color: Theme.of(context).colorScheme.primary),
+                child: Icon(
+                  isExpired ? Icons.autorenew : Icons.lock_outline,
+                  size: 56,
+                  color: isExpired
+                      ? Colors.orange.shade700
+                      : Theme.of(context).colorScheme.primary,
+                ),
               ),
               const SizedBox(height: 24),
               Text(
-                '$feature is a Professional feature',
+                isExpired
+                    ? 'Plan Expired'
+                    : '$feature is a Professional feature',
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -48,9 +63,13 @@ class PlanGate extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                isAdmin
-                    ? 'Upgrade your community plan to Professional to unlock this feature.'
-                    : 'Ask your community admin to upgrade to Professional to unlock this feature.',
+                isExpired
+                    ? (isAdmin
+                        ? 'Your plan has expired. Renew your subscription to continue using $feature.'
+                        : 'Your community\'s plan has expired. Ask your admin to renew the subscription.')
+                    : (isAdmin
+                        ? 'Upgrade your community plan to Professional to unlock this feature.'
+                        : 'Ask your community admin to upgrade to Professional to unlock this feature.'),
                 style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
                 textAlign: TextAlign.center,
               ),
@@ -58,10 +77,15 @@ class PlanGate extends StatelessWidget {
               if (isAdmin && slug != null)
                 ElevatedButton.icon(
                   onPressed: () => context.go('/$slug/settings'),
-                  icon: const Icon(Icons.arrow_upward, color: Colors.white),
-                  label: const Text('Upgrade Plan'),
+                  icon: Icon(
+                    isExpired ? Icons.autorenew : Icons.arrow_upward,
+                    color: Colors.white,
+                  ),
+                  label: Text(isExpired ? 'Renew Plan' : 'Upgrade Plan'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    backgroundColor: isExpired
+                        ? Colors.orange.shade700
+                        : Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 32, vertical: 16),

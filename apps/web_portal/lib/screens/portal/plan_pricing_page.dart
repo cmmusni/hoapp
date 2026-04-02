@@ -360,7 +360,7 @@ class _PlanPricingCardState extends State<_PlanPricingCard> {
                             height: 14,
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.save, size: 16),
+                        : const Icon(Icons.save, size: 16, color: Colors.white),
                     label: const Text('Save'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primary,

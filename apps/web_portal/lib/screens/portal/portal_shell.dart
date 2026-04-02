@@ -508,7 +508,17 @@ class _PortalShellState extends State<PortalShell> {
                   body: Stack(
                     children: [
                       _isCommunityLoaded
-                          ? widget.child
+                          ? Column(
+                              children: [
+                                if (isAdmin &&
+                                    !currentPath.contains('/settings'))
+                                  _PlanExpiryBanner(
+                                    community: appState.activeCommunity,
+                                    slug: widget.communitySlug,
+                                  ),
+                                Expanded(child: widget.child),
+                              ],
+                            )
                           : const Center(child: CircularProgressIndicator()),
                       if (_showTour && _isCommunityLoaded)
                         OnboardingTour(
@@ -600,7 +610,16 @@ class _PortalShellState extends State<PortalShell> {
           body: Stack(
             children: [
               _isCommunityLoaded
-                  ? widget.child
+                  ? Column(
+                      children: [
+                        if (isAdmin && !currentPath.contains('/settings'))
+                          _PlanExpiryBanner(
+                            community: appState.activeCommunity,
+                            slug: widget.communitySlug,
+                          ),
+                        Expanded(child: widget.child),
+                      ],
+                    )
                   : const Center(child: CircularProgressIndicator()),
               if (_showTour && _isCommunityLoaded)
                 OnboardingTour(
@@ -753,6 +772,15 @@ class _PortalShellState extends State<PortalShell> {
         ? _formatRole(appState.activeRole!.role)
         : null;
     final communityName = appState.activeCommunity?.name ?? '';
+    final initials = displayName.isNotEmpty
+        ? displayName
+            .trim()
+            .split(' ')
+            .map((w) => w.isNotEmpty ? w[0] : '')
+            .take(2)
+            .join()
+            .toUpperCase()
+        : '?';
 
     return PopupMenuButton<String>(
       offset: const Offset(0, 48),
@@ -841,27 +869,6 @@ class _PortalShellState extends State<PortalShell> {
           ),
         ),
         const PopupMenuDivider(),
-        const PopupMenuItem<String>(
-          value: 'profile',
-          child: Row(
-            children: [
-              Icon(Icons.person_outline, size: 18, color: Colors.blueGrey),
-              SizedBox(width: 8),
-              Text('My Profile'),
-            ],
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'change_password',
-          child: Row(
-            children: [
-              Icon(Icons.lock_outline, size: 18, color: Colors.blueGrey),
-              SizedBox(width: 8),
-              Text('Change Password'),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
         PopupMenuItem<String>(
           value: 'notifications',
           child: Row(
@@ -887,6 +894,26 @@ class _PortalShellState extends State<PortalShell> {
                     ),
                   ),
                 ),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'profile',
+          child: Row(
+            children: [
+              Icon(Icons.person_outline, size: 18, color: Colors.blueGrey),
+              SizedBox(width: 8),
+              Text('My Profile'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'change_password',
+          child: Row(
+            children: [
+              Icon(Icons.lock_outline, size: 18, color: Colors.blueGrey),
+              SizedBox(width: 8),
+              Text('Change Password'),
             ],
           ),
         ),
@@ -949,14 +976,15 @@ class _PortalShellState extends State<PortalShell> {
           mainAxisSize: MainAxisSize.min,
           children: [
             CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.white24,
+              radius: 18,
+              backgroundColor: Colors.white.withOpacity(0.15),
               child: Text(
-                displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-                style: TextStyle(
+                initials,
+                style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.none,
                 ),
               ),
             ),
@@ -1506,12 +1534,23 @@ class _PortalShellState extends State<PortalShell> {
                         radius: 28,
                         backgroundColor: Colors.white,
                         child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/hoapp-icon.png',
-                            width: 48,
-                            height: 48,
-                            fit: BoxFit.contain,
-                          ),
+                          child: appState.activeCommunity!.logoUrl != null
+                              ? Image.network(
+                                  appState.activeCommunity!.logoUrl!,
+                                  fit: BoxFit.contain,
+                                  height: 60,
+                                  errorBuilder: (_, __, ___) => Image.asset(
+                                    'assets/images/hoapp-logo.png',
+                                    fit: BoxFit.contain,
+                                    height: 60,
+                                  ),
+                                )
+                              : Image.asset(
+                                  'assets/images/hoapp-icon.png',
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.contain,
+                                ),
                         ),
                       ),
                     ),
@@ -2402,6 +2441,73 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   ],
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Plan Expiry Banner ──────────────────────────────────────────────────────
+
+class _PlanExpiryBanner extends StatelessWidget {
+  final Community? community;
+  final String slug;
+
+  const _PlanExpiryBanner({required this.community, required this.slug});
+
+  @override
+  Widget build(BuildContext context) {
+    if (community == null) return const SizedBox.shrink();
+    final c = community!;
+
+    // Only show for paid plans that are expiring soon or expired
+    if (c.plan == 'starter') return const SizedBox.shrink();
+    if (!c.isPlanExpiringSoon && !c.isPlanExpired)
+      return const SizedBox.shrink();
+
+    final isExpired = c.isPlanExpired;
+    final daysLeft = (c.daysUntilExpiry ?? 0) + 1;
+
+    final bgColor = isExpired ? Colors.red.shade50 : Colors.orange.shade50;
+    final fgColor = isExpired ? Colors.red.shade800 : Colors.orange.shade900;
+    final icon = isExpired ? Icons.error_outline : Icons.warning_amber_rounded;
+    final message = isExpired
+        ? 'Your ${c.plan == 'professional' ? 'Professional' : 'Enterprise'} plan has expired. Renew now to keep premium features.'
+        : 'Your plan expires in $daysLeft day${daysLeft == 1 ? '' : 's'}. Renew to avoid losing premium features.';
+
+    return Material(
+      color: bgColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Icon(icon, color: fgColor, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: fgColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            TextButton(
+              onPressed: () => context.go('/$slug/settings'),
+              style: TextButton.styleFrom(
+                foregroundColor: fgColor,
+                backgroundColor: fgColor.withOpacity(0.1),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Renew',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],
         ),

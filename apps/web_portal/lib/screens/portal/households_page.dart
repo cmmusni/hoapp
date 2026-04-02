@@ -212,8 +212,10 @@ class _UnitListState extends State<_UnitList> {
               // Unit & member count badges + plan limit
               if (units.isNotEmpty)
                 Builder(builder: (context) {
-                  final plan = context.read<AppState>().activeCommunity?.plan ??
-                      'starter';
+                  final appStateLocal = context.read<AppState>();
+                  final plan = appStateLocal.isPlanExpired
+                      ? 'starter'
+                      : appStateLocal.activeCommunity?.plan ?? 'starter';
                   final limit = _unitLimitForPlan(plan);
                   final totalUnits = units.length;
                   final atLimit = limit != null && totalUnits >= limit;
@@ -283,8 +285,10 @@ class _UnitListState extends State<_UnitList> {
           ),
           floatingActionButton: isStaff
               ? Builder(builder: (context) {
-                  final plan = context.read<AppState>().activeCommunity?.plan ??
-                      'starter';
+                  final appStateLocal = context.read<AppState>();
+                  final plan = appStateLocal.isPlanExpired
+                      ? 'starter'
+                      : appStateLocal.activeCommunity?.plan ?? 'starter';
                   final limit = _unitLimitForPlan(plan);
                   final atLimit = limit != null && units.length >= limit;
 
@@ -474,61 +478,151 @@ class _UnitListState extends State<_UnitList> {
     final slug = appState.activeCommunitySlug;
     final planLabel = plan == 'starter' ? 'Starter' : 'Professional';
     final nextPlan = plan == 'starter' ? 'Professional' : 'Enterprise';
+    final isExpired = appState.isPlanExpired;
+    final rawPlan = appState.activeCommunity?.plan ?? 'starter';
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+        title: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(10),
+                shape: BoxShape.circle,
               ),
-              child: Icon(Icons.warning_amber_rounded,
-                  color: Colors.orange.shade700, size: 24),
+              child: Icon(Icons.lock_outline_rounded,
+                  color: Colors.orange.shade700, size: 32),
             ),
-            const SizedBox(width: 12),
-            const Expanded(child: Text('Unit Limit Reached')),
+            const SizedBox(height: 16),
+            const Text(
+              'Unit Limit Reached',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Your $planLabel plan allows up to $limit units.',
-              style: const TextStyle(fontSize: 15),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined,
+                      color: Colors.grey.shade600, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                            fontSize: 14, color: Colors.grey.shade800),
+                        children: [
+                          const TextSpan(text: 'Your '),
+                          TextSpan(
+                            text: isExpired
+                                ? '${rawPlan[0].toUpperCase()}${rawPlan.substring(1)} (expired)'
+                                : planLabel,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          TextSpan(text: ' plan allows up to $limit units.'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Upgrade to $nextPlan to add more units${plan == 'starter' ? ' (up to 300)' : ' (unlimited)'}.',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.rocket_launch_outlined,
+                      color: Theme.of(context).colorScheme.primary, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      isExpired
+                          ? 'Renew your plan to restore your previous limit.'
+                          : 'Upgrade to $nextPlan to add more units${plan == 'starter' ? ' (up to 300)' : ' (unlimited)'}.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
-          ),
-          if (isAdmin && slug != null)
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                context.go('/$slug/settings');
-              },
-              icon: const Icon(Icons.arrow_upward, size: 18),
-              label: Text('Upgrade to $nextPlan'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  child: const Text('Close',
+                      style: TextStyle(
+                          color: Colors.black87, fontWeight: FontWeight.w600)),
+                ),
               ),
-            ),
+              if (isAdmin && slug != null) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      context.go('/$slug/settings');
+                    },
+                    icon: Icon(
+                        isExpired
+                            ? Icons.autorenew_rounded
+                            : Icons.arrow_upward_rounded,
+                        size: 18,
+                        color: Colors.white),
+                    label: Text(
+                      isExpired ? 'Renew Plan' : 'Upgrade to $nextPlan',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );

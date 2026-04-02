@@ -3029,6 +3029,8 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
   }
 
   Widget _buildScanInvoiceButton(BuildContext context) {
+    final isPro = context.read<AppState>().isProfessional;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -3045,7 +3047,18 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
             : Colors.grey.shade50,
       ),
       child: InkWell(
-        onTap: _isScanning ? null : _scanImage,
+        onTap: _isScanning
+            ? null
+            : isPro
+                ? _scanImage
+                : () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Invoice scanning is available on the Professional plan.'),
+                      ),
+                    );
+                  },
         borderRadius: BorderRadius.circular(12),
         child: Column(
           children: [
@@ -3060,14 +3073,41 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                   style: TextStyle(fontSize: 13, color: Colors.grey)),
             ] else ...[
               Icon(Icons.document_scanner_outlined,
-                  size: 32, color: Theme.of(context).colorScheme.primary),
+                  size: 32,
+                  color: isPro
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey),
               const SizedBox(height: 8),
-              Text('Upload Invoice Image',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.primary,
-                  )),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Upload Invoice Image',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isPro
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey,
+                      )),
+                  if (!isPro) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text('PRO',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade800,
+                          )),
+                    ),
+                  ],
+                ],
+              ),
               const SizedBox(height: 4),
               Text('Auto-fill form from an invoice photo',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600])),

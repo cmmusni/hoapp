@@ -90,13 +90,20 @@ serve(async (req) => {
       return jsonResponse({ ok: true, message: 'already processed' })
     }
 
-    // Update subscription to paid
+    // Update subscription to paid with expiry (30 days from now)
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 30)
+    const graceEndsAt = new Date(expiresAt)
+    graceEndsAt.setDate(graceEndsAt.getDate() + 7)
+
     const { error: updateErr } = await admin
       .from('plan_subscriptions')
       .update({
         status: 'paid',
         paymongo_payment_id: paymentId,
         paid_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
+        grace_ends_at: graceEndsAt.toISOString(),
       })
       .eq('id', subscriptionId)
 
@@ -105,10 +112,13 @@ serve(async (req) => {
       return errorResponse('Failed to update subscription', 500)
     }
 
-    // Upgrade community plan
+    // Upgrade community plan and set expiry
     const { error: planErr } = await admin
       .from('communities')
-      .update({ plan: subscription.plan })
+      .update({
+        plan: subscription.plan,
+        plan_expires_at: expiresAt.toISOString(),
+      })
       .eq('id', subscription.community_id)
 
     if (planErr) {

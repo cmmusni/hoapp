@@ -52,9 +52,11 @@ serve(async (req) => {
       return errorResponse('Community not found', 404)
     }
 
-    if (community.plan === 'professional' || community.plan === 'enterprise') {
-      return errorResponse('Community is already on a paid plan', 400)
+    if (community.plan === 'enterprise') {
+      return errorResponse('Enterprise plans are managed separately. Contact support.', 400)
     }
+
+    const isRenewal = community.plan === 'professional'
 
     // Fetch dynamic pricing from plan_pricing table
     const { data: pricing } = await admin
@@ -99,15 +101,15 @@ serve(async (req) => {
           attributes: {
             line_items: [
               {
-                name: 'HOApp Professional Plan',
-                description: `Professional plan upgrade for ${community.name}`,
+                name: isRenewal ? 'HOApp Professional Plan Renewal' : 'HOApp Professional Plan',
+                description: `Professional plan ${isRenewal ? 'renewal' : 'upgrade'} for ${community.name}`,
                 amount,
                 currency: 'PHP',
                 quantity: 1,
               },
             ],
             payment_method_types: ['qrph', 'gcash', 'grab_pay', 'paymaya'],
-            description: `HOApp Professional Plan - ${community.name}`,
+            description: `HOApp Professional Plan ${isRenewal ? 'Renewal' : 'Upgrade'} - ${community.name}`,
             send_email_receipt: true,
             show_description: true,
             show_line_items: true,

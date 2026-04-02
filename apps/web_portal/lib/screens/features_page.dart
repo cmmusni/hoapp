@@ -339,24 +339,28 @@ class _FeatureShowcaseRowState extends State<_FeatureShowcaseRow> {
         transform: _hovered
             ? (Matrix4.identity()..translate(0.0, -6.0))
             : Matrix4.identity(),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: _hovered
-                  ? _brand.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.1),
-              blurRadius: _hovered ? 32 : 20,
-              offset: Offset(0, _hovered ? 12 : 8),
+        child: Center(
+          child: Container(
+            constraints: BoxConstraints(maxHeight: widget.isMobile ? 400 : 500),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: _hovered
+                      ? _brand.withOpacity(0.2)
+                      : Colors.black.withOpacity(0.1),
+                  blurRadius: _hovered ? 32 : 20,
+                  offset: Offset(0, _hovered ? 12 : 8),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.asset(
-            widget.data.imagePath!,
-            fit: BoxFit.contain,
-            width: double.infinity,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                widget.data.imagePath!,
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
         ),
       ),

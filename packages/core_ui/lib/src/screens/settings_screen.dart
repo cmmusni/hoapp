@@ -627,7 +627,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(width: 8),
           ElevatedButton.icon(
             onPressed: () => Navigator.of(ctx).pop(true),
-            icon: const Icon(Icons.logout_rounded, size: 18),
+            icon:
+                const Icon(Icons.logout_rounded, size: 18, color: Colors.white),
             label: const Text('Sign Out'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade600,
@@ -1117,6 +1118,10 @@ class _PlanSectionState extends State<_PlanSection> {
   Widget build(BuildContext context) {
     final isStarter = community.plan == 'starter';
     final planColor = _planColor(context);
+    final expiresAt = community.planExpiresAt;
+    final isExpiringSoon = community.isPlanExpiringSoon;
+    final isExpired = community.isPlanExpired;
+    final daysLeft = (community.daysUntilExpiry ?? 0) + 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1187,11 +1192,62 @@ class _PlanSectionState extends State<_PlanSection> {
                               color: Color(0xFF6B7280),
                             ),
                           ),
+                          // Show expiry date for paid plans
+                          if (!isStarter && expiresAt != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  isExpired
+                                      ? Icons.error_outline
+                                      : isExpiringSoon
+                                          ? Icons.warning_amber_rounded
+                                          : Icons.schedule,
+                                  size: 14,
+                                  color: isExpired
+                                      ? Colors.red
+                                      : isExpiringSoon
+                                          ? Colors.orange
+                                          : const Color(0xFF6B7280),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isExpired
+                                      ? 'Expired — renew to keep features'
+                                      : isExpiringSoon
+                                          ? 'Expires in $daysLeft day${daysLeft == 1 ? '' : 's'} — renew now'
+                                          : 'Renews ${_formatDate(expiresAt)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: (isExpired || isExpiringSoon)
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                    color: isExpired
+                                        ? Colors.red
+                                        : isExpiringSoon
+                                            ? Colors.orange.shade800
+                                            : const Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
                   ],
                 ),
+
+                // Renewal banner for expiring/expired paid plans
+                if (!isStarter && (isExpiringSoon || isExpired)) ...[
+                  const Divider(height: 28),
+                  _RenewalBanner(
+                    communityId: community.id,
+                    onRenewed: widget.onPlanUpdated,
+                    priceDisplay: _priceDisplay,
+                    isExpired: isExpired,
+                  ),
+                ],
 
                 // Upgrade option for starter plans
                 if (isStarter) ...[
@@ -1202,11 +1258,445 @@ class _PlanSectionState extends State<_PlanSection> {
                     priceDisplay: _priceDisplay,
                   ),
                 ],
+
+                // Cancel subscription for paid plans (not if already expired)
+                if (!isStarter && !isExpired) ...[
+                  const Divider(height: 28),
+                  _CancelSubscriptionBanner(
+                    communityId: community.id,
+                    planLabel: _planLabel,
+                    onCancelled: widget.onPlanUpdated,
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+}
+
+class _RenewalBanner extends StatefulWidget {
+  final String communityId;
+  final VoidCallback onRenewed;
+  final String priceDisplay;
+  final bool isExpired;
+
+  const _RenewalBanner({
+    required this.communityId,
+    required this.onRenewed,
+    required this.priceDisplay,
+    required this.isExpired,
+  });
+
+  @override
+  State<_RenewalBanner> createState() => _RenewalBannerState();
+}
+
+class _RenewalBannerState extends State<_RenewalBanner> {
+  bool _renewing = false;
+
+  Future<void> _handleRenew() async {
+    setState(() => _renewing = true);
+    try {
+      final supabase = Supabase.instance.client;
+      final token = supabase.auth.currentSession?.accessToken;
+      final response = await supabase.functions.invoke(
+        'create_upgrade_checkout',
+        body: {'community_id': widget.communityId},
+        headers: {if (token != null) 'x-user-token': token},
+      );
+
+      final data = response.data is String
+          ? jsonDecode(response.data) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      final checkoutUrl = data['checkout_url'] as String?;
+      if (checkoutUrl == null) {
+        throw Exception(data['error'] ?? 'Failed to create checkout session');
+      }
+
+      final uri = Uri.parse(checkoutUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('Could not open payment page');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Payment page opened. Your plan will be renewed once payment is confirmed.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Renewal failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _renewing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.isExpired ? Colors.red : Colors.orange;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.05),
+            color.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            widget.isExpired ? Icons.error_outline : Icons.autorenew,
+            color: color.shade700,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.isExpired
+                      ? 'Plan Expired — Renew Now'
+                      : 'Plan Expiring Soon',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: color.shade900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  widget.isExpired
+                      ? 'Renew for ${widget.priceDisplay} to restore premium features.'
+                      : 'Renew for ${widget.priceDisplay} to keep your premium features.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: _renewing ? null : _handleRenew,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color.shade700,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            child: _renewing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text('Renew',
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CancelSubscriptionBanner extends StatefulWidget {
+  final String communityId;
+  final String planLabel;
+  final VoidCallback onCancelled;
+
+  const _CancelSubscriptionBanner({
+    required this.communityId,
+    required this.planLabel,
+    required this.onCancelled,
+  });
+
+  @override
+  State<_CancelSubscriptionBanner> createState() =>
+      _CancelSubscriptionBannerState();
+}
+
+class _CancelSubscriptionBannerState extends State<_CancelSubscriptionBanner> {
+  bool _cancelling = false;
+
+  Future<void> _confirmCancel() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.cancel_outlined,
+                      color: Colors.red.shade700, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Cancel Subscription',
+                  style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600, color: Colors.red.shade700),
+                ),
+              ],
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure you want to cancel your ${widget.planLabel} plan?',
+                style: const TextStyle(fontSize: 15, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'You will lose access to:',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151)),
+              ),
+              const SizedBox(height: 8),
+              _CancelFeatureRow(text: 'Billing & Payments'),
+              _CancelFeatureRow(text: 'Amenity Reservations'),
+              _CancelFeatureRow(text: 'Pool Access Management'),
+              _CancelFeatureRow(text: 'Security Passes & QR'),
+              _CancelFeatureRow(text: 'Mobile App Access'),
+              _CancelFeatureRow(text: 'Priority Support'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded,
+                        color: Colors.orange.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Your community will be downgraded to the Starter plan immediately.',
+                        style:
+                            TextStyle(fontSize: 13, color: Color(0xFF92400E)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Keep Plan'),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              icon: const Icon(Icons.cancel_outlined,
+                  size: 18, color: Colors.white),
+              label: const Text('Cancel Subscription'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _cancelling = true);
+    try {
+      final repo = context.read<CommunityRepository>();
+      await repo.updateCommunityPlan(
+        communityId: widget.communityId,
+        plan: 'starter',
+      );
+
+      if (mounted) {
+        final appState = context.read<AppState>();
+        final refreshed = await repo.getCommunityById(widget.communityId);
+        if (refreshed != null && mounted) {
+          appState.setActiveCommunityData(refreshed);
+        }
+        widget.onCancelled();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Subscription cancelled. Your community is now on the Starter plan.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Cancellation failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.red.withOpacity(0.03),
+            Colors.red.withOpacity(0.07),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.red.withOpacity(0.15),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: Colors.red.shade400, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Cancel Subscription',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Downgrade to the free Starter plan.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: _cancelling ? null : _confirmCancel,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red.shade600,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              side: BorderSide(color: Colors.red.shade300),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: _cancelling
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.red.shade600),
+                  )
+                : Text('Cancel',
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red.shade600)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CancelFeatureRow extends StatelessWidget {
+  final String text;
+  const _CancelFeatureRow({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(Icons.remove_circle_outline,
+              color: Colors.red.shade400, size: 16),
+          const SizedBox(width: 8),
+          Text(text,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+        ],
+      ),
     );
   }
 }

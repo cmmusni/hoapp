@@ -4,6 +4,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 
+/// Returns the max number of units allowed for the given plan.
+/// Returns null for unlimited (enterprise).
+int? _unitLimitForPlan(String plan) {
+  switch (plan) {
+    case 'professional':
+      return 300;
+    case 'enterprise':
+      return null; // unlimited
+    default:
+      return 50; // starter
+  }
+}
+
 class HouseholdScreen extends StatefulWidget {
   const HouseholdScreen({super.key});
 
@@ -124,50 +137,71 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
         // Badges row
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${units.length} units',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onPrimaryContainer,
+          child: Builder(builder: (context) {
+            final appState = context.read<AppState>();
+            final plan = appState.isPlanExpired
+                ? 'starter'
+                : appState.activeCommunity?.plan ?? 'starter';
+            final limit = _unitLimitForPlan(plan);
+            final atLimit = limit != null && units.length >= limit;
+
+            return Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: atLimit
+                        ? Colors.orange.shade100
+                        : theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    limit != null
+                        ? '${units.length} / $limit units'
+                        : '${units.length} units',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: atLimit
+                          ? Colors.orange.shade900
+                          : theme.colorScheme.onPrimaryContainer,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              FutureBuilder<int>(
-                future: _memberCountFuture,
-                builder: (context, snap) {
-                  final count = snap.data;
-                  if (count == null) return const SizedBox.shrink();
-                  return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$count members',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSecondaryContainer,
+                const SizedBox(width: 8),
+                FutureBuilder<int>(
+                  future: _memberCountFuture,
+                  builder: (context, snap) {
+                    final count = snap.data;
+                    if (count == null) return const SizedBox.shrink();
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
+                      child: Text(
+                        '$count members',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSecondaryContainer,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                if (atLimit)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Icon(Icons.warning_amber_rounded,
+                        color: Colors.orange.shade700, size: 16),
+                  ),
+              ],
+            );
+          }),
         ),
         // Unit list
         Expanded(
