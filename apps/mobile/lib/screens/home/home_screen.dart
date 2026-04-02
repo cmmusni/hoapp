@@ -469,18 +469,37 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: CircleAvatar(
                         radius: 28,
                         backgroundColor: Colors.white,
-                        child: CircleAvatar(
-                          radius: 28,
-                          backgroundColor: Colors.white,
-                          child: ClipOval(
-                            child: Image.asset(
-                              'assets/images/hoapp-icon.png',
-                              width: 48,
-                              height: 48,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
+                        child: appState.activeCommunity?.logoUrl != null
+                            ? ClipOval(
+                                child: Image.network(
+                                  appState.activeCommunity!.logoUrl!,
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Text(
+                                    communityName.isNotEmpty
+                                        ? communityName[0].toUpperCase()
+                                        : 'H',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : CircleAvatar(
+                                radius: 28,
+                                backgroundColor: Colors.white,
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/hoapp-icon.png',
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
                       ),
                     ),
                     const Spacer(),

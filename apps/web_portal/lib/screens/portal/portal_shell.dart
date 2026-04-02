@@ -1086,11 +1086,22 @@ class _PortalShellState extends State<PortalShell> {
                   ],
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Image.asset(
-                  'assets/images/hoapp-logo.png',
-                  fit: BoxFit.contain,
-                  height: 72,
-                ),
+                child: appState.activeCommunity?.logoUrl != null
+                    ? Image.network(
+                        appState.activeCommunity!.logoUrl!,
+                        fit: BoxFit.contain,
+                        height: 60,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/hoapp-logo.png',
+                          fit: BoxFit.contain,
+                          height: 60,
+                        ),
+                      )
+                    : Image.asset(
+                        'assets/images/hoapp-logo.png',
+                        fit: BoxFit.contain,
+                        height: 60,
+                      ),
               ),
               // User header
               Container(
