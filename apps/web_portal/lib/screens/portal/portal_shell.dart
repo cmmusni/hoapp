@@ -1497,8 +1497,8 @@ class _PortalShellState extends State<PortalShell> {
                         child: ClipOval(
                           child: Image.asset(
                             'assets/images/hoapp-icon.png',
-                            width: 56,
-                            height: 56,
+                            width: 48,
+                            height: 48,
                             fit: BoxFit.contain,
                           ),
                         ),
