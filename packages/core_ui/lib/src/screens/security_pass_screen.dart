@@ -262,7 +262,7 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 80,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
         ),
         child: _CreatePassSheet(passTypes: _passTypes, onCreated: _loadData),
       ),
@@ -948,7 +948,7 @@ class _CreatePassSheetState extends State<_CreatePassSheet> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.send_rounded),
+                    : const Icon(Icons.send_rounded, color: Colors.white),
                 label: Text(_isLoading ? 'Submitting...' : 'Submit Request',
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w600)),

@@ -289,7 +289,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       isScrollControlled: true,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 80,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
         ),
         child: _SubmitFeedbackSheet(onSubmitted: _load),
       ),

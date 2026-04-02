@@ -196,7 +196,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 80,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
         ),
         child: _InviteUserSheet(onInvited: _loadRoles),
       ),
