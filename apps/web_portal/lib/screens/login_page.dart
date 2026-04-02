@@ -521,7 +521,7 @@ class _LoginPageState extends State<LoginPage> {
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 400),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 120),
                 child: Form(
                   key: _formKey,
                   child: Column(

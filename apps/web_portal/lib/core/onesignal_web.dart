@@ -30,6 +30,29 @@ class OneSignalWeb {
     });
   }
 
+  /// Request push notification permission from the browser.
+  static void requestPermission() {
+    _pushDeferred((js.JsObject oneSignal) {
+      final notifications = oneSignal['Notifications'] as js.JsObject;
+      notifications.callMethod('requestPermission', []);
+    });
+  }
+
+  /// Check if the user has granted notification permission.
+  static bool get permissionGranted {
+    try {
+      final oneSignal = js.context['OneSignal'];
+      if (oneSignal == null) return false;
+      final notifications =
+          (oneSignal as js.JsObject)['Notifications'] as js.JsObject?;
+      if (notifications == null) return false;
+      final permission = notifications['permission'];
+      return permission == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ── internal helpers ──────────────────────────────────────────────
 
   static void _pushDeferred(void Function(js.JsObject oneSignal) callback) {

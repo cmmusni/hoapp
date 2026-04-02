@@ -264,6 +264,11 @@ class _PortalShellState extends State<PortalShell> {
         print('OneSignal: setting tags $tags');
         OneSignalWeb.setTags(tags);
       }
+      // Request push permission if not already granted
+      if (!OneSignalWeb.permissionGranted) {
+        print('OneSignal: requesting notification permission');
+        OneSignalWeb.requestPermission();
+      }
     } catch (e) {
       print('OneSignal registration error: $e');
     }
@@ -458,7 +463,7 @@ class _PortalShellState extends State<PortalShell> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
-                width: _sidebarOpen ? 250 : 0,
+                width: _sidebarOpen ? 260 : 0,
                 child: _sidebarOpen
                     ? _buildSidebar(context, user, appState, isStaff, isAdmin,
                         isGuard, isMaintenance, isResident, isPro, currentPath)
@@ -1032,65 +1037,112 @@ class _PortalShellState extends State<PortalShell> {
             ? 'User (contact Admin to assign unit)'
             : '';
     final sidebarColor = _getSidebarColor(appState);
-    final sidebarLight = Color.lerp(sidebarColor, Colors.white, 0.35)!;
+    final sidebarDark = Color.lerp(sidebarColor, Colors.black, 0.15)!;
+    final initials = displayName.isNotEmpty
+        ? displayName
+            .trim()
+            .split(' ')
+            .map((w) => w.isNotEmpty ? w[0] : '')
+            .take(2)
+            .join()
+            .toUpperCase()
+        : '?';
 
     return ClipRect(
       child: OverflowBox(
         alignment: Alignment.topLeft,
-        maxWidth: 250,
+        maxWidth: 260,
         child: Container(
-          width: 250,
+          width: 260,
           margin: const EdgeInsets.fromLTRB(0, 0, 1, 0),
           decoration: BoxDecoration(
-            color: sidebarColor,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [sidebarColor, sidebarDark],
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 20,
-                offset: const Offset(2, 0),
+                color: Colors.black.withOpacity(0.30),
+                blurRadius: 24,
+                offset: const Offset(3, 0),
               ),
             ],
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
+              // Logo with subtle shadow
               Container(
                 width: double.infinity,
-                color: Colors.white,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: sidebarColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 6),
                 child: appState.activeCommunity?.logoUrl != null
                     ? Image.network(
                         appState.activeCommunity!.logoUrl!,
                         fit: BoxFit.contain,
-                        height: 70,
+                        height: 72,
                         errorBuilder: (_, __, ___) => Image.asset(
                           'assets/images/hoapp-logo.png',
                           fit: BoxFit.contain,
-                          height: 70,
+                          height: 72,
                         ),
                       )
                     : Image.asset(
                         'assets/images/hoapp-logo.png',
                         fit: BoxFit.contain,
-                        height: 70,
+                        height: 72,
                       ),
               ),
               // User header
               Container(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
                 decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: sidebarLight, width: 1),
+                    bottom: BorderSide(
+                        color: Colors.white.withOpacity(0.12), width: 1),
                   ),
                 ),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.white24,
-                      child:
-                          Icon(Icons.person, size: 18, color: Colors.white70),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.5),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.white.withOpacity(0.15),
+                        child: Text(
+                          initials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1099,20 +1151,31 @@ class _PortalShellState extends State<PortalShell> {
                             displayName,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 13,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.w600,
                               decoration: TextDecoration.none,
+                              letterSpacing: 0.1,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (roleBadge != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              roleBadge,
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                decoration: TextDecoration.none,
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                roleBadge,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                  decoration: TextDecoration.none,
+                                  letterSpacing: 0.3,
+                                ),
                               ),
                             ),
                           ],
@@ -1123,7 +1186,7 @@ class _PortalShellState extends State<PortalShell> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               // Nav items
               Expanded(
@@ -1135,7 +1198,8 @@ class _PortalShellState extends State<PortalShell> {
                         ),
                       )
                     : ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         children: [
                           _buildSidebarItem(
                               context,
@@ -1220,7 +1284,9 @@ class _PortalShellState extends State<PortalShell> {
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 12),
-                              child: Divider(color: sidebarLight, height: 1),
+                              child: Divider(
+                                  color: Colors.white.withOpacity(0.15),
+                                  height: 1),
                             ),
                             _buildSidebarItem(
                                 context,
@@ -1239,7 +1305,9 @@ class _PortalShellState extends State<PortalShell> {
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 12),
-                              child: Divider(color: sidebarLight, height: 1),
+                              child: Divider(
+                                  color: Colors.white.withOpacity(0.15),
+                                  height: 1),
                             ),
                             _buildSidebarItem(
                                 context,
@@ -1254,6 +1322,55 @@ class _PortalShellState extends State<PortalShell> {
                         ],
                       ),
               ),
+
+              // Sign-out at bottom
+              Container(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: Colors.white.withOpacity(0.12),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      hoverColor: Colors.red.withOpacity(0.12),
+                      splashColor: Colors.red.withOpacity(0.15),
+                      onTap: () async {
+                        OneSignalWeb.logoutUser();
+                        await context.read<AuthRepository>().signOut();
+                        if (context.mounted) context.go('/login');
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout_rounded,
+                                size: 18, color: Colors.white.withOpacity(0.6)),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Sign Out',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -1267,36 +1384,48 @@ class _PortalShellState extends State<PortalShell> {
     final isActive = currentPath.contains(pathSuffix);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
+      padding: const EdgeInsets.only(bottom: 3),
       child: Material(
-        color: isActive ? Colors.white.withOpacity(0.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+        color: isActive ? Colors.white.withOpacity(0.14) : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          hoverColor: Colors.white.withOpacity(0.06),
-          splashColor: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          hoverColor: Colors.white.withOpacity(0.08),
+          splashColor: Colors.white.withOpacity(0.12),
           onTap: () => context.go('/${widget.communitySlug}$pathSuffix'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: isActive
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border(
+                      left: BorderSide(
+                        color: Colors.white.withOpacity(0.85),
+                        width: 3,
+                      ),
+                    ),
+                  )
+                : null,
             child: Row(
               children: [
                 Icon(icon,
-                    size: 20, color: isActive ? Colors.white : Colors.white60),
+                    size: 20, color: isActive ? Colors.white : Colors.white54),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     title,
                     style: TextStyle(
                       color: isActive ? Colors.white : Colors.white70,
-                      fontSize: 14,
+                      fontSize: 13.5,
                       fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      letterSpacing: 0.1,
                     ),
                   ),
                 ),
                 if (badge > 0)
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.redAccent,
                       borderRadius: BorderRadius.circular(10),
@@ -1383,26 +1512,22 @@ class _PortalShellState extends State<PortalShell> {
                                   width: 56,
                                   height: 56,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => Text(
-                                    communityName.isNotEmpty
-                                        ? communityName[0].toUpperCase()
-                                        : 'H',
-                                    style: TextStyle(
-                                      color: primary,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
+                                  errorBuilder: (_, __, ___) => ClipOval(
+                                    child: Image.asset(
+                                      'assets/images/hoapp-icon.png',
+                                      width: 56,
+                                      height: 56,
+                                      fit: BoxFit.contain,
                                     ),
                                   ),
                                 ),
                               )
-                            : Text(
-                                communityName.isNotEmpty
-                                    ? communityName[0].toUpperCase()
-                                    : 'H',
-                                style: TextStyle(
-                                  color: primary,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                            : ClipOval(
+                                child: Image.asset(
+                                  'assets/images/hoapp-icon.png',
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.contain,
                                 ),
                               ),
                       ),
