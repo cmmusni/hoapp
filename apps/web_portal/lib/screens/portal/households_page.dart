@@ -5,6 +5,20 @@ import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:data_table_2/data_table_2.dart';
+import 'package:go_router/go_router.dart';
+
+/// Returns the max number of units allowed for the given plan.
+/// Returns null for unlimited (enterprise).
+int? _unitLimitForPlan(String plan) {
+  switch (plan) {
+    case 'professional':
+      return 300;
+    case 'enterprise':
+      return null; // unlimited
+    default:
+      return 50; // starter
+  }
+}
 
 class HouseholdsPage extends StatefulWidget {
   const HouseholdsPage({super.key});
@@ -195,57 +209,71 @@ class _UnitListState extends State<_UnitList> {
                   ],
                 ),
               ),
-              // Unit & member count badges
+              // Unit & member count badges + plan limit
               if (units.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${_filterAndSort(units).length} units',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onPrimaryContainer,
+                Builder(builder: (context) {
+                  final plan = context.read<AppState>().activeCommunity?.plan ??
+                      'starter';
+                  final limit = _unitLimitForPlan(plan);
+                  final totalUnits = units.length;
+                  final atLimit = limit != null && totalUnits >= limit;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: atLimit
+                                ? Colors.orange.shade100
+                                : theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            limit != null
+                                ? '${_filterAndSort(units).length} / $limit units'
+                                : '${_filterAndSort(units).length} units',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: atLimit
+                                  ? Colors.orange.shade900
+                                  : theme.colorScheme.onPrimaryContainer,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      FutureBuilder<int>(
-                        future: widget.memberCountFuture,
-                        builder: (context, memberSnap) {
-                          final count = memberSnap.data;
-                          if (count == null) return const SizedBox.shrink();
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer
-                                  .withOpacity(0.7),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '$count members',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onPrimaryContainer
-                                    .withOpacity(0.9),
+                        const SizedBox(width: 8),
+                        FutureBuilder<int>(
+                          future: widget.memberCountFuture,
+                          builder: (context, memberSnap) {
+                            final count = memberSnap.data;
+                            if (count == null) return const SizedBox.shrink();
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer
+                                    .withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                              child: Text(
+                                '$count members',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onPrimaryContainer
+                                      .withOpacity(0.9),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               const SizedBox(height: 8),
               // DataTable2 or loading/error/empty states
               Expanded(
@@ -254,19 +282,37 @@ class _UnitListState extends State<_UnitList> {
             ],
           ),
           floatingActionButton: isStaff
-              ? screenSizeOf(context) == ScreenSize.mobile
-                  ? FloatingActionButton(
-                      onPressed: () => _showCreateUnitDialog(context, units),
+              ? Builder(builder: (context) {
+                  final plan = context.read<AppState>().activeCommunity?.plan ??
+                      'starter';
+                  final limit = _unitLimitForPlan(plan);
+                  final atLimit = limit != null && units.length >= limit;
+
+                  if (screenSizeOf(context) == ScreenSize.mobile) {
+                    return FloatingActionButton(
+                      onPressed: () => atLimit
+                          ? _showUnitLimitDialog(context, plan, limit)
+                          : _showCreateUnitDialog(context, units),
+                      backgroundColor: atLimit
+                          ? Colors.grey
+                          : Theme.of(context).colorScheme.primary,
                       child: const Icon(Icons.add, color: Colors.white),
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                    )
-                  : FloatingActionButton.extended(
-                      onPressed: () => _showCreateUnitDialog(context, units),
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      icon: const Icon(Icons.add, color: Colors.white),
-                      label: const Text('Add Unit',
-                          style: TextStyle(color: Colors.white)),
-                    )
+                    );
+                  }
+                  return FloatingActionButton.extended(
+                    onPressed: () => atLimit
+                        ? _showUnitLimitDialog(context, plan, limit)
+                        : _showCreateUnitDialog(context, units),
+                    backgroundColor: atLimit
+                        ? Colors.grey
+                        : Theme.of(context).colorScheme.primary,
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: Text(
+                      atLimit ? 'Limit Reached' : 'Add Unit',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  );
+                })
               : null,
           floatingActionButtonLocation:
               screenSizeOf(context) == ScreenSize.mobile
@@ -418,6 +464,72 @@ class _UnitListState extends State<_UnitList> {
       builder: (context) => _CreateUnitDialog(
         onCreate: widget.onRefresh,
         existingUnits: existingUnits,
+      ),
+    );
+  }
+
+  void _showUnitLimitDialog(BuildContext context, String plan, int limit) {
+    final appState = context.read<AppState>();
+    final isAdmin = appState.isAdmin;
+    final slug = appState.activeCommunitySlug;
+    final planLabel = plan == 'starter' ? 'Starter' : 'Professional';
+    final nextPlan = plan == 'starter' ? 'Professional' : 'Enterprise';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.warning_amber_rounded,
+                  color: Colors.orange.shade700, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Unit Limit Reached')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your $planLabel plan allows up to $limit units.',
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Upgrade to $nextPlan to add more units${plan == 'starter' ? ' (up to 300)' : ' (unlimited)'}.',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+          if (isAdmin && slug != null)
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                context.go('/$slug/settings');
+              },
+              icon: const Icon(Icons.arrow_upward, size: 18),
+              label: Text('Upgrade to $nextPlan'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+        ],
       ),
     );
   }

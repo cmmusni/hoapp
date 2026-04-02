@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'beta_requests_page.dart';
-
+import 'plan_pricing_page.dart';
 
 /// Platform admin shell — outside the community portal context.
 /// Accessible only to users with the app_admin platform role.
@@ -19,6 +19,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
   bool _loading = true;
   bool _isAllowed = false;
   int _pendingBetaRequests = 0;
+  int _selectedTab = 0;
 
   @override
   void initState() {
@@ -137,10 +138,15 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
                   children: [
                     _buildSidebar(context),
                     const VerticalDivider(width: 1),
-                    const Expanded(child: BetaRequestsPage()),
+                    Expanded(
+                        child: _selectedTab == 0
+                            ? const BetaRequestsPage()
+                            : const PlanPricingPage()),
                   ],
                 )
-              : const BetaRequestsPage(),
+              : _selectedTab == 0
+                  ? const BetaRequestsPage()
+                  : const PlanPricingPage(),
           drawer: isWide ? null : _buildDrawer(context),
         );
       },
@@ -158,8 +164,16 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
             context,
             icon: Icons.science_outlined,
             label: 'Beta Requests',
-            selected: true,
+            selected: _selectedTab == 0,
             badge: _pendingBetaRequests,
+            onTap: () => setState(() => _selectedTab = 0),
+          ),
+          _sidebarItem(
+            context,
+            icon: Icons.payments_outlined,
+            label: 'Plan Pricing',
+            selected: _selectedTab == 1,
+            onTap: () => setState(() => _selectedTab = 1),
           ),
           const Spacer(),
           Padding(
@@ -205,7 +219,8 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.science_outlined, color: Theme.of(context).colorScheme.primary),
+            leading: Icon(Icons.science_outlined,
+                color: Theme.of(context).colorScheme.primary),
             title: const Text('Beta Requests',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             trailing: _pendingBetaRequests > 0
@@ -228,8 +243,26 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
                     ),
                   )
                 : null,
-            tileColor: Theme.of(context).colorScheme.primary.withOpacity(0.08),
-            onTap: () => Navigator.pop(context),
+            tileColor: _selectedTab == 0
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
+                : null,
+            onTap: () {
+              Navigator.pop(context);
+              setState(() => _selectedTab = 0);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.payments_outlined,
+                color: Theme.of(context).colorScheme.primary),
+            title: const Text('Plan Pricing',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            tileColor: _selectedTab == 1
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
+                : null,
+            onTap: () {
+              Navigator.pop(context);
+              setState(() => _selectedTab = 1);
+            },
           ),
           const Divider(),
           ListTile(
@@ -248,6 +281,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
     required String label,
     bool selected = false,
     int badge = 0,
+    VoidCallback? onTap,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -257,6 +291,7 @@ class _PlatformAdminShellState extends State<PlatformAdminShell> {
       ),
       child: ListTile(
         dense: true,
+        onTap: onTap,
         leading: Icon(icon,
             color: selected ? Colors.white : Colors.white.withOpacity(0.6),
             size: 20),

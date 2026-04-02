@@ -76,3 +76,9 @@ verify_jwt = false
 
 [functions.scan_invoice]
 verify_jwt = false
+
+[functions.create_upgrade_checkout]
+verify_jwt = false
+
+[functions.paymongo_webhook]
+verify_jwt = false

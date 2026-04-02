@@ -32,6 +32,7 @@ import 'screens/pricing_page.dart';
 import 'screens/support_page.dart';
 import 'screens/contact_page.dart';
 import 'screens/select_community_page.dart';
+import 'screens/upgrade_success_page.dart';
 
 GoRouter createRouter({String? lastCommunitySlug}) {
   return GoRouter(
@@ -140,6 +141,15 @@ GoRouter createRouter({String? lastCommunitySlug}) {
           return null;
         },
         builder: (context, state) => const PlatformAdminShell(),
+      ),
+      // Upgrade success page (PayMongo redirect after payment)
+      GoRoute(
+        path: '/upgrade-success',
+        builder: (context, state) => const UpgradeSuccessPage(),
+      ),
+      GoRoute(
+        path: '/upgrade-cancelled',
+        redirect: (context, state) => '/select-community',
       ),
 
       // Demo scaffolding route (UI showcase with mock data)

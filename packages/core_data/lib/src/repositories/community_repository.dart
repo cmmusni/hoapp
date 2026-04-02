@@ -475,4 +475,14 @@ class CommunityRepository {
         .from('communities')
         .update({'settings': settings}).eq('id', communityId);
   }
+
+  /// Update community plan (starter, professional, enterprise)
+  Future<void> updateCommunityPlan({
+    required String communityId,
+    required String plan,
+  }) async {
+    await _client
+        .from('communities')
+        .update({'plan': plan}).eq('id', communityId);
+  }
 }

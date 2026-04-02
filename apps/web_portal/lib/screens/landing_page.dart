@@ -165,17 +165,13 @@ class LandingPage extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xFF2E5C3F).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.apartment_rounded,
-                                  size: 32,
-                                  color: Color(0xFF2E5C3F),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.asset(
+                                  'assets/images/trusted-by-eleve.png',
+                                  width: isMobile ? 48 : 56,
+                                  height: isMobile ? 48 : 56,
+                                  fit: BoxFit.cover,
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -223,7 +219,7 @@ class LandingPage extends StatelessWidget {
                           alignment: WrapAlignment.center,
                           children: [
                             ElevatedButton(
-                              onPressed: () => context.go('/signup'),
+                              onPressed: () => context.go('/pricing'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF2E5C3F),
                                 foregroundColor: Colors.white,

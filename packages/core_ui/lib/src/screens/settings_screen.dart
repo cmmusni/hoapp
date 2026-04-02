@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/eyedropper.dart' as eyedropper;
 
 /// Shared settings screen — adaptive for web and mobile.
@@ -148,6 +150,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // Unit Types (admin only)
                 if (isAdmin) ...[
                   _UnitTypesSection(communityId: community.id),
+                  const SizedBox(height: 24),
+                ],
+
+                // Plan & Subscription (admin only)
+                if (isAdmin) ...[
+                  _PlanSection(
+                    community: community,
+                    onPlanUpdated: _loadCommunity,
+                  ),
                   const SizedBox(height: 24),
                 ],
 
@@ -1018,6 +1029,414 @@ class _UnitTypesSectionState extends State<_UnitTypesSection> {
           ],
         );
       },
+    );
+  }
+}
+
+// ─── Plan & Subscription Section ───────────────────────────
+
+class _PlanSection extends StatefulWidget {
+  final Community community;
+  final VoidCallback onPlanUpdated;
+
+  const _PlanSection({
+    required this.community,
+    required this.onPlanUpdated,
+  });
+
+  @override
+  State<_PlanSection> createState() => _PlanSectionState();
+}
+
+class _PlanSectionState extends State<_PlanSection> {
+  String? _proLabel;
+  String? _proPeriod;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPricing();
+  }
+
+  Future<void> _loadPricing() async {
+    try {
+      final row = await Supabase.instance.client
+          .from('plan_pricing')
+          .select('label, period')
+          .eq('plan', 'professional')
+          .single();
+      if (mounted) {
+        setState(() {
+          _proLabel = row['label'] as String?;
+          _proPeriod = row['period'] as String?;
+        });
+      }
+    } catch (_) {}
+  }
+
+  String get _priceDisplay =>
+      '${_proLabel ?? '₱2,999'}${_proPeriod ?? '/month'}';
+
+  Community get community => widget.community;
+
+  String get _planLabel {
+    switch (community.plan) {
+      case 'professional':
+        return 'Professional';
+      case 'enterprise':
+        return 'Enterprise';
+      default:
+        return 'Starter';
+    }
+  }
+
+  Color _planColor(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    switch (community.plan) {
+      case 'professional':
+        return primary;
+      case 'enterprise':
+        return const Color(0xFF6A1B9A);
+      default:
+        return const Color(0xFF6B7280);
+    }
+  }
+
+  IconData get _planIcon {
+    switch (community.plan) {
+      case 'professional':
+        return Icons.workspace_premium;
+      case 'enterprise':
+        return Icons.diamond_outlined;
+      default:
+        return Icons.rocket_launch_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isStarter = community.plan == 'starter';
+    final planColor = _planColor(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Plan & Subscription',
+            style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Current plan display
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: planColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(_planIcon, size: 28, color: planColor),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                _planLabel,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: planColor,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: planColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'CURRENT',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: planColor,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isStarter
+                                ? 'Free plan — up to 50 units'
+                                : community.plan == 'professional'
+                                    ? '$_priceDisplay — up to 300 units'
+                                    : 'Custom pricing — unlimited units',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Upgrade option for starter plans
+                if (isStarter) ...[
+                  const Divider(height: 28),
+                  _UpgradeBanner(
+                    communityId: community.id,
+                    onUpgraded: widget.onPlanUpdated,
+                    priceDisplay: _priceDisplay,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UpgradeBanner extends StatefulWidget {
+  final String communityId;
+  final VoidCallback onUpgraded;
+  final String priceDisplay;
+
+  const _UpgradeBanner({
+    required this.communityId,
+    required this.onUpgraded,
+    required this.priceDisplay,
+  });
+
+  @override
+  State<_UpgradeBanner> createState() => _UpgradeBannerState();
+}
+
+class _UpgradeBannerState extends State<_UpgradeBanner> {
+  bool _upgrading = false;
+
+  Future<void> _confirmUpgrade() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final primary = Theme.of(ctx).colorScheme.primary;
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.workspace_premium, color: primary, size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Text('Upgrade to Professional'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Unlock all premium features for your community:',
+                style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              ),
+              const SizedBox(height: 16),
+              _UpgradeFeatureRow(text: 'Up to 300 units', color: primary),
+              _UpgradeFeatureRow(text: 'Billing & Payments', color: primary),
+              _UpgradeFeatureRow(text: 'Amenity Reservations', color: primary),
+              _UpgradeFeatureRow(
+                  text: 'Pool Access Management', color: primary),
+              _UpgradeFeatureRow(text: 'Security Passes & QR', color: primary),
+              _UpgradeFeatureRow(text: 'Mobile App Access', color: primary),
+              _UpgradeFeatureRow(text: 'Priority Support', color: primary),
+              const SizedBox(height: 16),
+              Text(
+                widget.priceDisplay,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: primary,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Pay Now'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _upgrading = true);
+    try {
+      final supabase = Supabase.instance.client;
+      final token = supabase.auth.currentSession?.accessToken;
+      final response = await supabase.functions.invoke(
+        'create_upgrade_checkout',
+        body: {'community_id': widget.communityId},
+        headers: {if (token != null) 'x-user-token': token},
+      );
+
+      final data = response.data is String
+          ? jsonDecode(response.data) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      final checkoutUrl = data['checkout_url'] as String?;
+      if (checkoutUrl == null) {
+        throw Exception(data['error'] ?? 'Failed to create checkout session');
+      }
+
+      final uri = Uri.parse(checkoutUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('Could not open payment page');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Payment page opened. Your plan will be upgraded once payment is confirmed.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Upgrade failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _upgrading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            primary.withOpacity(0.05),
+            primary.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: primary.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.auto_awesome, color: primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Upgrade to Professional',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Unlock billing, amenities, pool access, security passes & more.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: _upgrading ? null : _confirmUpgrade,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            child: _upgrading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text('Upgrade',
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpgradeFeatureRow extends StatelessWidget {
+  final String text;
+  final Color? color;
+  const _UpgradeFeatureRow({required this.text, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle, color: c, size: 18),
+          const SizedBox(width: 10),
+          Text(text,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF374151))),
+        ],
+      ),
     );
   }
 }

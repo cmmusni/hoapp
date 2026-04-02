@@ -1,11 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'marketing_nav_bar.dart';
 
 const _brand = Color(0xFF2E5C3F);
 
-class PricingPage extends StatelessWidget {
+class PricingPage extends StatefulWidget {
   const PricingPage({super.key});
+
+  @override
+  State<PricingPage> createState() => _PricingPageState();
+}
+
+class _PricingPageState extends State<PricingPage> {
+  Map<String, _PlanPriceData> _prices = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPricing();
+  }
+
+  Future<void> _loadPricing() async {
+    try {
+      final rows = await Supabase.instance.client.from('plan_pricing').select();
+      if (mounted) {
+        final map = <String, _PlanPriceData>{};
+        for (final r in rows) {
+          final plan = r['plan'] as String;
+          map[plan] = _PlanPriceData(
+            label: r['label'] as String? ?? '',
+            period: r['period'] as String? ?? '',
+            originalPriceCentavos: r['original_price_centavos'] as int?,
+          );
+        }
+        setState(() => _prices = map);
+      }
+    } catch (_) {
+      // Fall back to hardcoded defaults
+    }
+  }
+
+  String _priceLabel(String plan, String fallback) =>
+      _prices[plan]?.label ?? fallback;
+
+  String _pricePeriod(String plan, String fallback) =>
+      _prices[plan]?.period ?? fallback;
+
+  String? _originalPrice(String plan) {
+    final orig = _prices[plan]?.originalPriceCentavos;
+    if (orig == null || orig == 0) return null;
+    final pesos = orig ~/ 100;
+    final formatted = pesos
+        .toString()
+        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+    return '₱$formatted';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,8 +115,8 @@ class PricingPage extends StatelessWidget {
                                 children: [
                                   _PricingCard(
                                     title: 'Starter',
-                                    price: 'Free',
-                                    period: '',
+                                    price: _priceLabel('starter', 'Free'),
+                                    period: _pricePeriod('starter', ''),
                                     description:
                                         'Perfect for small communities getting started.',
                                     features: const [
@@ -82,9 +132,12 @@ class PricingPage extends StatelessWidget {
                                   const SizedBox(height: 24),
                                   _PricingCard(
                                     title: 'Professional',
-                                    price: '₱2,999',
-                                    originalPrice: '₱3,999',
-                                    period: '/month',
+                                    price:
+                                        _priceLabel('professional', '₱2,999'),
+                                    originalPrice:
+                                        _originalPrice('professional'),
+                                    period:
+                                        _pricePeriod('professional', '/month'),
                                     description:
                                         'For growing communities that need more.',
                                     highlighted: true,
@@ -104,8 +157,8 @@ class PricingPage extends StatelessWidget {
                                   const SizedBox(height: 24),
                                   _PricingCard(
                                     title: 'Enterprise',
-                                    price: 'Custom',
-                                    period: '',
+                                    price: _priceLabel('enterprise', 'Custom'),
+                                    period: _pricePeriod('enterprise', ''),
                                     description:
                                         'For large-scale HOAs and property managers.',
                                     features: const [
@@ -117,7 +170,7 @@ class PricingPage extends StatelessWidget {
                                       'SLA & uptime guarantee',
                                     ],
                                     ctaLabel: 'Contact Sales',
-                                    onCta: () {},
+                                    onCta: () => context.go('/contact'),
                                   ),
                                 ],
                               )
@@ -127,8 +180,8 @@ class PricingPage extends StatelessWidget {
                                   Expanded(
                                     child: _PricingCard(
                                       title: 'Starter',
-                                      price: 'Free',
-                                      period: '',
+                                      price: _priceLabel('starter', 'Free'),
+                                      period: _pricePeriod('starter', ''),
                                       description:
                                           'Perfect for small communities getting started.',
                                       features: const [
@@ -146,9 +199,12 @@ class PricingPage extends StatelessWidget {
                                   Expanded(
                                     child: _PricingCard(
                                       title: 'Professional',
-                                      price: '₱2,999',
-                                      originalPrice: '₱3,999',
-                                      period: '/month',
+                                      price:
+                                          _priceLabel('professional', '₱2,999'),
+                                      originalPrice:
+                                          _originalPrice('professional'),
+                                      period: _pricePeriod(
+                                          'professional', '/month'),
                                       description:
                                           'For growing communities that need more.',
                                       highlighted: true,
@@ -170,8 +226,9 @@ class PricingPage extends StatelessWidget {
                                   Expanded(
                                     child: _PricingCard(
                                       title: 'Enterprise',
-                                      price: 'Custom',
-                                      period: '',
+                                      price:
+                                          _priceLabel('enterprise', 'Custom'),
+                                      period: _pricePeriod('enterprise', ''),
                                       description:
                                           'For large-scale HOAs and property managers.',
                                       features: const [
@@ -499,4 +556,16 @@ class _PricingCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PlanPriceData {
+  final String label;
+  final String period;
+  final int? originalPriceCentavos;
+
+  _PlanPriceData({
+    required this.label,
+    required this.period,
+    this.originalPriceCentavos,
+  });
 }
