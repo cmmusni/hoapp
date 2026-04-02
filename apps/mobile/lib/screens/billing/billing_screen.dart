@@ -109,13 +109,17 @@ class _BillingScreenState extends State<BillingScreen>
   bool _showChart = true;
   int _refreshKey = 0;
 
+  int _tabCount(AppState appState) {
+    if (!appState.isStaff) return 1;
+    return appState.hasUnit ? 3 : 2;
+  }
+
   @override
   void initState() {
     super.initState();
     final appState = context.read<AppState>();
-    final isStaff = appState.isStaff;
-    _tabController = TabController(length: isStaff ? 3 : 1, vsync: this);
-    if (isStaff) _loadTabBadges();
+    _tabController = TabController(length: _tabCount(appState), vsync: this);
+    if (appState.isStaff) _loadTabBadges();
   }
 
   Future<void> _loadTabBadges() async {
@@ -135,12 +139,13 @@ class _BillingScreenState extends State<BillingScreen>
           .count(CountOption.exact);
 
       int myCount = 0;
+      List<String> unitIds = [];
       if (userId != null) {
         final householdRows = await client
             .from('household_members')
             .select('unit_id')
             .eq('user_id', userId);
-        final unitIds = (householdRows as List)
+        unitIds = (householdRows as List)
             .map((e) => e['unit_id'] as String)
             .toSet()
             .toList();
@@ -214,6 +219,12 @@ class _BillingScreenState extends State<BillingScreen>
     final appState = context.watch<AppState>();
     final isStaff = appState.isStaff;
 
+    final neededLength = _tabCount(appState);
+    if (_tabController.length != neededLength) {
+      _tabController.dispose();
+      _tabController = TabController(length: neededLength, vsync: this);
+    }
+
     return Scaffold(
       body: Column(
         children: [
@@ -227,7 +238,8 @@ class _BillingScreenState extends State<BillingScreen>
               controller: _tabController,
               isScrollable: true,
               tabs: [
-                _buildTabLabel('My Invoices', _myPendingCount),
+                if (appState.hasUnit)
+                  _buildTabLabel('My Invoices', _myPendingCount),
                 _buildTabLabel('All Invoices', _allPendingCount),
                 const Tab(text: 'Income'),
               ],
@@ -237,11 +249,12 @@ class _BillingScreenState extends State<BillingScreen>
                 ? TabBarView(
                     controller: _tabController,
                     children: [
-                      _InvoiceListView(
-                        key: ValueKey('my_$_refreshKey'),
-                        showMyInvoices: true,
-                        onRefresh: _loadTabBadges,
-                      ),
+                      if (appState.hasUnit)
+                        _InvoiceListView(
+                          key: ValueKey('my_$_refreshKey'),
+                          showMyInvoices: true,
+                          onRefresh: _loadTabBadges,
+                        ),
                       _InvoiceListView(
                         key: ValueKey('all_$_refreshKey'),
                         showMyInvoices: false,
@@ -1441,7 +1454,7 @@ class _PaymentCardState extends State<_PaymentCard> {
                           size: 16, color: Colors.white),
                       label: const Text('Verify'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromRGBO(39, 99, 67, 1),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                       ),
                     ),

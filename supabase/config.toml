@@ -80,5 +80,8 @@ verify_jwt = false
 [functions.create_upgrade_checkout]
 verify_jwt = false
 
+[functions.onesignal_cleanup]
+verify_jwt = false
+
 [functions.paymongo_webhook]
 verify_jwt = false

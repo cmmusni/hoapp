@@ -119,13 +119,17 @@ class _BillingPageState extends State<BillingPage>
   int _dueRecurringCount = 0;
   int _refreshKey = 0;
 
+  int _tabCount(AppState appState) {
+    if (!appState.isStaff) return 1;
+    return appState.hasUnit ? 4 : 3;
+  }
+
   @override
   void initState() {
     super.initState();
     final appState = context.read<AppState>();
-    final isStaff = appState.isStaff;
-    _tabController = TabController(length: isStaff ? 4 : 1, vsync: this);
-    if (isStaff) {
+    _tabController = TabController(length: _tabCount(appState), vsync: this);
+    if (appState.isStaff) {
       _loadTabBadges();
       _autoGenerateInvoices();
     }
@@ -149,6 +153,7 @@ class _BillingPageState extends State<BillingPage>
           .count(CountOption.exact);
 
       int myCount = 0;
+      List<String> unitIds = [];
       if (userId != null) {
         // Get all units the user belongs to
         final householdRows = await client
@@ -156,7 +161,7 @@ class _BillingPageState extends State<BillingPage>
             .select('unit_id')
             .eq('user_id', userId);
 
-        final unitIds = (householdRows as List)
+        unitIds = (householdRows as List)
             .map((e) => e['unit_id'] as String)
             .toSet()
             .toList();
@@ -261,7 +266,8 @@ class _BillingPageState extends State<BillingPage>
               controller: _tabController,
               isScrollable: true,
               tabs: [
-                _buildTabLabel('My Invoices', _myPendingCount),
+                if (appState.hasUnit)
+                  _buildTabLabel('My Invoices', _myPendingCount),
                 _buildTabLabel('All Invoices', _allPendingCount),
                 _buildTabLabel('Recurring Invoices', _dueRecurringCount),
                 const Tab(text: 'Income'),
@@ -272,9 +278,10 @@ class _BillingPageState extends State<BillingPage>
                 ? TabBarView(
                     controller: _tabController,
                     children: [
-                      _InvoiceListView(
-                          key: ValueKey('my_$_refreshKey'),
-                          showMyInvoices: true),
+                      if (appState.hasUnit)
+                        _InvoiceListView(
+                            key: ValueKey('my_$_refreshKey'),
+                            showMyInvoices: true),
                       _InvoiceListView(
                           key: ValueKey('all_$_refreshKey'),
                           showMyInvoices: false),
@@ -2004,7 +2011,7 @@ class _PaymentCardState extends State<_PaymentCard> {
                           size: 16, color: Colors.white),
                       label: const Text('Verify'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color.fromRGBO(39, 99, 67, 1),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                       ),
                     ),
@@ -2749,7 +2756,7 @@ class _CreateInvoiceDialogState extends State<_CreateInvoiceDialog> {
                     height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.receipt_long_rounded),
+                : const Icon(Icons.receipt_long_rounded, color: Colors.white),
             label: Text(_isCreating ? 'Creating...' : 'Create',
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
