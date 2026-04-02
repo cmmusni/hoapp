@@ -168,6 +168,10 @@ class _LoginPageState extends State<LoginPage> {
         if (effectiveToken != null) {
           try {
             await communityRepo.acceptInvite(effectiveToken);
+            // Clear invite_token from metadata so it doesn't re-trigger on next login
+            await Supabase.instance.client.auth.updateUser(
+              UserAttributes(data: {'invite_token': null}),
+            );
           } catch (e) {
             debugPrint('Post-login invite setup failed: $e');
             // Only show error for explicit invite tokens, not metadata ones

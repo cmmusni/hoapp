@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? inviteToken;
@@ -133,6 +134,10 @@ class _LoginScreenState extends State<LoginScreen>
         try {
           final communityRepo = context.read<CommunityRepository>();
           await communityRepo.acceptInvite(widget.inviteToken!);
+          // Clear invite_token from metadata so it doesn't re-trigger on next login
+          await Supabase.instance.client.auth.updateUser(
+            UserAttributes(data: {'invite_token': null}),
+          );
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

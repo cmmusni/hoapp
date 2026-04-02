@@ -17,8 +17,11 @@ class OneSignalWeb {
 
   /// Tag the current browser with the Supabase user ID so the Edge Function
   /// can target notifications to this user.
+  /// Calls logout first to release any stale external_id alias and avoid
+  /// 409 "Alias claimed by another User" conflicts.
   static void loginUser(String userId) {
     _pushDeferred((js.JsObject oneSignal) {
+      oneSignal.callMethod('logout', []);
       oneSignal.callMethod('login', [userId]);
     });
   }

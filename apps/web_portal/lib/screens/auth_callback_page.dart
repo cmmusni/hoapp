@@ -202,6 +202,10 @@ class _AuthCallbackPageState extends State<AuthCallbackPage> {
         debugPrint('Auth callback: calling acceptInvite with token');
         final result = await communityRepo.acceptInvite(inviteToken);
         debugPrint('Auth callback: acceptInvite result=$result');
+        // Clear invite_token from metadata so it doesn't re-trigger on next login
+        await Supabase.instance.client.auth.updateUser(
+          UserAttributes(data: {'invite_token': null}),
+        );
       } catch (e) {
         debugPrint('Auth callback: invite acceptance failed: $e');
       }

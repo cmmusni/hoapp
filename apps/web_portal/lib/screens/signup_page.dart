@@ -202,6 +202,10 @@ class _SignupPageState extends State<SignupPage> {
             try {
               final communityRepo = context.read<CommunityRepository>();
               await communityRepo.acceptInvite(widget.inviteToken!);
+              // Clear invite_token from metadata so it doesn't re-trigger on next login
+              await Supabase.instance.client.auth.updateUser(
+                UserAttributes(data: {'invite_token': null}),
+              );
               if (mounted) {
                 if (widget.communitySlug != null) {
                   context.go('/${widget.communitySlug}/announcements');

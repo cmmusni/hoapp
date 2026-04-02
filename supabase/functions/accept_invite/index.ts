@@ -93,12 +93,7 @@ serve(async (req) => {
       invite = pendingInvite
     }
 
-    // Check expiry
-    if (new Date(invite.expires_at) < new Date()) {
-      return jsonResponse({ ok: false, error: 'Invite has expired' }, 410)
-    }
-
-    // Check if already accepted
+    // Check if already accepted (before expiry — accepted invites stay valid)
     if (invite.accepted_at) {
       // Even if already accepted, ensure profile exists (in case it failed before)
       const { data: existingProfile } = await supabaseAdmin
@@ -153,6 +148,11 @@ serve(async (req) => {
         community_slug: community?.slug,
         community_name: community?.name,
       })
+    }
+
+    // Check expiry (only for invites not yet accepted)
+    if (new Date(invite.expires_at) < new Date()) {
+      return jsonResponse({ ok: false, error: 'Invite has expired' }, 410)
     }
 
     // Check if email matches (optional strict check)
