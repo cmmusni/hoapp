@@ -1,4 +1,5 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'dart:js' as js;
 
 /// Thin wrapper around the OneSignal Web SDK v16.
@@ -6,6 +7,13 @@ import 'dart:js' as js;
 /// notifications by Supabase user-id and community.
 class OneSignalWeb {
   OneSignalWeb._();
+
+  /// Returns true when running on localhost — OneSignal SDK is
+  /// domain-restricted to hoapp.net and will not initialise locally.
+  static bool get _isLocalhost {
+    final host = html.window.location.hostname ?? '';
+    return host == 'localhost' || host == '127.0.0.1';
+  }
 
   /// Tag the current browser with the Supabase user ID so the Edge Function
   /// can target notifications to this user.
@@ -40,6 +48,7 @@ class OneSignalWeb {
 
   /// Check if the user has granted notification permission.
   static bool get permissionGranted {
+    if (_isLocalhost) return false;
     try {
       final oneSignal = js.context['OneSignal'];
       if (oneSignal == null) return false;
@@ -56,14 +65,29 @@ class OneSignalWeb {
   // ── internal helpers ──────────────────────────────────────────────
 
   static void _pushDeferred(void Function(js.JsObject oneSignal) callback) {
+    if (_isLocalhost) {
+      print('OneSignal: skipped on localhost');
+      return;
+    }
     final deferred = js.context['OneSignalDeferred'] as js.JsArray?;
     if (deferred == null) {
       print('OneSignal: OneSignalDeferred not found on window');
       return;
     }
     print('OneSignal: pushing to deferred queue');
-    deferred.add(js.JsFunction.withThis((thisArg, oneSignal) {
-      callback(oneSignal as js.JsObject);
+    deferred.add(js.JsFunction.withThis((thisArg, [dynamic osArg]) {
+      try {
+        // Prefer the callback argument; fall back to window.OneSignal
+        final oneSignal =
+            (osArg as js.JsObject?) ?? js.context['OneSignal'] as js.JsObject?;
+        if (oneSignal == null) {
+          print('OneSignal: SDK not available');
+          return;
+        }
+        callback(oneSignal);
+      } catch (e) {
+        print('OneSignal deferred callback error: $e');
+      }
     }));
   }
 }

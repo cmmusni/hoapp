@@ -97,17 +97,26 @@
   <link rel="preconnect" href="https://rdkpxdgxepybuswyirrs.supabase.co">
   <link rel="dns-prefetch" href="https://rdkpxdgxepybuswyirrs.supabase.co">
 
-  <!-- OneSignal Web Push SDK -->
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <!-- OneSignal Web Push SDK (skip on localhost — app is domain-restricted) -->
   <script>
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "be65b68a-a00d-487f-97b4-90815b5db693",
-        notifyButton: { enable: true },
-        allowLocalhostAsSecureOrigin: true,
+    if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+      s.defer = true;
+      document.head.appendChild(s);
+
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "be65b68a-a00d-487f-97b4-90815b5db693",
+          notifyButton: { enable: true },
+          autoResubscribe: true,
+          promptOptions: {
+            autoPrompt: false,
+          },
+        });
       });
-    });
+    }
   </script>
 </head>
 <body>

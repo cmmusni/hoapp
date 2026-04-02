@@ -264,11 +264,9 @@ class _PortalShellState extends State<PortalShell> {
         print('OneSignal: setting tags $tags');
         OneSignalWeb.setTags(tags);
       }
-      // Request push permission if not already granted
-      if (!OneSignalWeb.permissionGranted) {
-        print('OneSignal: requesting notification permission');
-        OneSignalWeb.requestPermission();
-      }
+      // NOTE: Do NOT auto-call requestPermission() here.
+      // Browsers require notification permission requests to originate
+      // from a user gesture (click/tap). Prompt via a UI button instead.
     } catch (e) {
       print('OneSignal registration error: $e');
     }
