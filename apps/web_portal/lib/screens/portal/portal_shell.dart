@@ -252,7 +252,13 @@ class _PortalShellState extends State<PortalShell> {
       }
 
       print('OneSignal: registering user ${user.id}');
-      OneSignalWeb.loginUser(user.id);
+
+      // First clean up any stale alias server-side, then login client-side.
+      // The cleanup is fire-and-forget — login proceeds regardless.
+      _cleanupOneSignalAlias(user.id).then((_) {
+        OneSignalWeb.loginUser(user.id);
+      });
+
       final tags = <String, String>{};
       if (appState.activeCommunityId != null) {
         tags['community_id'] = appState.activeCommunityId!;
@@ -269,6 +275,22 @@ class _PortalShellState extends State<PortalShell> {
       // from a user gesture (click/tap). Prompt via a UI button instead.
     } catch (e) {
       print('OneSignal registration error: $e');
+    }
+  }
+
+  /// Call the onesignal_cleanup edge function to delete any stale OneSignal
+  /// user that holds this external_id, preventing 409 alias conflicts.
+  Future<void> _cleanupOneSignalAlias(String userId) async {
+    try {
+      final client = SupabaseClientManager.instance;
+      await client.functions.invoke(
+        'onesignal_cleanup',
+        body: {'external_id': userId},
+      );
+      print('OneSignal: alias cleanup completed for $userId');
+    } catch (e) {
+      // Non-fatal — login will still attempt
+      print('OneSignal: alias cleanup failed (non-fatal): $e');
     }
   }
 
