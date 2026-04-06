@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const _brand = Color(0xFF2E5C3F);
 
@@ -385,6 +386,11 @@ class MarketingNavBar extends StatelessWidget {
                   active: activePage == 'Features'),
               const SizedBox(width: 32),
               _NavItem(
+                  label: 'Security',
+                  route: '/security',
+                  active: activePage == 'Security'),
+              const SizedBox(width: 32),
+              _NavItem(
                   label: 'Pricing',
                   route: '/pricing',
                   active: activePage == 'Pricing'),
@@ -458,6 +464,8 @@ class _MobileMenuButton extends StatelessWidget {
                     'Support', '/support', activePage == 'Support', ctx),
                 _MobileNavTile(
                     'Contact', '/contact', activePage == 'Contact', ctx),
+                _MobileNavTile(
+                    'Security', '/security', activePage == 'Security', ctx),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.login, color: _brand),
@@ -618,7 +626,7 @@ class MarketingFooter extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Efficient Management,\nEffortless Community.',
+                'Smart HOA Management for Modern Communities.',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.6),
                   fontSize: 14,
@@ -649,6 +657,7 @@ class MarketingFooter extends StatelessWidget {
             'Company',
             {
               'Contact': '/contact',
+              'Data Security': '/security',
               'Login': '/login',
             },
           ),
@@ -671,6 +680,8 @@ class MarketingFooter extends StatelessWidget {
               _buildContactRow(Icons.email_outlined, 'support@hoapp.net'),
               const SizedBox(height: 10),
               _buildContactRow(Icons.language_outlined, 'hoapp.net'),
+              const SizedBox(height: 16),
+              _buildFacebookLink(),
             ],
           ),
         ),
@@ -707,7 +718,7 @@ class MarketingFooter extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Efficient Management, Effortless Community.',
+          'Smart HOA Management for Modern Communities.',
           style: TextStyle(
             color: Colors.white.withOpacity(0.6),
             fontSize: 13,
@@ -735,6 +746,7 @@ class MarketingFooter extends StatelessWidget {
               'Company',
               {
                 'Contact': '/contact',
+                'Data Security': '/security',
                 'Login': '/login',
               },
             ),
@@ -746,6 +758,8 @@ class MarketingFooter extends StatelessWidget {
         _buildContactRow(Icons.email_outlined, 'support@hoapp.net'),
         const SizedBox(height: 8),
         _buildContactRow(Icons.language_outlined, 'hoapp.net'),
+        const SizedBox(height: 16),
+        _buildFacebookLink(),
       ],
     );
   }
@@ -795,6 +809,30 @@ class MarketingFooter extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  static Widget _buildFacebookLink() {
+    return InkWell(
+      onTap: () => launchUrl(
+        Uri.parse('https://www.facebook.com/profile.php?id=61576472196862'),
+        mode: LaunchMode.externalApplication,
+      ),
+      borderRadius: BorderRadius.circular(6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.facebook, size: 18, color: Colors.white.withOpacity(0.6)),
+          const SizedBox(width: 8),
+          Text(
+            'Follow us on Facebook',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

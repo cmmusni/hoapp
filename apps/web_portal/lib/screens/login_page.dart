@@ -175,7 +175,8 @@ class _LoginPageState extends State<LoginPage> {
         final id = input.id;
 
         if (value.isNotEmpty) {
-          debugPrint('AF-poll input[$i]: id=$id ac=$ac tp=$tp val_len=${value.length}');
+          debugPrint(
+              'AF-poll input[$i]: id=$id ac=$ac tp=$tp val_len=${value.length}');
         }
 
         if (foundEmail.isEmpty &&

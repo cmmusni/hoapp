@@ -1,15 +1,17 @@
 {
-    "name": "HOApp — Community Management Platform",
+    "name": "HOApp — Homeowners Association Management App & Community Platform",
     "short_name": "HOApp",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#215E3F",
-    "description": "A modern HOA management platform for homeowners associations. Manage announcements, billing, households, violations, amenities, pool access, and security passes.",
+    "description": "The best homeowners association (HOA) management application. Manage billing, announcements, violations, amenity booking, pool access, and security passes for your residential community, condominium, or subdivision.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
-    "categories": ["business", "productivity"],
+    "categories": ["business", "productivity", "utilities"],
     "lang": "en-US",
+    "scope": "/",
+    "id": "/",
     "icons": [
         {
             "src": "icons/Icon-192.png",

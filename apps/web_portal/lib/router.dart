@@ -31,6 +31,7 @@ import 'screens/features_page.dart';
 import 'screens/pricing_page.dart';
 import 'screens/support_page.dart';
 import 'screens/contact_page.dart';
+import 'screens/data_security_page.dart';
 import 'screens/select_community_page.dart';
 import 'screens/upgrade_success_page.dart';
 
@@ -118,6 +119,10 @@ GoRouter createRouter({String? lastCommunitySlug}) {
       GoRoute(
         path: '/contact',
         builder: (context, state) => const ContactPage(),
+      ),
+      GoRoute(
+        path: '/security',
+        builder: (context, state) => const DataSecurityPage(),
       ),
       GoRoute(
         path: '/create-community',

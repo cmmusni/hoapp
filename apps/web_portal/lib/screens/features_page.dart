@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'marketing_nav_bar.dart';
 
 const _brand = Color(0xFF2E5C3F);
+const _brandLight = Color(0xFF3A7A50);
 const _dark = Color(0xFF1F2937);
 const _muted = Color(0xFF6B7280);
 const _lightBg = Color(0xFFF9FAFB);
@@ -14,22 +15,26 @@ class _FeatureData {
   final String title;
   final String description;
   final String? imagePath;
+  final String? category;
 
   const _FeatureData({
     required this.icon,
     required this.title,
     required this.description,
     this.imagePath,
+    this.category,
   });
 }
 
 const _features = <_FeatureData>[
+  // ── Core Operations ──
   _FeatureData(
     icon: Icons.campaign_outlined,
     title: 'Announcements',
     description:
         'Broadcast community-wide announcements with rich text. Pin important notices and attach images or documents to keep everyone informed.',
     imagePath: 'assets/images/features/announcements.png',
+    category: 'Core Operations',
   ),
   _FeatureData(
     icon: Icons.credit_card_outlined,
@@ -37,6 +42,7 @@ const _features = <_FeatureData>[
     description:
         'Generate invoices, track payments, upload proof of payment, and let staff verify or reject — all with a complete audit trail.',
     imagePath: 'assets/images/features/billing.png',
+    category: 'Core Operations',
   ),
   _FeatureData(
     icon: Icons.home_outlined,
@@ -44,6 +50,7 @@ const _features = <_FeatureData>[
     description:
         'Manage units, households, and residents. Invite members, assign roles, and keep a structured directory of your community.',
     imagePath: 'assets/images/features/households.png',
+    category: 'Core Operations',
   ),
   _FeatureData(
     icon: Icons.gavel_outlined,
@@ -51,13 +58,17 @@ const _features = <_FeatureData>[
     description:
         'Report and track community violations with photos. Staff can review, fine, and resolve cases with clear status tracking.',
     imagePath: 'assets/images/features/violations.png',
+    category: 'Core Operations',
   ),
+
+  // ── Community Engagement ──
   _FeatureData(
     icon: Icons.confirmation_number_outlined,
     title: 'Tickets',
     description:
         'Resident support ticket system for maintenance requests, complaints, and inquiries — with status updates and staff replies.',
     imagePath: 'assets/images/features/tickets.png',
+    category: 'Community Engagement',
   ),
   _FeatureData(
     icon: Icons.feedback_outlined,
@@ -65,6 +76,7 @@ const _features = <_FeatureData>[
     description:
         'Collect and manage resident feedback. Track open and resolved submissions to continuously improve community services.',
     imagePath: 'assets/images/features/feedback.png',
+    category: 'Community Engagement',
   ),
   _FeatureData(
     icon: Icons.event_seat_outlined,
@@ -72,6 +84,7 @@ const _features = <_FeatureData>[
     description:
         'Browse community amenities, check availability, and book reservations — from function halls to gyms and courts.',
     imagePath: 'assets/images/features/amenities-reservation.png',
+    category: 'Community Engagement',
   ),
   _FeatureData(
     icon: Icons.pool_outlined,
@@ -79,34 +92,25 @@ const _features = <_FeatureData>[
     description:
         'Register swimmers, manage pool entry, and track active sessions. Designed for multi-member households and guest access.',
     imagePath: 'assets/images/features/pool-access.png',
+    category: 'Community Engagement',
   ),
+
+  // ── Security & Access ──
   _FeatureData(
     icon: Icons.qr_code_2_outlined,
     title: 'Security Passes',
     description:
         'Request visitor, gate, contractor, and delivery passes. Staff approve with QR codes — guards scan for instant validation.',
     imagePath: 'assets/images/features/security-pass.png',
+    category: 'Security & Access',
   ),
   _FeatureData(
-    icon: Icons.account_balance_wallet_outlined,
-    title: 'Expense Tracker',
+    icon: Icons.qr_code_scanner_outlined,
+    title: 'QR Pass Scanner',
     description:
-        'Track community expenses by category with filtering and real-time charts. Maintain full transparency over HOA spending.',
-    imagePath: 'assets/images/features/community-expenses.png',
-  ),
-  _FeatureData(
-    icon: Icons.bar_chart_outlined,
-    title: 'Financial Reports',
-    description:
-        'View comprehensive income vs. expense analytics with interactive charts over configurable time periods.',
-    imagePath: 'assets/images/features/financial-reports.png',
-  ),
-  _FeatureData(
-    icon: Icons.notifications_outlined,
-    title: 'Notifications Hub',
-    description:
-        'Aggregated view of all pending items — payments, tickets, violations, feedback, bookings, and announcements — in one place.',
-    imagePath: 'assets/images/features/notifications.png',
+        'Guards and staff can scan QR-coded passes at gates and entry points for instant validation and automated entry logging.',
+    imagePath: 'assets/images/features/qr-scanner.png',
+    category: 'Security & Access',
   ),
   _FeatureData(
     icon: Icons.people_outlined,
@@ -114,6 +118,33 @@ const _features = <_FeatureData>[
     description:
         'Invite and manage community members with role-based access — admins, HOA officers, guards, maintenance, and residents.',
     imagePath: 'assets/images/features/manage-users.png',
+    category: 'Security & Access',
+  ),
+  _FeatureData(
+    icon: Icons.notifications_outlined,
+    title: 'Notifications Hub',
+    description:
+        'Aggregated view of all pending items — payments, tickets, violations, feedback, bookings, and announcements — in one place.',
+    imagePath: 'assets/images/features/notifications.png',
+    category: 'Security & Access',
+  ),
+
+  // ── Finance & Analytics ──
+  _FeatureData(
+    icon: Icons.account_balance_wallet_outlined,
+    title: 'Expense Tracker',
+    description:
+        'Track community expenses by category with filtering and real-time charts. Maintain full transparency over HOA spending.',
+    imagePath: 'assets/images/features/community-expenses.png',
+    category: 'Finance & Analytics',
+  ),
+  _FeatureData(
+    icon: Icons.bar_chart_outlined,
+    title: 'Financial Reports',
+    description:
+        'View comprehensive income vs. expense analytics with interactive charts over configurable time periods.',
+    imagePath: 'assets/images/features/financial-reports.png',
+    category: 'Finance & Analytics',
   ),
   _FeatureData(
     icon: Icons.settings_outlined,
@@ -121,13 +152,17 @@ const _features = <_FeatureData>[
     description:
         'Configure your community profile, branding, and preferences from a centralized settings dashboard.',
     imagePath: 'assets/images/features/community-settings.png',
+    category: 'Finance & Analytics',
   ),
+
+  // ── Platform & Experience ──
   _FeatureData(
     icon: Icons.phone_iphone_outlined,
     title: 'Mobile App',
     description:
         'Access your community on the go with the HOApp mobile app for iOS and Android — check announcements, pay bills, and scan QR passes from your phone.',
     imagePath: 'assets/images/features/mobile-app.png',
+    category: 'Platform & Experience',
   ),
   _FeatureData(
     icon: Icons.hub_outlined,
@@ -135,30 +170,31 @@ const _features = <_FeatureData>[
     description:
         'Manage or belong to multiple communities from a single account. Easily switch between communities from the portal.',
     imagePath: 'assets/images/features/select-community.png',
-  ),
-  _FeatureData(
-    icon: Icons.qr_code_scanner_outlined,
-    title: 'QR Pass Scanner',
-    description:
-        'Guards and staff can scan QR-coded passes at gates and entry points for instant validation and automated entry logging.',
+    category: 'Platform & Experience',
   ),
   _FeatureData(
     icon: Icons.smart_toy_outlined,
     title: 'AI Chatbot Assistant',
     description:
         'Get instant help with a built-in AI assistant that provides contextual guidance based on your current page and role.',
+    category: 'Platform & Experience',
+    imagePath: 'assets/images/features/ai-chatbot.png',
   ),
   _FeatureData(
     icon: Icons.tour_outlined,
     title: 'Onboarding Tour',
     description:
         'Interactive guided walkthrough for new users. Replay anytime from the menu to learn about all portal features.',
+    category: 'Platform & Experience',
+    imagePath: 'assets/images/features/guided-tour.png',
   ),
   _FeatureData(
     icon: Icons.devices_outlined,
     title: 'Mobile Responsive',
     description:
         'The entire web portal is fully responsive — optimized for desktops, tablets, and smartphones so you can manage your community from any device.',
+    category: 'Platform & Experience',
+    imagePath: 'assets/images/features/mobile-responsive.png',
   ),
 ];
 
@@ -172,8 +208,42 @@ class FeaturesPage extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 600;
 
-    final withImage = _features.where((f) => f.imagePath != null).toList();
-    final withoutImage = _features.where((f) => f.imagePath == null).toList();
+    // Group features by category, preserving order
+    final categories = <String>[];
+    final grouped = <String, List<_FeatureData>>{};
+    for (final f in _features) {
+      final cat = f.category ?? 'More';
+      if (!grouped.containsKey(cat)) {
+        categories.add(cat);
+        grouped[cat] = [];
+      }
+      grouped[cat]!.add(f);
+    }
+
+    // Category icons
+    const categoryIcons = <String, IconData>{
+      'Core Operations': Icons.dashboard_outlined,
+      'Community Engagement': Icons.people_outline,
+      'Security & Access': Icons.shield_outlined,
+      'Finance & Analytics': Icons.insights_outlined,
+      'Platform & Experience': Icons.devices_outlined,
+    };
+
+    // Category subtitles
+    const categorySubs = <String, String>{
+      'Core Operations':
+          'Essential tools for managing announcements, billing, households, and violations.',
+      'Community Engagement':
+          'Keep residents connected with tickets, feedback, amenities, and pool access.',
+      'Security & Access':
+          'Protect your community with QR passes, role-based access, and real-time notifications.',
+      'Finance & Analytics':
+          'Full transparency with expense tracking, financial reports, and community settings.',
+      'Platform & Experience':
+          'Access HOApp anywhere — mobile apps, AI assistance, and responsive design.',
+    };
+
+    int showcaseIndex = 0;
 
     return Scaffold(
       body: Stack(
@@ -190,26 +260,67 @@ class FeaturesPage extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  const SizedBox(height: 72),
+
                   // ── Hero Header ──
-                  _HeroHeader(isMobile: isMobile),
+                  _HeroHeader(
+                      isMobile: isMobile, featureCount: _features.length),
 
-                  // ── Alternating Feature Showcases ──
-                  ...List.generate(withImage.length, (i) {
-                    final isEven = i.isEven;
-                    return _FeatureShowcaseRow(
-                      data: withImage[i],
-                      imageOnLeft: isEven,
-                      isMobile: isMobile,
-                      index: i,
-                    );
-                  }),
-
-                  // ── "And More" Section ──
-                  if (withoutImage.isNotEmpty)
-                    _MoreFeaturesSection(
-                      features: withoutImage,
-                      isMobile: isMobile,
+                  // ── Stats Bar ──
+                  Container(
+                    width: double.infinity,
+                    color: const Color(0xFF243F2F),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 16 : 48,
+                      vertical: isMobile ? 16 : 22,
                     ),
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceEvenly,
+                      spacing: isMobile ? 24 : 60,
+                      runSpacing: 12,
+                      children: [
+                        _MiniStat(
+                            value: '${_features.length}', label: 'Features'),
+                        _MiniStat(
+                            value: '${categories.length}', label: 'Categories'),
+                        const _MiniStat(
+                            value: 'Web + Mobile', label: 'Platforms'),
+                        const _MiniStat(value: 'Free', label: 'Starter Plan'),
+                      ],
+                    ),
+                  ),
+
+                  // ── Category Sections ──
+                  for (int ci = 0; ci < categories.length; ci++) ...[
+                    // Category Header
+                    _CategoryHeader(
+                      icon: categoryIcons[categories[ci]] ?? Icons.star_outline,
+                      title: categories[ci],
+                      subtitle: categorySubs[categories[ci]] ?? '',
+                      isMobile: isMobile,
+                      index: ci,
+                    ),
+
+                    // Features in this category
+                    for (final feature in grouped[categories[ci]]!)
+                      Builder(builder: (context) {
+                        final idx = showcaseIndex++;
+                        if (feature.imagePath != null) {
+                          return _FeatureShowcaseRow(
+                            data: feature,
+                            imageOnLeft: idx.isEven,
+                            isMobile: isMobile,
+                            index: idx,
+                          );
+                        } else {
+                          return _FeatureCardRow(
+                            data: feature,
+                            isMobile: isMobile,
+                            index: idx,
+                          );
+                        }
+                      }),
+                  ],
 
                   // ── CTA Section ──
                   _CtaSection(isMobile: isMobile),
@@ -230,61 +341,62 @@ class FeaturesPage extends StatelessWidget {
 
 class _HeroHeader extends StatelessWidget {
   final bool isMobile;
-  const _HeroHeader({required this.isMobile});
+  final int featureCount;
+  const _HeroHeader({required this.isMobile, required this.featureCount});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.only(top: isMobile ? 100 : 120, bottom: 48),
-      decoration: BoxDecoration(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 48,
+        vertical: isMobile ? 48 : 72,
+      ),
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            _brand.withOpacity(0.08),
-            Colors.white.withOpacity(0.0),
-          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2E5C3F), Color(0xFF3A7A50)],
         ),
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: _brand.withOpacity(0.08),
+              color: Colors.white.withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'FEATURES',
+              '$featureCount BUILT-IN FEATURES',
               style: TextStyle(
-                fontSize: isMobile ? 12 : 13,
+                fontSize: isMobile ? 11 : 13,
                 fontWeight: FontWeight.w700,
-                color: _brand,
+                color: Colors.white,
                 letterSpacing: 2,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             'Everything Your\nCommunity Needs',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: isMobile ? 32 : 48,
               fontWeight: FontWeight.w800,
-              color: _dark,
+              color: Colors.white,
               height: 1.15,
             ),
           ),
           const SizedBox(height: 16),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 48),
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 48),
             child: Text(
               'From billing to security passes, manage every aspect of your HOA with a single, beautiful platform.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: isMobile ? 15 : 18,
-                color: _muted,
+                color: Colors.white.withOpacity(0.9),
                 height: 1.6,
               ),
             ),
@@ -294,7 +406,7 @@ class _HeroHeader extends StatelessWidget {
             width: 48,
             height: 4,
             decoration: BoxDecoration(
-              color: _brand.withOpacity(0.3),
+              color: Colors.white.withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -446,70 +558,240 @@ class _FeatureShowcaseRowState extends State<_FeatureShowcaseRow> {
   }
 }
 
-// ─── More Features Section ─────────────────────────────────
+// ─── Category Header ───────────────────────────────────────
 
-class _MoreFeaturesSection extends StatelessWidget {
-  final List<_FeatureData> features;
+class _CategoryHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
   final bool isMobile;
+  final int index;
 
-  const _MoreFeaturesSection({
-    required this.features,
+  const _CategoryHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
     required this.isMobile,
+    required this.index,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: _lightBg.withOpacity(0.5),
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 48,
-        vertical: isMobile ? 40 : 64,
+      padding: EdgeInsets.only(
+        left: isMobile ? 20 : 48,
+        right: isMobile ? 20 : 48,
+        top: isMobile ? 40 : 56,
+        bottom: isMobile ? 16 : 24,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
+          constraints: const BoxConstraints(maxWidth: 1100),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _brand.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
+              if (index > 0) ...[
+                Container(
+                  width: double.infinity,
+                  height: 1,
+                  color: _brand.withOpacity(0.1),
                 ),
-                child: Text(
-                  'AND MORE',
-                  style: TextStyle(
-                    fontSize: isMobile ? 11 : 12,
-                    fontWeight: FontWeight.w700,
-                    color: _brand,
-                    letterSpacing: 1.5,
+                SizedBox(height: isMobile ? 32 : 48),
+              ],
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [_brand, _brandLight],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, size: 22, color: Colors.white),
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Even More Built-In',
-                style: TextStyle(
-                  fontSize: isMobile ? 24 : 32,
-                  fontWeight: FontWeight.w800,
-                  color: _dark,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Wrap(
-                spacing: isMobile ? 12 : 20,
-                runSpacing: isMobile ? 12 : 20,
-                alignment: WrapAlignment.center,
-                children: features
-                    .map((f) => _IconFeatureTile(data: f, isMobile: isMobile))
-                    .toList(),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: isMobile ? 20 : 24,
+                            fontWeight: FontWeight.w800,
+                            color: _dark,
+                          ),
+                        ),
+                        if (subtitle.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: isMobile ? 13 : 15,
+                              color: _muted,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─── Feature Card Row (for features without screenshots) ───
+
+class _FeatureCardRow extends StatefulWidget {
+  final _FeatureData data;
+  final bool isMobile;
+  final int index;
+
+  const _FeatureCardRow({
+    required this.data,
+    required this.isMobile,
+    required this.index,
+  });
+
+  @override
+  State<_FeatureCardRow> createState() => _FeatureCardRowState();
+}
+
+class _FeatureCardRowState extends State<_FeatureCardRow> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final useAltBg = widget.index.isOdd;
+
+    return Container(
+      width: double.infinity,
+      color: useAltBg ? _lightBg.withOpacity(0.7) : Colors.transparent,
+      padding: EdgeInsets.symmetric(
+        horizontal: widget.isMobile ? 20 : 48,
+        vertical: widget.isMobile ? 28 : 40,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: MouseRegion(
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+              transform: _hovered
+                  ? (Matrix4.identity()..translate(0.0, -3.0))
+                  : Matrix4.identity(),
+              padding: EdgeInsets.all(widget.isMobile ? 24 : 36),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color:
+                      _hovered ? _brand.withOpacity(0.2) : Colors.transparent,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _hovered
+                        ? _brand.withOpacity(0.12)
+                        : Colors.black.withOpacity(0.06),
+                    blurRadius: _hovered ? 24 : 12,
+                    offset: Offset(0, _hovered ? 8 : 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          _brand.withOpacity(0.1),
+                          _brand.withOpacity(0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(widget.data.icon,
+                        size: widget.isMobile ? 28 : 32, color: _brand),
+                  ),
+                  SizedBox(width: widget.isMobile ? 16 : 24),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.data.title,
+                          style: TextStyle(
+                            fontSize: widget.isMobile ? 18 : 22,
+                            fontWeight: FontWeight.w800,
+                            color: _dark,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.data.description,
+                          style: TextStyle(
+                            fontSize: widget.isMobile ? 14 : 16,
+                            color: _muted,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Mini Stat ─────────────────────────────────────────────
+
+class _MiniStat extends StatelessWidget {
+  final String value;
+  final String label;
+  const _MiniStat({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withOpacity(0.7),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -522,178 +804,84 @@ class _CtaSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
+      width: double.infinity,
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 20 : 48,
-        vertical: isMobile ? 40 : 64,
+        vertical: isMobile ? 48 : 72,
       ),
-      child: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 700),
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 24 : 48,
-            vertical: isMobile ? 32 : 48,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                _brand.withOpacity(0.06),
-                _brand.withOpacity(0.12),
-              ],
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2E5C3F), Color(0xFF3A7A50)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Ready to get started?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: isMobile ? 24 : 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
             ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: _brand.withOpacity(0.15)),
           ),
-          child: Column(
+          const SizedBox(height: 10),
+          Text(
+            'Set up your community in minutes. No credit card required.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: isMobile ? 14 : 17,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+          const SizedBox(height: 28),
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            alignment: WrapAlignment.center,
             children: [
-              Text(
-                'Ready to get started?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: isMobile ? 22 : 28,
-                  fontWeight: FontWeight.w800,
-                  color: _dark,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Set up your community in minutes.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: isMobile ? 14 : 16,
-                  color: _muted,
-                ),
-              ),
-              const SizedBox(height: 28),
-              Wrap(
-                spacing: 16,
-                runSpacing: 12,
-                alignment: WrapAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => context.go('/pricing'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _brand,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isMobile ? 32 : 48,
-                        vertical: isMobile ? 16 : 20,
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30)),
-                      elevation: 4,
-                    ),
-                    child: const Text('Get Started',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
+              ElevatedButton(
+                onPressed: () => context.go('/pricing'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: _brand,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 32 : 48,
+                    vertical: isMobile ? 16 : 20,
                   ),
-                  OutlinedButton(
-                    onPressed: () => context.go('/'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _brand,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isMobile ? 32 : 48,
-                        vertical: isMobile ? 16 : 20,
-                      ),
-                      side: const BorderSide(color: _brand, width: 2),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30)),
-                    ),
-                    child: const Text('Back to Home',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                  elevation: 4,
+                ),
+                child: const Text('Get Started Free',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+              OutlinedButton(
+                onPressed: () => context.go('/'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 32 : 48,
+                    vertical: isMobile ? 16 : 20,
                   ),
-                ],
+                  side: const BorderSide(color: Colors.white70, width: 2),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                ),
+                child: const Text('Back to Home',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-// ─── Icon-only Feature Tile ────────────────────────────────
-
-class _IconFeatureTile extends StatefulWidget {
-  final _FeatureData data;
-  final bool isMobile;
-
-  const _IconFeatureTile({
-    required this.data,
-    this.isMobile = false,
-  });
-
-  @override
-  State<_IconFeatureTile> createState() => _IconFeatureTileState();
-}
-
-class _IconFeatureTileState extends State<_IconFeatureTile> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        width: widget.isMobile ? double.infinity : 260,
-        transform: _hovered
-            ? (Matrix4.identity()..translate(0.0, -3.0))
-            : Matrix4.identity(),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _hovered ? _brand.withOpacity(0.25) : Colors.transparent,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: _hovered
-                  ? _brand.withOpacity(0.12)
-                  : Colors.black.withOpacity(0.06),
-              blurRadius: _hovered ? 20 : 10,
-              offset: Offset(0, _hovered ? 6 : 3),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: _brand.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(widget.data.icon, size: 26, color: _brand),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              widget.data.title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: _dark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.data.description,
-              style: const TextStyle(
-                fontSize: 13,
-                color: _muted,
-                height: 1.6,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// end of file

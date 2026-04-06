@@ -6,6 +6,7 @@ Allow: /support
 Allow: /contact
 Allow: /login
 Allow: /signup
+Allow: /security
 
 # Disallow portal internal pages (require auth)
 Disallow: /*/announcements
