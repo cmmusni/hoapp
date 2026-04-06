@@ -131,60 +131,106 @@
   </form>
   <script>
     (function() {
-      // Shared store – Dart reads this via dart:html
       window._autofillData = { email: '', password: '' };
+      window._afDebug = [];
 
-      // Watch our persistent native inputs
       var afEmail = document.getElementById('_af_email');
       var afPass  = document.getElementById('_af_pass');
 
-      // Also watch any <input> Flutter creates (or password managers inject)
+      function log(msg) {
+        var entry = new Date().toISOString().substr(11,12) + ' ' + msg;
+        window._afDebug.push(entry);
+        console.log('[AF] ' + entry);
+        // Keep only last 50 entries
+        if (window._afDebug.length > 50) window._afDebug.shift();
+      }
+
       function scanAll() {
         var inputs = document.querySelectorAll('input');
+        var count = 0;
         for (var i = 0; i < inputs.length; i++) {
           var inp = inputs[i];
           watchInput(inp);
-          readInput(inp);
+          var v = inp.value;
+          if (v) {
+            var ac = (inp.getAttribute('autocomplete') || '');
+            var tp = inp.type || '';
+            var id = inp.id || '(no-id)';
+            if (ac.indexOf('email') !== -1 || ac.indexOf('username') !== -1 || tp === 'email') {
+              if (window._autofillData.email !== v) {
+                log('EMAIL found: id=' + id + ' ac=' + ac + ' tp=' + tp + ' val=' + v.substr(0,20));
+                window._autofillData.email = v;
+              }
+            }
+            if (ac.indexOf('password') !== -1 || tp === 'password') {
+              if (window._autofillData.password !== v) {
+                log('PASS found: id=' + id + ' ac=' + ac + ' tp=' + tp + ' len=' + v.length);
+                window._autofillData.password = v;
+              }
+            }
+            count++;
+          }
         }
-      }
-
-      function readInput(inp) {
-        var v = inp.value;
-        if (!v) return;
-        var ac = (inp.getAttribute('autocomplete') || '').toLowerCase();
-        var tp = (inp.type || '').toLowerCase();
-        if (ac.indexOf('email') !== -1 || ac.indexOf('username') !== -1 || tp === 'email') {
-          window._autofillData.email = v;
-        }
-        if (ac.indexOf('password') !== -1 || tp === 'password') {
-          window._autofillData.password = v;
-        }
+        return count;
       }
 
       function watchInput(inp) {
         if (inp._afW) return;
         inp._afW = true;
-        var last = inp.value;
-        // Listen for real events
-        ['input','change','blur'].forEach(function(ev) {
-          inp.addEventListener(ev, function() { readInput(inp); });
+        var ac = inp.getAttribute('autocomplete') || '';
+        var tp = inp.type || '';
+        var id = inp.id || '(no-id)';
+        log('WATCH: id=' + id + ' ac=' + ac + ' tp=' + tp);
+
+        ['input','change','blur','focus'].forEach(function(ev) {
+          inp.addEventListener(ev, function() {
+            var v = inp.value || '';
+            if (v) {
+              log('EVENT ' + ev + ': id=' + id + ' tp=' + tp + ' len=' + v.length);
+            }
+            if (ac.indexOf('email') !== -1 || ac.indexOf('username') !== -1 || tp === 'email') {
+              window._autofillData.email = v;
+            }
+            if (ac.indexOf('password') !== -1 || tp === 'password') {
+              window._autofillData.password = v;
+            }
+          });
         });
-        // Poll for programmatic changes (password managers)
-        var id = setInterval(function() {
-          if (!document.body.contains(inp)) { clearInterval(id); return; }
+
+        var last = inp.value;
+        var pollId = setInterval(function() {
+          if (!document.body.contains(inp)) { clearInterval(pollId); return; }
           if (inp.value !== last) {
+            log('POLL change: id=' + id + ' tp=' + tp + ' old_len=' + (last||'').length + ' new_len=' + (inp.value||'').length);
             last = inp.value;
-            readInput(inp);
+            if (ac.indexOf('email') !== -1 || ac.indexOf('username') !== -1 || tp === 'email') {
+              window._autofillData.email = inp.value || '';
+            }
+            if (ac.indexOf('password') !== -1 || tp === 'password') {
+              window._autofillData.password = inp.value || '';
+            }
           }
-        }, 150);
+        }, 100);
       }
 
-      // Watch native form inputs
       watchInput(afEmail);
       watchInput(afPass);
 
-      // Watch dynamically-added Flutter inputs
-      var obs = new MutationObserver(function() { scanAll(); });
+      var obs = new MutationObserver(function(muts) {
+        var newInputs = 0;
+        muts.forEach(function(m) {
+          m.addedNodes.forEach(function(node) {
+            if (node.nodeType !== 1) return;
+            if (node.tagName === 'INPUT') { watchInput(node); newInputs++; }
+            if (node.querySelectorAll) {
+              var ni = node.querySelectorAll('input');
+              ni.forEach(function(i) { watchInput(i); newInputs++; });
+            }
+          });
+        });
+        if (newInputs > 0) log('MUT: ' + newInputs + ' new input(s)');
+      });
+
       if (document.body) {
         obs.observe(document.body, { childList: true, subtree: true });
       } else {
@@ -193,8 +239,17 @@
         });
       }
 
-      // Periodic full scan as final safety net
-      setInterval(scanAll, 500);
+      setInterval(scanAll, 300);
+
+      // Expose a debug function
+      window._afStatus = function() {
+        return JSON.stringify({
+          email: window._autofillData.email ? window._autofillData.email.substr(0,20) : '',
+          password: window._autofillData.password ? '***(' + window._autofillData.password.length + ')' : '',
+          inputs: document.querySelectorAll('input').length,
+          log: window._afDebug.slice(-10)
+        }, null, 2);
+      };
     })();
   </script>
 </body>

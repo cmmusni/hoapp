@@ -155,28 +155,38 @@ class _LoginPageState extends State<LoginPage> {
         if (data != null) {
           foundEmail = (data['email']?.toString()) ?? '';
           foundPassword = (data['password']?.toString()) ?? '';
+          if (foundEmail.isNotEmpty || foundPassword.isNotEmpty) {
+            debugPrint(
+                'AF-poll JS bridge: email=${foundEmail.length > 0 ? foundEmail.substring(0, foundEmail.length.clamp(0, 20)) : "empty"}, pass_len=${foundPassword.length}');
+          }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('AF-poll JS bridge error: $e');
+      }
 
       // 2. Also scan all DOM inputs as fallback
       final inputs = html.document.querySelectorAll('input');
+      debugPrint('AF-poll scanning ${inputs.length} DOM inputs');
       for (var i = 0; i < inputs.length; i++) {
         final input = inputs[i] as html.InputElement;
         final value = input.value ?? '';
-        if (value.isEmpty) continue;
-
         final ac = (input.getAttribute('autocomplete') ?? '').toLowerCase();
         final tp = (input.type ?? '').toLowerCase();
+        final id = input.id;
+
+        if (value.isNotEmpty) {
+          debugPrint('AF-poll input[$i]: id=$id ac=$ac tp=$tp val_len=${value.length}');
+        }
 
         if (foundEmail.isEmpty &&
             (ac.contains('email') ||
                 ac.contains('username') ||
                 tp == 'email')) {
-          foundEmail = value;
+          if (value.isNotEmpty) foundEmail = value;
         }
         if (foundPassword.isEmpty &&
             (ac.contains('password') || tp == 'password')) {
-          foundPassword = value;
+          if (value.isNotEmpty) foundPassword = value;
         }
       }
 
@@ -185,16 +195,16 @@ class _LoginPageState extends State<LoginPage> {
       if (foundEmail.isNotEmpty && _emailController.text.trim().isEmpty) {
         _emailController.text = foundEmail;
         changed = true;
+        debugPrint('AF-poll: SYNCED email to controller');
       }
       if (foundPassword.isNotEmpty && _passwordController.text.isEmpty) {
         _passwordController.text = foundPassword;
         changed = true;
+        debugPrint('AF-poll: SYNCED password to controller');
       }
 
       if (changed && mounted) {
         setState(() {});
-        debugPrint(
-            'Autofill sync: email=${foundEmail.isNotEmpty}, pass=${foundPassword.isNotEmpty}');
       }
 
       // Stop polling once both fields are filled
@@ -202,9 +212,10 @@ class _LoginPageState extends State<LoginPage> {
           _passwordController.text.isNotEmpty) {
         _autofillTimer?.cancel();
         _autofillTimer = null;
+        debugPrint('AF-poll: STOPPED - both fields filled');
       }
     } catch (e) {
-      debugPrint('Autofill poll error: $e');
+      debugPrint('AF-poll error: $e');
     }
   }
 
