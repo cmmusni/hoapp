@@ -24,6 +24,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   String _scanType = 'entry';
   _ScanMode _mode = _ScanMode.camera;
   bool _validating = false;
+  CameraFacing _facing = CameraFacing.back;
   Map<String, dynamic>? _lastResult;
   String? _lastScannedToken;
 
@@ -33,7 +34,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     WidgetsBinding.instance.addObserver(this);
     _cameraController = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.back,
+      facing: _facing,
       formats: [BarcodeFormat.qrCode],
     );
     debugPrint(
@@ -293,7 +294,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                               _cameraController.dispose();
                               _cameraController = MobileScannerController(
                                 detectionSpeed: DetectionSpeed.normal,
-                                facing: CameraFacing.back,
+                                facing: _facing,
                                 formats: [BarcodeFormat.qrCode],
                               );
                               setState(() {});
@@ -333,6 +334,37 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                     child: Text(
                       _validating ? 'Validating…' : 'Point camera at QR code',
                       style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ),
+                ),
+              ),
+              // Flip camera button
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      setState(() {
+                        _facing = _facing == CameraFacing.back
+                            ? CameraFacing.front
+                            : CameraFacing.back;
+                      });
+                      _cameraController.dispose();
+                      _cameraController = MobileScannerController(
+                        detectionSpeed: DetectionSpeed.normal,
+                        facing: _facing,
+                        formats: [BarcodeFormat.qrCode],
+                      );
+                      _cameraController.start();
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Icon(Icons.cameraswitch_outlined,
+                          color: Colors.white, size: 20),
                     ),
                   ),
                 ),

@@ -23,6 +23,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
   _ScanMode _mode = _ScanMode.camera;
   bool _validating = false;
   bool _cameraError = false;
+  CameraFacing _facing = CameraFacing.front;
   Map<String, dynamic>? _lastResult;
 
   // Prevent duplicate scans while a validation is in progress
@@ -38,7 +39,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
     _cameraController = MobileScannerController(
       autoStart: false,
       detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.front,
+      facing: _facing,
       formats: [BarcodeFormat.qrCode],
     );
     _cameraController!.start().catchError((e) {
@@ -50,6 +51,17 @@ class _QrScannerPageState extends State<QrScannerPage> {
         });
       }
     });
+  }
+
+  void _flipCamera() {
+    setState(() {
+      _facing = _facing == CameraFacing.front
+          ? CameraFacing.back
+          : CameraFacing.front;
+      _cameraError = false;
+    });
+    _cameraController?.dispose();
+    _initCamera();
   }
 
   @override
@@ -335,6 +347,24 @@ class _QrScannerPageState extends State<QrScannerPage> {
                     child: Text(
                       _validating ? 'Validating…' : 'Point camera at QR code',
                       style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ),
+                ),
+              ),
+              // Flip camera button
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: _flipCamera,
+                    child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Icon(Icons.cameraswitch_outlined,
+                          color: Colors.white, size: 20),
                     ),
                   ),
                 ),
