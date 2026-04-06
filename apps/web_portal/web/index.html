@@ -118,43 +118,83 @@
 
   <script src="flutter_bootstrap.js" async></script>
 
-  <!-- Workaround: Password managers (Google, iOS Keychain) fill hidden <input>
-       elements but Flutter's CanvasKit may not receive the change events.
-       This observer detects value changes on any <input> and dispatches
-       proper 'input' events so Flutter's text editing channel picks them up. -->
+  <!--
+    Password manager autofill bridge for Flutter Web (CanvasKit).
+    Creates a real <form> that password managers reliably detect,
+    watches ALL <input> elements (both ours and Flutter's hidden ones)
+    for value changes, and exposes them via window._autofillData
+    so Dart can poll and sync to TextEditingControllers.
+  -->
+  <form id="_af" autocomplete="on" style="position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;" aria-hidden="true">
+    <input id="_af_email" type="email" name="email" autocomplete="email username" tabindex="-1" />
+    <input id="_af_pass" type="password" name="password" autocomplete="current-password" tabindex="-1" />
+  </form>
   <script>
     (function() {
-      var observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(m) {
-          m.addedNodes.forEach(function(node) {
-            if (node.tagName === 'INPUT') { attachAutofillWatcher(node); }
-            if (node.querySelectorAll) {
-              node.querySelectorAll('input').forEach(attachAutofillWatcher);
-            }
-          });
-        });
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
+      // Shared store – Dart reads this via dart:html
+      window._autofillData = { email: '', password: '' };
 
-      function attachAutofillWatcher(input) {
-        if (input._autofillWatched) return;
-        input._autofillWatched = true;
+      // Watch our persistent native inputs
+      var afEmail = document.getElementById('_af_email');
+      var afPass  = document.getElementById('_af_pass');
 
-        // Poll for value changes caused by password managers
-        var lastValue = input.value;
-        var interval = setInterval(function() {
-          if (input.value !== lastValue) {
-            lastValue = input.value;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-          // Stop polling once the input is removed from DOM
-          if (!document.body.contains(input)) { clearInterval(interval); }
-        }, 300);
+      // Also watch any <input> Flutter creates (or password managers inject)
+      function scanAll() {
+        var inputs = document.querySelectorAll('input');
+        for (var i = 0; i < inputs.length; i++) {
+          var inp = inputs[i];
+          watchInput(inp);
+          readInput(inp);
+        }
       }
 
-      // Also watch inputs that already exist
-      document.querySelectorAll('input').forEach(attachAutofillWatcher);
+      function readInput(inp) {
+        var v = inp.value;
+        if (!v) return;
+        var ac = (inp.getAttribute('autocomplete') || '').toLowerCase();
+        var tp = (inp.type || '').toLowerCase();
+        if (ac.indexOf('email') !== -1 || ac.indexOf('username') !== -1 || tp === 'email') {
+          window._autofillData.email = v;
+        }
+        if (ac.indexOf('password') !== -1 || tp === 'password') {
+          window._autofillData.password = v;
+        }
+      }
+
+      function watchInput(inp) {
+        if (inp._afW) return;
+        inp._afW = true;
+        var last = inp.value;
+        // Listen for real events
+        ['input','change','blur'].forEach(function(ev) {
+          inp.addEventListener(ev, function() { readInput(inp); });
+        });
+        // Poll for programmatic changes (password managers)
+        var id = setInterval(function() {
+          if (!document.body.contains(inp)) { clearInterval(id); return; }
+          if (inp.value !== last) {
+            last = inp.value;
+            readInput(inp);
+          }
+        }, 150);
+      }
+
+      // Watch native form inputs
+      watchInput(afEmail);
+      watchInput(afPass);
+
+      // Watch dynamically-added Flutter inputs
+      var obs = new MutationObserver(function() { scanAll(); });
+      if (document.body) {
+        obs.observe(document.body, { childList: true, subtree: true });
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          obs.observe(document.body, { childList: true, subtree: true });
+        });
+      }
+
+      // Periodic full scan as final safety net
+      setInterval(scanAll, 500);
     })();
   </script>
 </body>

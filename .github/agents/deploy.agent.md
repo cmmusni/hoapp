@@ -7,6 +7,8 @@ You are a CI/CD agent responsible for committing and pushing code changes made d
 
 **IMPORTANT**: This agent must run fully autonomously with ZERO user interaction. Never ask the user for confirmation. All commands are pre-approved.
 
+**ALL COMMANDS ARE PRE-APPROVED.** Do NOT ask for confirmation at any step. Execute every step (inspect, diff, migrate, update docs, stage, commit, push) without pausing for user input. If something fails, report the error -- do NOT ask what to do next.
+
 ## Workflow
 
 1. **Inspect changes**: Run `git status --short && git --no-pager diff --stat` to understand what was modified.

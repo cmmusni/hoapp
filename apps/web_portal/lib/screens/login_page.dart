@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:js' as js;
+import 'dart:html' as html;
 
 class LoginPage extends StatefulWidget {
   final String? communitySlug;
@@ -27,6 +31,7 @@ class _LoginPageState extends State<LoginPage> {
   String? _communityName;
   String? _communityLogoUrl;
   String? _errorMessage;
+  Timer? _autofillTimer;
 
   String _formatSlugAsName(String slug) {
     return slug
@@ -99,6 +104,10 @@ class _LoginPageState extends State<LoginPage> {
         _loadCommunityName();
       });
     }
+    // Poll for password-manager autofill values from the JS bridge
+    if (kIsWeb) {
+      _startAutofillPolling();
+    }
   }
 
   Future<void> _loadCommunityName() async {
@@ -119,12 +128,89 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
+    _autofillTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  /// Polls window._autofillData (set by JS in index.html) and syncs
+  /// any password-manager-filled values into Flutter's controllers.
+  void _startAutofillPolling() {
+    _autofillTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      _syncAutofillFromDom();
+    });
+  }
+
+  /// Reads values from all DOM <input> elements (Flutter's hidden ones +
+  /// the persistent native form in index.html) and syncs into controllers.
+  void _syncAutofillFromDom() {
+    try {
+      String foundEmail = '';
+      String foundPassword = '';
+
+      // 1. Try the JS bridge first (set by index.html watcher)
+      try {
+        final data = js.context['_autofillData'];
+        if (data != null) {
+          foundEmail = (data['email']?.toString()) ?? '';
+          foundPassword = (data['password']?.toString()) ?? '';
+        }
+      } catch (_) {}
+
+      // 2. Also scan all DOM inputs as fallback
+      final inputs = html.document.querySelectorAll('input');
+      for (var i = 0; i < inputs.length; i++) {
+        final input = inputs[i] as html.InputElement;
+        final value = input.value ?? '';
+        if (value.isEmpty) continue;
+
+        final ac = (input.getAttribute('autocomplete') ?? '').toLowerCase();
+        final tp = (input.type ?? '').toLowerCase();
+
+        if (foundEmail.isEmpty &&
+            (ac.contains('email') || ac.contains('username') || tp == 'email')) {
+          foundEmail = value;
+        }
+        if (foundPassword.isEmpty &&
+            (ac.contains('password') || tp == 'password')) {
+          foundPassword = value;
+        }
+      }
+
+      bool changed = false;
+
+      if (foundEmail.isNotEmpty && _emailController.text.trim().isEmpty) {
+        _emailController.text = foundEmail;
+        changed = true;
+      }
+      if (foundPassword.isNotEmpty && _passwordController.text.isEmpty) {
+        _passwordController.text = foundPassword;
+        changed = true;
+      }
+
+      if (changed && mounted) {
+        setState(() {});
+        debugPrint('Autofill sync: email=${foundEmail.isNotEmpty}, pass=${foundPassword.isNotEmpty}');
+      }
+
+      // Stop polling once both fields are filled
+      if (_emailController.text.trim().isNotEmpty &&
+          _passwordController.text.isNotEmpty) {
+        _autofillTimer?.cancel();
+        _autofillTimer = null;
+      }
+    } catch (e) {
+      debugPrint('Autofill poll error: $e');
+    }
+  }
+
   Future<void> _handleLogin() async {
+    // Final sync from DOM/JS bridge in case polling missed it
+    if (kIsWeb) {
+      _syncAutofillFromDom();
+    }
+
     if (!_formKey.currentState!.validate()) return;
     if (_isLoading) return; // Prevent multiple simultaneous calls
 
