@@ -117,8 +117,8 @@ make deploy:supabase
 ```
 
 This will:
-- ✅ Push 5 database migrations
-- ✅ Deploy 5 Edge Functions
+- ✅ Push 60 database migrations
+- ✅ Deploy 18 Edge Functions
 - ✅ Configure secrets
 - ✅ Optionally seed demo data
 
@@ -228,16 +228,17 @@ Before going live:
 │  └─ Assets: Static files + WASM bundle                 │
 │                                                          │
 │  Backend (Supabase)                                     │
-│  ├─ Database: PostgreSQL with RLS                      │
+│  ├─ Database: PostgreSQL with RLS (35+ tables)            │
 │  ├─ Auth: Email/password + JWT                         │
-│  ├─ Storage: File uploads (photos, PDFs)               │
+│  ├─ Storage: File uploads (photos, PDFs) – 8+ buckets   │
 │  ├─ Realtime: WebSocket subscriptions                  │
-│  └─ Edge Functions: Deno runtime                       │
-│      ├─ create_community                                │
-│      ├─ create_invite                                   │
-│      ├─ accept_invite                                   │
-│      ├─ verify_payment                                  │
-│      └─ book_amenity                                    │
+│  └─ Edge Functions: 18 Deno functions                   │
+│      ├─ create_community, create_invite, accept_invite    │
+│      ├─ verify_payment, book_amenity, batch_operations    │
+│      ├─ create_upgrade_checkout, paymongo_webhook          │
+│      ├─ provision_community, contact_us, request_access   │
+│      ├─ review_pass, validate_pass, scan_invoice           │
+│      └─ send_notification, delete_user, onesignal_cleanup  │
 │                                                          │
 │  Mobile (Flutter Android/iOS)                           │
 │  ├─ Platform: Android APK / iOS App                    │
@@ -257,35 +258,19 @@ Before going live:
 
 ## 📋 Database Schema Overview
 
-**5 Migration Files** (Applied in order):
-1. `20260322000001_initial_schema.sql` - Core tables
-   - communities, buildings, units
-   - profiles, user_roles, platform_roles
-   - invites, household_members
-   - announcements, violations, tickets, messages
-   - amenities, amenity_bookings
-   - invoices, payments
-   - pool_access_registrations
-   - audit_logs, notification_tokens
+**60 Migration Files** (Applied in order, March 22 – April 2, 2026):
 
-2. `20260322000002_triggers.sql` - Database triggers
-   - Automatic timestamps (created_at, updated_at)
-   - Audit logging for sensitive operations
-   - User profile creation on signup
-
-3. `20260322000003_rls_policies.sql` - Row Level Security
-   - Community-scoped data access
-   - Role-based permissions
-   - Anonymous violation reporter privacy
-
-4. `20260322000004_storage_policies.sql` - File upload policies
-   - Size limits, file type restrictions
-   - Community-scoped file access
-   - RLS on storage buckets
-
-5. `20240322000005_enable_realtime.sql` - Realtime features
-   - Enable realtime on specific tables
-   - Configure realtime policies
+Key migration groups:
+1. `20260322000001-005` - Core schema, triggers, RLS, storage, realtime
+2. `20260323-20260324` - Pool docs, payment proofs, email, member names, unit types
+3. `20260325` - Announcement images, pool swimmers, ticket delete, invoice line items
+4. `20260326` - Maintenance role, security passes, community plans, contact, preferences, invites, beta requests, platform admin
+5. `20260327` - Feedback, community logos, staff pool registration, expenses, announcement reads/attachments
+6. `20260328` - Income tracker, feedback images, recurring billings, feedback delete
+7. `20260329` - Financial reports member access, payments member read, violation reporter update
+8. `20260330` - Anonymous signup, household member signup, unit type max pax, email check, household/announcement select policies, profile backfill
+9. `20260331` - Primary member management, community user emails, multi-category line items, member name constraint, household RLS fix, pool lock functions, invoice created_by
+10. `20260402` - Plan subscriptions, plan pricing, subscription expiry CRON
 
 ---
 
@@ -519,6 +504,7 @@ make deploy:prod
 
 ---
 
-**Created**: March 22, 2026
-**Status**: ✅ Ready for Production Deployment
+**Created**: March 22, 2026  
+**Updated**: April 2026  
+**Status**: ✅ Ready for Production Deployment  
 **Next Review**: After first deployment

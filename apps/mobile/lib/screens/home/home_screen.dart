@@ -48,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _pendingViolations = 0;
   int _openFeedback = 0;
   int _pendingBookings = 0;
+  int _unpaidInvoices = 0;
 
   @override
   void initState() {
@@ -185,9 +186,38 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final appState = context.read<AppState>();
       final communityId = appState.activeCommunityId;
-      if (communityId == null || !appState.isStaff) return;
+      if (communityId == null) return;
 
       final client = Supabase.instance.client;
+      final userId = client.auth.currentUser?.id;
+
+      // Unpaid invoices for the current user's units (all roles)
+      int invoiceCount = 0;
+      if (userId != null) {
+        final householdRows = await client
+            .from('household_members')
+            .select('unit_id')
+            .eq('user_id', userId);
+        final unitIds = (householdRows as List)
+            .map((e) => e['unit_id'] as String)
+            .toSet()
+            .toList();
+        if (unitIds.isNotEmpty) {
+          final invoiceResult = await client
+              .from('invoices')
+              .select('id')
+              .eq('community_id', communityId)
+              .eq('status', 'unpaid')
+              .inFilter('unit_id', unitIds)
+              .count(CountOption.exact);
+          invoiceCount = invoiceResult.count;
+        }
+      }
+      if (mounted) {
+        setState(() => _unpaidInvoices = invoiceCount);
+      }
+
+      if (!appState.isStaff) return;
       final results = await Future.wait([
         client
             .from('payments')
@@ -266,11 +296,28 @@ class _HomeScreenState extends State<HomeScreen> {
         _openTickets +
         _pendingViolations +
         _openFeedback +
-        _pendingBookings;
+        _pendingBookings +
+        _unpaidInvoices;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(currentItem.label),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Badge(
+              isLabelVisible: totalBadge > 0,
+              label: Text('$totalBadge',
+                  style: const TextStyle(
+                      fontSize: 9, fontWeight: FontWeight.bold)),
+              backgroundColor: Colors.red.shade400,
+              child: IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ],
       ),
       drawer: _buildDrawer(context, appState, visibleItems),
       body: currentItem.pageBuilder(),
@@ -551,7 +598,6 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index) {
                 final item = visibleItems[index];
                 final isSelected = index == _selectedIndex;
-                final badge = _getBadgeForItem(item.label);
 
                 // Section dividers
                 Widget? divider;
@@ -594,23 +640,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontSize: 14,
                           ),
                         ),
-                        trailing: badge > 0
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade400,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  '$badge',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                              )
-                            : null,
+                        trailing: null,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -715,22 +745,5 @@ class _HomeScreenState extends State<HomeScreen> {
     if (role.role == Role.guard) return 'Security Guard';
     if (role.role == Role.maintenance) return 'Maintenance';
     return 'Resident';
-  }
-
-  int _getBadgeForItem(String label) {
-    switch (label) {
-      case 'Billing':
-        return _pendingPayments;
-      case 'Tickets':
-        return _openTickets;
-      case 'Violations':
-        return _pendingViolations;
-      case 'Feedback':
-        return _openFeedback;
-      case 'Amenities':
-        return _pendingBookings;
-      default:
-        return 0;
-    }
   }
 }

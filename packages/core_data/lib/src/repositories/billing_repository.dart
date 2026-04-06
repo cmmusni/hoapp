@@ -168,7 +168,51 @@ class BillingRepository {
       await _client.from('invoice_line_items').insert(items);
     }
 
+    // Fire-and-forget: send invoice email notification to primary household member
+    _sendInvoiceEmail(
+      invoiceId: invoiceId,
+      communityId: communityId,
+      unitId: unitId,
+      amount: amount,
+      dueDate: dueDate,
+      description: description,
+    );
+
     return invoiceId;
+  }
+
+  /// Send invoice email notification (fire-and-forget, never throws).
+  void _sendInvoiceEmail({
+    required String invoiceId,
+    required String communityId,
+    required String unitId,
+    required double amount,
+    required DateTime dueDate,
+    String? description,
+  }) {
+    Future(() async {
+      try {
+        final jwt = _client.auth.currentSession?.accessToken;
+        await _client.functions.invoke(
+          'invoice_email',
+          headers: {
+            if (jwt != null) 'x-user-token': jwt,
+          },
+          body: {
+            'invoice_id': invoiceId,
+            'community_id': communityId,
+            'unit_id': unitId,
+            'amount': amount,
+            'due_date': dueDate.toIso8601String().split('T').first,
+            if (description != null) 'description': description,
+            if (jwt != null) '_jwt': jwt,
+          },
+        );
+      } catch (e) {
+        // Email is non-critical; silently ignore failures
+        print('Invoice email notification failed (non-critical): $e');
+      }
+    });
   }
 
   /// Update invoice status (staff only)

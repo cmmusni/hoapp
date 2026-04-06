@@ -52,12 +52,24 @@ supabase link --project-ref YOUR_PROJECT_REF
 cd supabase
 supabase db push
 
-# Deploy Edge Functions
+# Deploy all Edge Functions
 supabase functions deploy create_community --no-verify-jwt
 supabase functions deploy create_invite
 supabase functions deploy accept_invite
 supabase functions deploy verify_payment
 supabase functions deploy book_amenity
+supabase functions deploy create_upgrade_checkout
+supabase functions deploy paymongo_webhook
+supabase functions deploy provision_community --no-verify-jwt
+supabase functions deploy contact_us --no-verify-jwt
+supabase functions deploy request_access
+supabase functions deploy review_pass
+supabase functions deploy validate_pass
+supabase functions deploy scan_invoice
+supabase functions deploy send_notification
+supabase functions deploy delete_user
+supabase functions deploy batch_operations
+supabase functions deploy onesignal_cleanup
 
 # Set secrets
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-key

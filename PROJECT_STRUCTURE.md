@@ -5,24 +5,53 @@ hoapp/
 ├── apps/
 │   ├── web_portal/              # Flutter Web (Marketing + SaaS + Portal)
 │   │   ├── lib/
-│   │   │   ├── main.dart        # Entry point
-│   │   │   ├── router.dart      # GoRouter configuration
+│   │   │   ├── main.dart        # Entry point (MultiProvider setup)
+│   │   │   ├── router.dart      # GoRouter configuration (30+ routes)
 │   │   │   └── screens/
 │   │   │       ├── landing_page.dart
-│   │   │       ├── login_page.dart
-│   │   │       ├── signup_page.dart
+│   │   │       ├── login_page.dart         # Supports invite tokens
+│   │   │       ├── signup_page.dart        # Supports invite + email pre-fill
 │   │   │       ├── create_community_page.dart
+│   │   │       ├── select_community_page.dart
+│   │   │       ├── contact_page.dart
+│   │   │       ├── features_page.dart
+│   │   │       ├── pricing_page.dart
+│   │   │       ├── support_page.dart
+│   │   │       ├── auth_callback_page.dart
+│   │   │       ├── upgrade_success_page.dart
+│   │   │       ├── marketing_nav_bar.dart
 │   │   │       └── portal/      # Community portal screens
-│   │   │           ├── portal_shell.dart
+│   │   │           ├── portal_shell.dart           # Role-aware sidebar navigation
+│   │   │           ├── platform_admin_shell.dart   # Cross-community admin
+│   │   │           ├── plan_gate.dart              # Plan-based feature gating
+│   │   │           ├── onboarding_tour.dart        # First-time user guide
 │   │   │           ├── announcements_page.dart
 │   │   │           ├── violations_page.dart
 │   │   │           ├── tickets_page.dart
-│   │   │           ├── amenities_page.dart
+│   │   │           ├── amenities_page.dart         # PlanGated
 │   │   │           ├── billing_page.dart
-│   │   │           ├── pool_access_page.dart
+│   │   │           ├── expenses_page.dart
+│   │   │           ├── expense_income_chart_page.dart  # Financial reports
+│   │   │           ├── pool_access_page.dart       # PlanGated
+│   │   │           ├── registered_swimmers_page.dart   # PlanGated
+│   │   │           ├── security_pass_page.dart     # PlanGated
+│   │   │           ├── qr_scanner_page.dart        # PlanGated
 │   │   │           ├── households_page.dart
 │   │   │           ├── manage_users_page.dart
-│   │   │           └── settings_page.dart
+│   │   │           ├── settings_page.dart
+│   │   │           ├── feedback_page.dart
+│   │   │           ├── notifications_page.dart
+│   │   │           ├── beta_requests_page.dart
+│   │   │           ├── plan_pricing_page.dart
+│   │   │           └── chatbot/
+│   │   │               ├── chatbot_widget.dart     # Floating AI assistant
+│   │   │               └── chatbot_knowledge.dart  # FAQ knowledge base
+│   │   ├── test/
+│   │   │   ├── widget_test.dart
+│   │   │   └── signup_validation_test.dart
+│   │   ├── integration_test/
+│   │   │   ├── app_test.dart
+│   │   │   └── signup_flow_test.dart
 │   │   └── pubspec.yaml
 │   │
 │   └── mobile/                   # Flutter Mobile (Residents)
@@ -39,6 +68,8 @@ hoapp/
 │       │   │   ├── build.gradle            # Android build config
 │       │   │   └── src/main/AndroidManifest.xml
 │       │   └── key.properties.example       # Signing config
+│       ├── test/
+│       │   └── widget_test.dart
 │       └── pubspec.yaml
 │
 ├── packages/
@@ -50,6 +81,7 @@ hoapp/
 │   │   │       ├── user_profile.dart
 │   │   │       ├── user_role.dart
 │   │   │       ├── unit.dart
+│   │   │       ├── unit_type.dart
 │   │   │       ├── household_member.dart
 │   │   │       ├── announcement.dart
 │   │   │       ├── violation.dart
@@ -57,8 +89,16 @@ hoapp/
 │   │   │       ├── amenity.dart
 │   │   │       ├── amenity_booking.dart
 │   │   │       ├── invoice.dart
+│   │   │       ├── invoice_line_item.dart
 │   │   │       ├── payment.dart
-│   │   │       └── pool_access.dart
+│   │   │       ├── pool_access.dart
+│   │   │       ├── pool_swimmer.dart
+│   │   │       ├── expense.dart
+│   │   │       ├── manual_income.dart
+│   │   │       ├── recurring_billing.dart
+│   │   │       ├── security_pass.dart
+│   │   │       ├── or_template_config.dart
+│   │   │       └── type_aliases.dart
 │   │   └── pubspec.yaml
 │   │
 │   ├── core_data/                # Data layer & repositories
@@ -68,16 +108,31 @@ hoapp/
 │   │   │   │   ├── supabase_client.dart
 │   │   │   │   ├── state/
 │   │   │   │   │   └── app_state.dart      # Global state
-│   │   │   │   └── repositories/
-│   │   │   │       ├── auth_repository.dart
-│   │   │   │       ├── community_repository.dart
-│   │   │   │       ├── announcement_repository.dart
-│   │   │   │       ├── violation_repository.dart     # Implemented
-│   │   │   │       ├── ticket_repository.dart        # Implemented
-│   │   │   │       ├── amenity_repository.dart       # Implemented
-│   │   │   │       ├── billing_repository.dart       # Implemented
-│   │   │   │       ├── pool_access_repository.dart   # Implemented
-│   │   │   │       └── household_repository.dart     # Implemented
+│   │   │   │   ├── repositories/
+│   │   │   │   │   ├── auth_repository.dart
+│   │   │   │   │   ├── community_repository.dart
+│   │   │   │   │   ├── announcement_repository.dart
+│   │   │   │   │   ├── violation_repository.dart
+│   │   │   │   │   ├── ticket_repository.dart
+│   │   │   │   │   ├── amenity_repository.dart
+│   │   │   │   │   ├── billing_repository.dart
+│   │   │   │   │   ├── pool_access_repository.dart
+│   │   │   │   │   ├── household_repository.dart
+│   │   │   │   │   ├── expense_repository.dart
+│   │   │   │   │   ├── income_repository.dart
+│   │   │   │   │   ├── recurring_billing_repository.dart
+│   │   │   │   │   └── security_pass_repository.dart
+│   │   │   │   └── services/
+│   │   │   │       ├── notification_service.dart   # OneSignal
+│   │   │   │       ├── realtime_service.dart       # Supabase Realtime
+│   │   │   │       └── storage_service.dart        # File uploads
+│   │   ├── test/
+│   │   │   ├── helpers/test_helpers.dart    # 13 mock factories
+│   │   │   ├── repositories/
+│   │   │   │   └── announcement_repository_test.dart
+│   │   │   └── services/
+│   │   │       ├── storage_service_test.dart
+│   │   │       └── realtime_service_test.dart
 │   │   └── pubspec.yaml
 │   │
 │   └── core_ui/                  # Shared UI components & theme
@@ -85,71 +140,129 @@ hoapp/
 │       │   ├── core_ui.dart
 │       │   └── src/
 │       │       ├── theme/
-│       │       │   └── app_theme.dart       # Material 3 theme
+│       │       │   └── app_theme.dart       # Material 3 + FlexColorScheme
+│       │       ├── services/
+│       │       │   └── pdf_service.dart     # PDF generation
 │       │       └── widgets/
 │       │           ├── hoapp_button.dart
 │       │           ├── hoapp_card.dart
-│       │           └── loading_indicator.dart
+│       │           ├── loading_indicator.dart
+│       │           └── file_upload_widget.dart
+│       ├── test/
+│       │   ├── services/pdf_service_test.dart
+│       │   └── widgets/widgets_test.dart
 │       └── pubspec.yaml
 │
 ├── supabase/
 │   ├── config.toml               # Supabase CLI config
-│   ├── seed.sql                  # Demo data
-│   ├── migrations/
-│   │   ├── 20260322000001_initial_schema.sql      # Tables
+│   ├── seed.sql                  # Demo data (Elevé Homes)
+│   ├── reset_schema.sql          # Schema reset script
+│   ├── migrations/               # 60 migration files (Mar 22 – Apr 2, 2026)
+│   │   ├── 20260322000001_initial_schema.sql      # Core tables
 │   │   ├── 20260322000002_triggers.sql            # Triggers
 │   │   ├── 20260322000003_rls_policies.sql        # RLS
-│   │   └── 20260322000004_storage_policies.sql    # Storage
-│   └── functions/                # Edge Functions (Deno)
-│       ├── create_community/
-│       │   └── index.ts
-│       ├── create_invite/
-│       │   └── index.ts
-│       ├── accept_invite/
-│       │   └── index.ts
-│       ├── verify_payment/
-│       │   └── index.ts
-│       └── book_amenity/
-│           └── index.ts
+│   │   ├── 20260322000004_storage_policies.sql    # Storage
+│   │   ├── 20260322000005_enable_realtime.sql     # Realtime
+│   │   ├── ...                                     # 55 more migrations
+│   │   └── 20260402000003_subscription_expiry_cron.sql  # Latest
+│   ├── functions/                # 18 Edge Functions (Deno)
+│   │   ├── _shared/              # Shared utilities & middleware
+│   │   ├── create_community/
+│   │   ├── create_invite/
+│   │   ├── accept_invite/
+│   │   ├── verify_payment/
+│   │   ├── book_amenity/
+│   │   ├── create_upgrade_checkout/
+│   │   ├── paymongo_webhook/
+│   │   ├── provision_community/
+│   │   ├── contact_us/
+│   │   ├── request_access/
+│   │   ├── review_pass/
+│   │   ├── validate_pass/
+│   │   ├── scan_invoice/
+│   │   ├── send_notification/
+│   │   ├── delete_user/
+│   │   ├── batch_operations/
+│   │   └── onesignal_cleanup/
+│   ├── manual-scripts/           # Utility SQL scripts
+│   └── snippets/                 # SQL snippets
 │
 ├── .env.example                  # Environment template
 ├── .gitignore                    # Git ignore rules
-├── Makefile                      # Development commands
+├── Makefile                      # Development commands (18 targets)
 ├── setup.sh                      # Quick start script
+├── build_prod.sh                 # Production build script
+├── deploy_supabase.sh            # Supabase deployment script
+├── run_tests.sh                  # Test runner script
+├── cloudflare-build.sh           # Cloudflare Pages build
+├── vercel_install.sh             # Vercel install helper
+├── netlify.toml                  # Netlify config
+├── vercel.json                   # Vercel config
+├── .github/workflows/
+│   ├── deploy.yml                # Main CI/CD pipeline
+│   └── deploy-vercel.yml         # Vercel auto-deploy
 │
-├── README.md                     # This file
+├── README.md                     # Project overview
 ├── ARCHITECTURE.md               # System architecture
+├── PROJECT_STRUCTURE.md          # This file
 ├── DEPLOYMENT.md                 # Deployment guide
+├── DEPLOYMENT_READY.md           # Quick deployment reference
+├── DEPLOYMENT_CHECKLIST.md       # Step-by-step checklist
+├── DEPLOY_QUICK_REF.md           # Command quick reference
+├── DELIVERABLES.md               # Project deliverables
+├── TODO.md                       # Future enhancements
+├── TEST_REPORT.md                # Signup test report
+├── TEST_SUMMARY.md               # Test implementation summary
+├── DATABASE_RESET_GUIDE.md       # Database reset guide
+├── EMAIL_CONFIRMATION_SETUP.md   # Email verification setup
+├── LOCAL_TESTING_GUIDE.md        # Local testing guide
+├── MIGRATION_INSTRUCTIONS.md     # Migration instructions
+└── docs/
+    ├── ADVANCED_FEATURES.md
+    ├── IMPLEMENTATION_SUMMARY_ADVANCED_FEATURES.md
+    ├── QUICK_REFERENCE_ADVANCED_FEATURES.md
+    └── TESTING_GUIDE.md
+```
 └── TODO.md                       # Future enhancements roadmap
 ```
 
 ## 📊 File Counts by Category
 
-- **Database Migrations:** 4 files
-- **Edge Functions:** 5 functions
-- **Domain Models:** 13 models
+- **Database Migrations:** 60 files
+- **Edge Functions:** 18 functions
+- **Domain Models:** 23+ models (with generated .g.dart files)
 - **Repositories:** 13 repositories (all fully implemented)
-- **Web Screens:** 14 screens
+- **Services:** 3 services (notification, realtime, storage)
+- **Web Screens:** 45+ screens
 - **Mobile Screens:** 3 screens
-- **Configuration:** 8 files
+- **Test Files:** 10 files
+- **Storage Buckets:** 8+
+- **Configuration:** 12+ files
 
-**Total Lines of Code (estimated):** ~3,500 lines
+**Total Lines of Code (estimated):** ~15,000+ lines
 
 ## 🎯 Key Files to Know
 
 ### Backend
-- `migrations/20260322000001_initial_schema.sql` – Complete database schema
+- `migrations/20260322000001_initial_schema.sql` – Core database schema
 - `migrations/20260322000003_rls_policies.sql` – Row Level Security
-- `functions/*/index.ts` – Business logic for invites, payments, booking
+- `migrations/20260402000003_subscription_expiry_cron.sql` – Latest migration
+- `functions/*/index.ts` – Edge Functions (invites, payments, booking, passes, etc.)
 
 ### Frontend Shared
-- `core_domain/lib/src/models/*.dart` – Data models (need .g.dart generation)
+- `core_domain/lib/src/models/*.dart` – Data models (with .g.dart generation)
 - `core_data/lib/src/state/app_state.dart` – Active community state
-- `core_ui/lib/src/theme/app_theme.dart` – Material 3 theme builder
+- `core_data/lib/src/repositories/*.dart` – 13 repository classes
+- `core_data/lib/src/services/*.dart` – Notification, realtime, storage services
+- `core_ui/lib/src/theme/app_theme.dart` – Material 3 + FlexColorScheme theme
+- `core_ui/lib/src/services/pdf_service.dart` – PDF generation
+- `core_ui/lib/src/widgets/file_upload_widget.dart` – Upload components
 
 ### Web Portal
-- `web_portal/lib/router.dart` – Route definitions
-- `web_portal/lib/screens/portal/portal_shell.dart` – Role-aware navigation
+- `web_portal/lib/router.dart` – Route definitions (30+ routes with GoRouter)
+- `web_portal/lib/screens/portal/portal_shell.dart` – Role-aware sidebar navigation
+- `web_portal/lib/screens/portal/plan_gate.dart` – Plan-based feature gating
+- `web_portal/lib/screens/portal/platform_admin_shell.dart` – Platform admin UI
 
 ### Mobile
 - `mobile/lib/screens/splash_screen.dart` – Bootstrap & community detection
@@ -265,14 +378,18 @@ MOBILE_SCHEME=hoapp
 ### Common Commands
 ```bash
 make install        # Install all dependencies
-make db:push        # Apply database migrations
-make fn:deploy      # Deploy Edge Functions
+make db-push        # Apply database migrations
+make fn-deploy      # Deploy Edge Functions
 make seed           # Seed demo data
-make run:web        # Run web dev server
-make run:mobile     # Run mobile app
-make build:web      # Build web for production
-make build:apk      # Build Android APK
+make run-web        # Run web dev server
+make run-mobile     # Run mobile app
+make build-web      # Build web for production
+make build-apk      # Build Android APK
+make test           # Run all tests
+make test-mocks     # Generate test mocks
 make clean          # Clean build artifacts
+make deploy-supabase  # Full backend deployment
+make deploy-prod    # Production web deployment
 ```
 
 ### Database Connections
@@ -320,7 +437,11 @@ For questions or issues, refer to:
 - [ARCHITECTURE.md](ARCHITECTURE.md) – System design
 - [DEPLOYMENT.md](DEPLOYMENT.md) – How to deploy
 - [TODO.md](TODO.md) – Future enhancements roadmap
+- [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) – Testing guide
+- [docs/ADVANCED_FEATURES.md](docs/ADVANCED_FEATURES.md) – PDF, uploads, realtime
 
 ---
+
+**Last Updated**: April 2026
 
 **This structure represents Supabase + Flutter best practices for a production-ready multi-tenant SaaS application.**

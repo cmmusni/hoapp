@@ -10,19 +10,38 @@ All essential features are implemented and production-ready:
 
 - ✅ **Multi-tenant architecture** with Row Level Security
 - ✅ **Self-serve community creation** with custom branding
-- ✅ **Role-based access control** (admin, officer, guard, resident)
+- ✅ **Role-based access control** (admin, officer, maintenance, guard, resident)
 - ✅ **User invitations** with tokenized links
-- ✅ **Household management** with flexible membership (registered & non-registered)
+- ✅ **Household management** with flexible membership (registered & non-registered, primary/member/child/tenant/other)
 - ✅ **Announcements** with full CRUD operations
 - ✅ **Violations** with anonymous reporting and photo uploads
 - ✅ **Support tickets** with threaded conversations
 - ✅ **Amenity reservations** with conflict prevention
-- ✅ **Pool access registration** with PDF generation and 3-month lock
-- ✅ **Billing & payments** with GCash proof upload and verification
-- ✅ **Income & expense tracking** with categorization
-- ✅ **Financial reports** with visual charts
-- ✅ **Recurring billing** for automatic dues
-- ✅ **Security passes** for visitors
+- ✅ **Pool access registration** with PDF generation, 3-month lock, and multi-swimmer support
+- ✅ **Billing & payments** with GCash proof upload, verification, and multi-category line items
+- ✅ **Income & expense tracking** with categorization and receipt uploads
+- ✅ **Financial reports** with visual charts (fl_chart)
+- ✅ **Recurring billing** for automatic dues (monthly/quarterly/yearly)
+- ✅ **Security passes** for visitors with QR tokens and scan logging
+- ✅ **Plan-based feature gating** (starter/professional/enterprise tiers)
+- ✅ **PayMongo integration** for plan upgrades with webhook processing
+- ✅ **Platform admin dashboard** for cross-community management
+- ✅ **Onboarding tour** for first-time users
+- ✅ **Chatbot widget** with FAQ/knowledge base
+- ✅ **Feedback system** with bug reports, feature requests, and image uploads
+- ✅ **Beta access requests** for feature opt-in
+- ✅ **User preferences** storage
+- ✅ **Contact form** for public inquiries
+- ✅ **Announcement read tracking** and file attachments
+- ✅ **Anonymous violation reporting** with privacy protection
+- ✅ **OneSignal push notifications** with device token management
+- ✅ **QR scanner** for security pass validation
+- ✅ **Primary member household management**
+- ✅ **Member-level financial report access**
+- ✅ **Subscription expiry automation** via CRON
+- ✅ **18 Edge Functions** for backend business logic
+- ✅ **60 database migrations** with comprehensive RLS policies
+- ✅ **CI/CD pipelines** (GitHub Actions + Vercel auto-deploy)
 - ✅ **File uploads** via Supabase Storage
 - ✅ **Search & pagination** across all major features
 - ✅ **Responsive design** for web, tablet, and mobile
@@ -43,14 +62,12 @@ All essential features are implemented and production-ready:
 - [ ] Load testing with realistic data volumes
 
 #### Mobile Experience
-- [ ] Push notifications for announcements, tickets, payments
 - [ ] Offline support with local caching and sync
 - [ ] Biometric authentication (Face ID/Touch ID)
 - [ ] Share functionality for announcements
 - [ ] Camera integration for faster photo uploads
 
 #### User Experience
-- [ ] Interactive onboarding tour for new users
 - [ ] Contextual help tooltips
 - [ ] Keyboard shortcuts for power users (web)
 - [ ] Drag-and-drop file uploads
@@ -65,7 +82,7 @@ All essential features are implemented and production-ready:
 - [ ] **Voting/polls**: HOA decision-making and surveys
 - [ ] **Marketplace**: Resident-to-resident buying and selling
 - [ ] **Service directory**: Approved contractors and vendors
-- [ ] **Visitor registration**: Pre-register visitors with QR codes
+- [ ] **Visitor registration**: Pre-register visitors with QR codes (enhanced beyond current security passes)
 - [ ] **Package tracking**: Delivery notifications and logs
 - [ ] **Maintenance requests**: Report and track facility issues
 - [ ] **Community feed**: Social media-style updates and discussions
@@ -78,8 +95,8 @@ All essential features are implemented and production-ready:
 - [ ] **Export to Excel**: Reports for accounting and audits
 
 #### Payment Integration
-- [ ] **GCash API integration**: Direct payment verification
-- [ ] **Maya/PayMongo integration**: Credit/debit card payments
+- [ ] **GCash API integration**: Direct payment verification (currently manual proof upload)
+- [ ] **Maya integration**: Additional payment gateway
 - [ ] **Automatic payment reminders**: Email/SMS before due dates
 - [ ] **Payment plans**: Installment options for large invoices
 - [ ] **Late fees**: Automatic penalty calculation
@@ -87,15 +104,13 @@ All essential features are implemented and production-ready:
 #### Notifications
 - [ ] **Email notifications**: Announcements, invoices, tickets
 - [ ] **SMS notifications**: Critical alerts and payment reminders
-- [ ] **In-app notification center**: Unified notification history
-- [ ] **Notification preferences**: User-controlled channel selection
+- [ ] **Notification preferences**: User-controlled channel selection (preferences table exists)
 
 ### Low Priority
 
 #### Platform Features
 - [ ] **Multi-language support**: Tagalog, English localization
 - [ ] **Dark mode**: Alternative theme for low-light use
-- [ ] **Admin dashboard**: Platform-level analytics and monitoring
 - [ ] **Community templates**: Pre-configured settings for common HOA types
 - [ ] **Subdomain routing**: custom-community.hoapp.net
 - [ ] **White-label option**: Rebrand for enterprise clients
@@ -161,5 +176,5 @@ Have an idea for improvement? Please:
 
 ---
 
-**Last Updated**: March 2026  
+**Last Updated**: April 2026  
 **Status**: Production-ready with enhancement roadmap

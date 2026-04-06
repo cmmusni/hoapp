@@ -222,3 +222,96 @@ export function generatePaymentNotificationHTML(params: {
 </html>
   `.trim()
 }
+
+/**
+ * Generate invoice created notification email HTML
+ */
+export function generateInvoiceNotificationHTML(params: {
+  recipientName: string
+  communityName: string
+  amount: number
+  dueDate: string
+  description?: string
+  portalLink: string
+  unitNo: string
+}): string {
+  const { recipientName, communityName, amount, dueDate, description, portalLink, unitNo } = params
+
+  const formattedAmount = amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Invoice from ${communityName}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+  <div style="background: linear-gradient(135deg, #215E3F 0%, #1B5E20 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <h1 style="margin: 0; font-size: 24px;">&#128196; New Invoice</h1>
+    <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.85;">${communityName}</p>
+  </div>
+  
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #e1e8ed; border-top: none; border-radius: 0 0 10px 10px;">
+    <p style="font-size: 16px; margin-top: 0;">Hi ${recipientName},</p>
+    
+    <p style="font-size: 16px;">
+      A new invoice has been created for <strong>Unit ${unitNo}</strong>. Please review the details below:
+    </p>
+    
+    <div style="background: #f7fafc; border-left: 4px solid #215E3F; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096; width: 120px;">Amount Due</td>
+          <td style="padding: 6px 0; font-size: 20px; font-weight: bold; color: #215E3F;">\u20B1${formattedAmount}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096;">Due Date</td>
+          <td style="padding: 6px 0; font-size: 14px; font-weight: 600; color: #333;">${dueDate}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096;">Unit</td>
+          <td style="padding: 6px 0; font-size: 14px; color: #333;">${unitNo}</td>
+        </tr>
+        ${description ? `
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096;">Description</td>
+          <td style="padding: 6px 0; font-size: 14px; color: #333;">${description}</td>
+        </tr>
+        ` : ''}
+      </table>
+    </div>
+    
+    <p style="font-size: 15px; color: #4a5568;">
+      To view the full invoice details and submit your payment, click the button below:
+    </p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${portalLink}" 
+         style="display: inline-block; background: linear-gradient(135deg, #215E3F 0%, #1B5E20 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+        View Invoice
+      </a>
+    </div>
+    
+    <p style="font-size: 14px; color: #718096;">
+      Or copy and paste this link into your browser:<br>
+      <a href="${portalLink}" style="color: #215E3F; word-break: break-all;">${portalLink}</a>
+    </p>
+    
+    <hr style="border: none; border-top: 1px solid #e1e8ed; margin: 30px 0;">
+    
+    <p style="font-size: 13px; color: #a0aec0; margin-bottom: 0;">
+      This is an automated notification from ${communityName} via HOApp. If you believe this was sent in error, please contact your community administrator.
+    </p>
+  </div>
+  
+  <div style="text-align: center; margin-top: 20px; padding: 20px;">
+    <p style="font-size: 12px; color: #a0aec0; margin: 0;">
+      &copy; ${new Date().getFullYear()} HOApp. All rights reserved.
+    </p>
+  </div>
+</body>
+</html>
+  `.trim()
+}

@@ -34,7 +34,16 @@ Test complete user workflows across multiple components.
 **Location**: `apps/web_portal/integration_test/`
 
 **Examples**:
-- `app_test.dart` - Full application workflows
+- `app_test.dart` - Full application workflows (10 scenarios)
+- `signup_flow_test.dart` - Signup user journey (14 tests, requires test Supabase)
+
+### 4. Validation Tests
+Test form validation and business logic.
+
+**Location**: `apps/web_portal/test/`
+
+**Examples**:
+- `signup_validation_test.dart` - Signup logic validation (8 tests)
 
 ---
 
@@ -271,10 +280,14 @@ flutter pub run build_runner build
 
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
-| Repositories | 80%+ | ⚠️ In Progress |
-| Services | 80%+ | ⚠️ In Progress |
-| Widgets | 70%+ | ⚠️ In Progress |
-| Integration | Key Flows | ⚠️ Planned |
+| Storage Service | 80%+ | ✅ 14 tests passing |
+| Realtime Service | 80%+ | ✅ 9 tests passing |
+| PDF Service | 80%+ | ✅ 7 tests passing |
+| UI Widgets | 70%+ | ✅ 18 tests passing |
+| Signup Validation | 80%+ | ✅ 8 tests passing |
+| Repositories | 80%+ | ⚠️ Requires DI refactoring |
+| Integration (App) | Key Flows | ⚠️ Structural outline |
+| Integration (Signup) | Key Flows | ⚠️ Requires test Supabase |
 
 ---
 

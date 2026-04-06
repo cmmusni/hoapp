@@ -33,7 +33,8 @@ Migrations verified:
 - [x] `20260322000002_triggers.sql` - Audit logs & timestamps
 - [x] `20260322000003_rls_policies.sql` - Row Level Security
 - [x] `20260322000004_storage_policies.sql` - File upload policies
-- [x] `20240322000005_enable_realtime.sql` - Realtime subscriptions
+- [x] `20260322000005_enable_realtime.sql` - Realtime subscriptions
+- [x] 55 additional migrations through `20260402000003` - Security passes, plans, expenses, income, recurring billing, feedback, subscriptions, CRON jobs, and more
 
 **Action Items**:
 - [ ] Review all migration files for production readiness
@@ -51,6 +52,18 @@ Functions verified:
 - [x] `accept_invite/` - Invite acceptance & role assignment
 - [x] `verify_payment/` - Payment verification workflow
 - [x] `book_amenity/` - Amenity booking with conflict checking
+- [x] `create_upgrade_checkout/` - PayMongo checkout sessions
+- [x] `paymongo_webhook/` - Payment webhook processing
+- [x] `provision_community/` - Community initialization
+- [x] `contact_us/` - Contact form handler
+- [x] `request_access/` - Beta/feature access requests
+- [x] `review_pass/` - Security pass approval
+- [x] `validate_pass/` - Security pass QR validation
+- [x] `scan_invoice/` - Invoice scanning
+- [x] `send_notification/` - Push notification delivery
+- [x] `delete_user/` - User account deletion
+- [x] `batch_operations/` - Batch CRUD operations
+- [x] `onesignal_cleanup/` - Device token cleanup
 
 **Action Items**:
 - [ ] Test each function locally
@@ -137,7 +150,7 @@ supabase db push
 ```
 
 **Verify**:
-- [ ] All 5 migrations applied successfully
+- [ ] All 60 migrations applied successfully
 - [ ] No errors in Supabase dashboard
 - [ ] Public schema tables visible
 - [ ] RLS policies active (check policies tab)
@@ -151,10 +164,22 @@ supabase functions deploy create_invite
 supabase functions deploy accept_invite
 supabase functions deploy verify_payment
 supabase functions deploy book_amenity
+supabase functions deploy create_upgrade_checkout
+supabase functions deploy paymongo_webhook
+supabase functions deploy provision_community --no-verify-jwt
+supabase functions deploy contact_us --no-verify-jwt
+supabase functions deploy request_access
+supabase functions deploy review_pass
+supabase functions deploy validate_pass
+supabase functions deploy scan_invoice
+supabase functions deploy send_notification
+supabase functions deploy delete_user
+supabase functions deploy batch_operations
+supabase functions deploy onesignal_cleanup
 ```
 
 **Verify**:
-- [ ] All 5 functions deployed
+- [ ] All 18 functions deployed
 - [ ] Functions appear in dashboard
 - [ ] Environment variables set
 - [ ] Test each function with sample data

@@ -47,11 +47,14 @@ await pdfService.previewPDF(pdfBytes, 'waiver.pdf');
 - `mime: ^1.0.4` - MIME type detection
 - `path: ^1.8.3` - Path manipulation
 
-**Storage Buckets Required**:
-- `violation-photos` - Violation report images
-- `pool-documents` - Signed pool access waivers
-- `payment-proofs` - Payment receipt uploads
-- `community-logos` - Community branding assets
+**Storage Buckets (Created via Migrations)**:
+- `violation-photos` - Violation report images (public)
+- `pool-access-docs` - Pool access documentation
+- `payment-proofs` - Payment receipt uploads (public)
+- `community-logos` - Community branding assets (public)
+- `announcement-attachments` - Announcement files (public)
+- `expense-receipts` - Expense documentation (public)
+- `feedback-images` - Feedback submission attachments
 
 **Usage Example**:
 ```dart

@@ -453,10 +453,13 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
                   itemCount: invoices.length,
                   itemBuilder: (context, index) {
                     final invoice = invoices[index];
+                    // Admins can always submit payment; for My Invoices tab, everyone can.
+                    final canSubmitPayment = widget.showMyInvoices || isAdmin;
                     return _InvoiceCard(
                       invoice: invoice,
                       isStaff: isStaff,
                       isAdmin: isAdmin,
+                      canSubmitPayment: canSubmitPayment,
                       onRefresh: () {
                         _loadInvoices();
                         widget.onRefresh();
@@ -475,18 +478,56 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
 
 // ============ INVOICE CARD ============
 
-class _InvoiceCard extends StatelessWidget {
+class _InvoiceCard extends StatefulWidget {
   final Invoice invoice;
   final bool isStaff;
   final bool isAdmin;
+  final bool canSubmitPayment;
   final VoidCallback onRefresh;
 
   const _InvoiceCard({
     required this.invoice,
     required this.isStaff,
     required this.isAdmin,
+    required this.canSubmitPayment,
     required this.onRefresh,
   });
+
+  @override
+  State<_InvoiceCard> createState() => _InvoiceCardState();
+}
+
+class _InvoiceCardState extends State<_InvoiceCard> {
+  bool _hasSubmittedPayment = false;
+  bool _hasRejectedPayment = false;
+
+  Invoice get invoice => widget.invoice;
+
+  @override
+  void initState() {
+    super.initState();
+    if (invoice.status == InvoiceStatus.unpaid) {
+      _checkLatestPaymentStatus();
+    }
+  }
+
+  Future<void> _checkLatestPaymentStatus() async {
+    try {
+      final result = await Supabase.instance.client
+          .from('payments')
+          .select('id, status')
+          .eq('invoice_id', invoice.id)
+          .order('created_at', ascending: false)
+          .limit(1);
+      if (mounted && (result as List).isNotEmpty) {
+        final status = result.first['status'] as String;
+        setState(() {
+          _hasSubmittedPayment = status == 'submitted';
+          _hasRejectedPayment = status == 'rejected';
+        });
+      }
+    } catch (_) {}
+  }
 
   String _getCategoryLabel(InvoiceCategory category) {
     switch (category) {
@@ -563,6 +604,59 @@ class _InvoiceCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (_hasSubmittedPayment) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.schedule,
+                          size: 12, color: Colors.blue.shade700),
+                      const SizedBox(width: 4),
+                      Text(
+                        'PAYMENT SUBMITTED',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (_hasRejectedPayment) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cancel, size: 12, color: Colors.red.shade700),
+                      const SizedBox(width: 4),
+                      Text(
+                        'PAYMENT REJECTED',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (invoice.description != null) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -597,7 +691,8 @@ class _InvoiceCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (invoice.status == InvoiceStatus.unpaid) ...[
+              if (invoice.status == InvoiceStatus.unpaid &&
+                  widget.canSubmitPayment) ...[
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -607,7 +702,7 @@ class _InvoiceCard extends StatelessWidget {
                         context: context,
                         builder: (ctx) => PaymentProofUploadDialog(
                           invoice: invoice,
-                          onPaymentSubmitted: onRefresh,
+                          onPaymentSubmitted: widget.onRefresh,
                         ),
                       );
                     },
@@ -636,9 +731,10 @@ class _InvoiceCard extends StatelessWidget {
       ),
       builder: (context) => _InvoiceDetailsSheet(
         invoice: invoice,
-        isStaff: isStaff,
-        isAdmin: isAdmin,
-        onRefresh: onRefresh,
+        isStaff: widget.isStaff,
+        isAdmin: widget.isAdmin,
+        canSubmitPayment: widget.canSubmitPayment,
+        onRefresh: widget.onRefresh,
       ),
     );
   }
@@ -650,12 +746,14 @@ class _InvoiceDetailsSheet extends StatefulWidget {
   final Invoice invoice;
   final bool isStaff;
   final bool isAdmin;
+  final bool canSubmitPayment;
   final VoidCallback onRefresh;
 
   const _InvoiceDetailsSheet({
     required this.invoice,
     required this.isStaff,
     required this.isAdmin,
+    required this.canSubmitPayment,
     required this.onRefresh,
   });
 
@@ -1033,7 +1131,8 @@ class _InvoiceDetailsSheetState extends State<_InvoiceDetailsSheet> {
                 const SizedBox(height: 16),
 
                 // Action buttons
-                if (widget.invoice.status == InvoiceStatus.unpaid)
+                if (widget.invoice.status == InvoiceStatus.unpaid &&
+                    widget.canSubmitPayment)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(

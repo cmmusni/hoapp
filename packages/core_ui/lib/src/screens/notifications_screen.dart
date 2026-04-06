@@ -41,6 +41,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final client = Supabase.instance.client;
       final isStaff = appState.isStaff;
 
+      // Fetch user's household unit IDs for invoice filtering (all users)
+      List<String> userUnitIds = [];
+      final householdRows = await client
+          .from('household_members')
+          .select('unit_id')
+          .eq('user_id', userId);
+      userUnitIds = (householdRows as List)
+          .map((e) => e['unit_id'] as String)
+          .toSet()
+          .toList();
+
       final results = await Future.wait([
         client
             .from('announcements')
@@ -91,9 +102,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 .limit(20)
             : client
                 .from('payments')
-                .select('id, amount, status, created_at')
+                .select('id, amount, status, created_at, rejection_reason')
                 .eq('community_id', communityId)
                 .eq('user_id', userId)
+                .inFilter('status', ['submitted', 'verified', 'rejected'])
                 .order('created_at', ascending: false)
                 .limit(10),
         // Staff see all pending bookings; residents see their own
@@ -128,22 +140,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 .eq('user_id', userId)
                 .order('created_at', ascending: false)
                 .limit(10),
-        // Staff see all unpaid invoices; residents see their own unit's
-        isStaff
+        // Only show invoices for the user's own household units
+        userUnitIds.isNotEmpty
             ? client
                 .from('invoices')
                 .select('id, category, amount, due_date, status, created_at')
                 .eq('community_id', communityId)
                 .eq('status', 'unpaid')
+                .inFilter('unit_id', userUnitIds)
                 .order('due_date', ascending: true)
                 .limit(20)
-            : client
-                .from('invoices')
-                .select('id, category, amount, due_date, status, created_at')
-                .eq('community_id', communityId)
-                .eq('status', 'unpaid')
-                .order('due_date', ascending: true)
-                .limit(10),
+            : Future.value(<Map<String, dynamic>>[]),
       ]);
 
       final items = <_NotificationItem>[];
@@ -160,58 +167,74 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ));
       }
       for (final v in results[1] as List) {
+        final status = v['status'] as String? ?? '';
         items.add(_NotificationItem(
           id: v['id'],
           type: 'violation',
           title: 'Violation: ${v['title'] ?? 'N/A'}',
-          subtitle: 'Status: ${v['status']}',
+          subtitle: 'Status: $status',
           createdAt: DateTime.parse(v['created_at']),
           icon: Icons.report,
           color: Colors.red,
+          isActionable: status != 'resolved',
         ));
       }
       for (final t in results[2] as List) {
+        final status = t['status'] as String? ?? '';
         items.add(_NotificationItem(
           id: t['id'],
           type: 'ticket',
           title: 'Ticket: ${t['type']}',
-          subtitle: 'Status: ${t['status']}',
+          subtitle: 'Status: $status',
           createdAt: DateTime.parse(t['created_at']),
           icon: Icons.support,
           color: Colors.orange,
+          isActionable: status == 'open',
         ));
       }
       for (final p in results[3] as List) {
+        final status = p['status'] as String? ?? '';
+        final rejectionReason = p['rejection_reason'] as String?;
+        final isRejected = status == 'rejected';
         items.add(_NotificationItem(
           id: p['id'],
           type: 'payment',
-          title: 'Payment: ₱${p['amount']}',
-          subtitle: 'Status: ${p['status']}',
+          title: isRejected
+              ? 'Payment Rejected: ₱${p['amount']}'
+              : 'Payment: ₱${p['amount']}',
+          subtitle: isRejected && rejectionReason != null
+              ? 'Reason: $rejectionReason'
+              : 'Status: $status',
           createdAt: DateTime.parse(p['created_at']),
-          icon: Icons.payment,
-          color: _brand,
+          icon: isRejected ? Icons.cancel : Icons.payment,
+          color: isRejected ? Colors.red : _brand,
+          isActionable: isRejected || (isStaff && status == 'submitted'),
         ));
       }
       for (final b in results[4] as List) {
+        final status = b['status'] as String? ?? '';
         items.add(_NotificationItem(
           id: b['id'],
           type: 'booking',
           title: 'Booking',
-          subtitle: 'Status: ${b['status']}',
+          subtitle: 'Status: $status',
           createdAt: DateTime.parse(b['created_at']),
           icon: Icons.event,
           color: Colors.purple,
+          isActionable: status == 'pending',
         ));
       }
       for (final f in results[5] as List) {
+        final status = f['status'] as String? ?? '';
         items.add(_NotificationItem(
           id: f['id'],
           type: 'feedback',
           title: f['subject'] ?? 'Feedback',
-          subtitle: 'Status: ${f['status']}',
+          subtitle: 'Status: $status',
           createdAt: DateTime.parse(f['created_at']),
           icon: Icons.feedback,
           color: Colors.teal,
+          isActionable: status == 'open',
         ));
       }
       for (final inv in results[6] as List) {
@@ -228,6 +251,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           createdAt: DateTime.parse(inv['created_at']),
           icon: Icons.receipt_long,
           color: isOverdue ? Colors.red : Colors.orange,
+          isActionable: true,
         ));
       }
 
@@ -413,6 +437,7 @@ class _NotificationItem {
   final DateTime createdAt;
   final IconData icon;
   final Color color;
+  final bool isActionable;
 
   _NotificationItem({
     required this.id,
@@ -422,6 +447,7 @@ class _NotificationItem {
     required this.createdAt,
     required this.icon,
     required this.color,
+    this.isActionable = false,
   });
 }
 
@@ -432,30 +458,48 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      leading: CircleAvatar(
-        backgroundColor: item.color.withValues(alpha: 0.1),
-        child: Icon(item.icon, color: item.color, size: 20),
-      ),
-      title: Text(item.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(item.subtitle,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _timeAgo(item.createdAt),
-            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-          ),
-          if (onTap != null) ...[
-            const SizedBox(width: 4),
-            Icon(Icons.chevron_right, size: 18, color: Colors.grey[400])
+    return Container(
+      color: item.isActionable
+          ? item.color.withValues(alpha: 0.04)
+          : Colors.transparent,
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(
+          backgroundColor: item.color.withValues(alpha: 0.1),
+          child: Icon(item.icon, color: item.color, size: 20),
+        ),
+        title: Text(item.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: item.isActionable ? FontWeight.w600 : FontWeight.w400,
+            )),
+        subtitle: Text(item.subtitle,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (item.isActionable) ...[
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: item.color,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              _timeAgo(item.createdAt),
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            ),
+            if (onTap != null) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right, size: 18, color: Colors.grey[400])
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

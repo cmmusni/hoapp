@@ -75,13 +75,16 @@ ElevatedButton(
 ### Overview
 Upload files to Supabase Storage buckets with validation, progress tracking, and preview.
 
-### Storage Buckets Required
+### Storage Buckets (Created via Migrations)
 
-Create these buckets in Supabase Dashboard:
-- `violation-photos` - For violation reports
-- `pool-documents` - For signed pool waivers
-- `payment-proofs` - For payment receipts
-- `community-logos` - For community branding
+The following buckets are automatically created by database migrations:
+- `violation-photos` - For violation reports (public)
+- `pool-access-docs` - For signed pool waivers
+- `payment-proofs` - For payment receipts (public)
+- `community-logos` - For community branding (public)
+- `announcement-attachments` - For announcement files (public)
+- `expense-receipts` - For expense documentation (public)
+- `feedback-images` - For feedback submission attachments
 
 ### Storage Service Usage
 

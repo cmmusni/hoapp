@@ -2,13 +2,15 @@
 
 🏘️ **Production-Ready** Flutter + Supabase platform for HOA and condominium communities.
 
-A complete multi-tenant SaaS solution with self-serve community creation, role-based access control, realtime features, and comprehensive HOA management tools.
+A complete multi-tenant SaaS solution with self-serve community creation, role-based access control, realtime features, plan-based feature gating, and comprehensive HOA management tools.
 
 ## 🏗️ Architecture
 
 - **Frontend:** Flutter (Web + Mobile)
 - **Backend:** Supabase (Auth, Postgres, Storage, Realtime, Edge Functions)
 - **Multi-tenancy:** Single database with Row Level Security (RLS)
+- **State Management:** Provider with ChangeNotifier (AppState)
+- **Routing:** GoRouter with ShellRoute pattern
 - **Deployment:** 
   - Web: hoapp.net (SPA with path routing)
   - Mobile: Android APK (sideload) + iOS (dev device testing)
@@ -18,16 +20,17 @@ A complete multi-tenant SaaS solution with self-serve community creation, role-b
 ```
 hoapp/
 ├── apps/
-│   ├── web_portal/      # Flutter web (marketing + portal)
+│   ├── web_portal/      # Flutter web (marketing + portal) – 45+ screens
 │   └── mobile/          # Flutter mobile app
 ├── packages/
-│   ├── core_ui/         # Shared UI components
-│   ├── core_domain/     # Business logic & models
-│   └── core_data/       # Data layer & API clients
+│   ├── core_ui/         # Shared UI components, theme, PDF service
+│   ├── core_domain/     # Business logic & models (23+ models)
+│   └── core_data/       # Data layer, repositories (13), services (3)
 ├── supabase/
-│   ├── migrations/      # Database schema & RLS
-│   ├── functions/       # Edge Functions (Deno)
+│   ├── migrations/      # 60 migration files (schema, RLS, triggers, storage)
+│   ├── functions/       # 18 Edge Functions (Deno)
 │   └── seed.sql         # Demo data
+├── .github/workflows/   # CI/CD pipelines (deploy.yml, deploy-vercel.yml)
 └── Makefile             # Development commands
 ```
 
@@ -35,9 +38,8 @@ hoapp/
 
 ### Prerequisites
 
-- Flutter SDK 3.16+
+- Flutter SDK 3.16+ (Dart SDK >=3.2.0 <4.0.0)
 - Supabase CLI
-- Dart 3.2+
 - Android Studio (for APK builds)
 - Xcode (for iOS testing, macOS only)
 
@@ -65,12 +67,12 @@ hoapp/
 
 4. **Apply migrations:**
    ```bash
-   make db:push
+   make db-push
    ```
 
 5. **Deploy Edge Functions:**
    ```bash
-   make fn:deploy
+   make fn-deploy
    ```
 
 6. **Seed demo data:**
@@ -82,7 +84,7 @@ hoapp/
 
 **Reset database** (⚠️ deletes all data):
 ```bash
-make db:reset
+make db-reset
 ```
 
 For detailed instructions, see [DATABASE_RESET_GUIDE.md](DATABASE_RESET_GUIDE.md)
@@ -92,14 +94,14 @@ For detailed instructions, see [DATABASE_RESET_GUIDE.md](DATABASE_RESET_GUIDE.md
 ### Web Portal
 
 ```bash
-make run:web
+make run-web
 # Opens at http://localhost:3000
 ```
 
 ### Mobile App
 
 ```bash
-make run:mobile
+make run-mobile
 # Select device when prompted
 ```
 
@@ -109,10 +111,10 @@ make run:mobile
 
 ```bash
 # Deploy backend (database + Edge Functions)
-make deploy:supabase
+make deploy-supabase
 
 # Build production web app
-make deploy:prod
+make deploy-prod
 ```
 
 ### Automated Scripts
@@ -130,11 +132,17 @@ Production configurations included for:
 
 ### CI/CD Pipeline
 
-GitHub Actions workflow (`.github/workflows/deploy.yml`):
-- ✓ Runs tests on every push/PR
-- ✓ Builds web & mobile on main
+GitHub Actions workflows:
+
+**`.github/workflows/deploy.yml`** (main CI/CD):
+- ✓ Runs tests on every push/PR (Flutter 3.19.0)
+- ✓ Generates coverage reports (Codecov)
+- ✓ Builds web & mobile on push to main
 - ✓ Deploys Supabase automatically
 - ✓ Uploads build artifacts
+
+**`.github/workflows/deploy-vercel.yml`** (Vercel):
+- ✓ Auto-deploys to Vercel on push to master
 
 ### Documentation
 
@@ -162,7 +170,7 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`):
 
 3. **Build:**
    ```bash
-   make build:apk
+   make build-apk
    # Output: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
    ```
 
@@ -178,31 +186,55 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`):
 
 ## 🌐 URL Structure
 
-### Marketing & SaaS
-- `/` – Landing page
-- `/signup` – Create HOApp account
-- `/login` – Login to account
+### Marketing & SaaS (Public)
+- `/` – Landing page (redirects to portal if authenticated)
+- `/signup` – Create HOApp account (supports `?invite=token` & `?email=base64`)
+- `/login` – Login (supports `?invite=token`)
+- `/features` – Feature showcase
+- `/pricing` – Plan pricing display
+- `/support` – Help page
+- `/contact` – Contact form
+- `/create-community` – Community creation wizard
+- `/select-community` – Community switcher (authenticated)
+- `/auth-callback`, `/auth/callback` – Email verification redirects
+- `/upgrade-success` – Post-payment redirect (PayMongo)
+- `/upgrade-cancelled` – Payment cancellation redirect
+
+### Platform Admin
+- `/admin` – Platform admin shell (cross-community management)
 
 ### Community Portal
-- `/:community/login.html` – Community-specific login
-- `/:community/` – Portal home (role-aware)
-- `/:community/announcements`
-- `/:community/violations`
-- `/:community/tickets`
-- `/:community/amenities`
-- `/:community/billing`
-- `/:community/pool-access`
-- `/:community/households` (staff)
-- `/:community/manage-users` (staff)
-- `/:community/settings` (community_admin)
+- `/:community/login`, `/:community/login.html` – Community-specific login
+- `/:community/signup` – Community-specific signup
+- `/:community/announcements` – Community announcements
+- `/:community/violations` – Violation reporting & tracking
+- `/:community/tickets` – Support tickets
+- `/:community/amenities` – Amenity bookings *(PlanGated)*
+- `/:community/billing` – Invoice & payment management
+- `/:community/expenses` – Expense tracking
+- `/:community/financial-reports` – Income vs. expense charts
+- `/:community/pool-access` – Pool registration *(PlanGated)*
+- `/:community/registered-swimmers` – Pool swimmer roster *(PlanGated)*
+- `/:community/security-pass` – Security pass requests *(PlanGated)*
+- `/:community/qr-scanner` – Pass validation scanner *(PlanGated)*
+- `/:community/households` – Household management (staff)
+- `/:community/manage-users` – User administration (staff)
+- `/:community/settings` – Community settings (community_admin)
+- `/:community/feedback` – User feedback submission
+- `/:community/notifications` – Notification history
+- `/:community/beta-requests` – Beta access management
+
+### Special
+- `/demo` – UI demo shell with mock data
 
 ## 👥 Roles & Permissions
 
 ### Per-Community Roles
-- **community_admin**: Full access to community settings
-- **hoa_officer**: Staff operations (no global settings)
-- **guard**: Read-only + basic operations
-- **resident**: Household member access
+- **community_admin**: Full access to community settings and management
+- **hoa_officer**: Staff operations (manage content, verify payments, invite users)
+- **maintenance**: Maintenance staff operations
+- **guard**: Read-only announcements + view bookings
+- **resident**: Household member access, submit violations/tickets
 
 ### Platform Role
 - **app_admin**: Platform-level operations (via SECURITY DEFINER functions)
@@ -213,83 +245,171 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`):
 
 #### 🏢 Self-Serve Community Management
 - **Community Creation**: Sign up and create communities with unique slugs
-- **Custom Branding**: Community-specific themes and settings
+- **Custom Branding**: Community-specific themes, colors, and logos
+- **Plan Tiers**: Starter (free), Professional, and Enterprise plans
+- **Plan-Based Feature Gating**: PlanGate component wraps premium features
 - **Multi-Tenant Architecture**: Single codebase serving all communities
 - **Auto Detection**: Intelligent community selection based on user membership
+- **Platform Admin Dashboard**: Cross-community management interface
 
 #### 👥 Household & User Management
-- **Unit Management**: Create and manage household units
-- **Member Profiles**: Support for multiple residents per unit
+- **Unit Management**: Create and manage household units with configurable unit types
+- **Unit Type Configuration**: Custom classifications with max occupancy settings
+- **Member Profiles**: Support for multiple residents per unit (primary, member, child, tenant, other)
 - **Flexible Membership**: Add both registered users and non-registered members
 - **Invitation System**: Tokenized invite links with role assignment and expiry
-- **Role-Based Access**: Community admin, HOA officer, guard, and resident roles
+- **Role-Based Access**: Community admin, HOA officer, maintenance, guard, and resident roles
+- **Primary Member Management**: Primary members can manage their own household
 
 #### 📢 Communications
 - **Announcements**: Create, edit, pin, and schedule community announcements
+- **Read Tracking**: Track which members have read announcements
+- **File Attachments**: Support for announcement attachments and images
 - **Realtime Updates**: Live notification system for instant updates
-- **Rich Content**: Support for formatted text and attachments
 
 #### 🚨 Violations & Compliance
 - **Anonymous Reporting**: Residents can submit violations with photo evidence
 - **Privacy Protection**: Reporter identity hidden from peers, visible to staff
 - **Photo Documentation**: Upload and attach violation evidence
-- **Staff Workflow**: Review, categorize, and resolve violations
+- **Staff Workflow**: Review, categorize, and resolve violations (new → under_review → resolved)
 
 #### 💬 Support Tickets
-- **Threaded Conversations**: Chat-style ticket system
+- **Threaded Conversations**: Chat-style ticket system with realtime messages
 - **File Attachments**: Support for documents and images
 - **Status Tracking**: Open, in-progress, resolved, closed states
 - **Unread Indicators**: Notification system for new messages
 
-#### 🏊 Amenity Reservations
+#### 🏊 Amenity Reservations *(PlanGated)*
 - **Booking Calendar**: Reserve pool and function room facilities
-- **Conflict Prevention**: Database-level exclusion constraints
-- **Payment Integration**: ₱8,000/day function room fee
+- **Dynamic Rules**: Configurable open/close times, pricing, max days ahead, same-day restrictions
+- **Conflict Prevention**: Database-level exclusion constraints (tstzrange)
 - **Access Control**: Pool Access registration requirement
 
-#### 🏊‍♂️ Pool Access Management
-- **Registration System**: Digital waiver and swimmer registration
+#### 🏊‍♂️ Pool Access Management *(PlanGated)*
+- **Registration System**: Digital waiver and swimmer registration per unit
+- **Multi-Swimmer Support**: Track individual swimmer names and ages
+- **Max Occupancy**: Per-unit-type capacity enforcement
 - **PDF Generation**: Auto-generated registration forms
 - **3-Month Lock**: Prevents frequent changes (safety requirement)
 - **Document Upload**: Staff can upload signed documentation
+- **Staff Registration**: Pool management for staff
+
+#### 🔐 Security Passes *(PlanGated)*
+- **Pass Types**: Configurable pass types (visitor, gate, contractor, delivery, etc.)
+- **Request Workflow**: Residents request → staff approve/reject
+- **QR Token Generation**: Unique tokens for pass validation
+- **QR Scanner**: Built-in scanner for guards at entry points
+- **Scan Logging**: Track entry/exit scans with timestamps
 
 #### 💳 Billing & Payments
-- **Invoice Management**: Create invoices for dues, amenities, and other fees
+- **Invoice Management**: Create invoices with multi-category line items
 - **Multiple Categories**: HOA dues, water bills, amenity fees, violations, other
 - **GCash Integration**: Upload payment proof screenshots
 - **Verification Workflow**: Staff review and confirmation
 - **Official Receipts**: Generate and store payment receipts
 - **Payment Tracking**: Complete payment history per household
+- **Member Payment Access**: Residents can view their own payment history
 
 #### 📊 Financial Management
-- **Income Tracking**: Record and categorize community income
-- **Expense Tracking**: Manage operational expenses with photo documentation
+- **Income Tracking**: Record and categorize community income (manual + invoiced)
+- **Expense Tracking**: Manage operational expenses with receipt photo documentation
+- **Expense Line Items**: Detailed expense categorization
 - **Category Management**: Custom income and expense categories
-- **Financial Reports**: Visual charts and reports for transparency
-- **Recurring Billing**: Set up automatic monthly billing for dues
+- **Financial Reports**: Visual charts and dashboards (fl_chart)
+- **Recurring Billing**: Automated invoice generation on schedule (monthly/quarterly/yearly)
+- **Member Financial Reports**: Read-only financial transparency for residents
+
+#### 💎 Plan & Subscription Management
+- **Plan Tiers**: Starter, Professional, Enterprise with configurable pricing
+- **PayMongo Integration**: Checkout session creation for plan upgrades
+- **Payment Webhooks**: Automated payment verification via PayMongo webhook
+- **Subscription Tracking**: Plan subscription status with expiry management
+- **Automated Expiry**: CRON-based subscription expiry enforcement
+
+#### 🤖 User Engagement
+- **Onboarding Tour**: First-time user guided walkthrough
+- **Chatbot Widget**: Floating AI assistant with FAQ/knowledge base
+- **Feedback System**: Bug reports, feature requests, improvements (with image uploads)
+- **Beta Access Requests**: Users can opt-in to beta features
+- **User Preferences**: Personalized settings storage
+- **Contact Form**: Public contact form for inquiries
+
+#### 🔔 Notifications
+- **OneSignal Integration**: Push notification delivery
+- **Device Token Management**: Track notification tokens per user
+- **Notification History**: View past notifications
+- **Token Cleanup**: Automated stale token removal via edge function
 
 ## 🗄️ Database Schema
 
-Key tables:
-- `communities`, `buildings`, `units`
+### 35+ tables organized by domain:
+
+**Core Infrastructure:**
+- `communities`, `buildings`, `units`, `unit_types`
 - `profiles`, `user_roles`, `platform_roles`
+
+**Invitations & Households:**
 - `invites`, `household_members`
-- `announcements`, `violations`, `tickets`, `messages`
+
+**Content & Communication:**
+- `announcements`, `announcement_reads`, `announcement_attachments`
+- `violations`, `tickets`, `messages`
+
+**Amenities & Recreation:**
 - `amenities`, `amenity_bookings`
-- `invoices`, `payments`
-- `pool_access_registrations`
+- `pool_access_registrations`, `pool_registered_swimmers`
+
+**Financial:**
+- `invoices`, `invoice_line_items`, `payments`
+- `expenses`, `manual_income`, `recurring_billings`
+- `plan_subscriptions`, `plan_pricing`
+
+**Security & Access:**
+- `pass_types`, `security_passes`, `pass_scan_logs`
+
+**User Engagement:**
+- `feedback`, `contact_messages`, `user_preferences`, `beta_access_requests`
+
+**System:**
 - `audit_logs`, `notification_tokens`
 
-All tables protected by Row Level Security (RLS).
+**Storage Buckets:** violation-photos, payment-proofs, pool-access-docs, community-logos, announcement-attachments, expense-receipts, feedback-images
+
+All tables protected by Row Level Security (RLS). 60 migration files applied (March 22 – April 2, 2026).
 
 ## 🔐 Security
 
 - JWT-based authentication via Supabase Auth
-- Row Level Security on all tables
-- Community-scoped data access
+- Row Level Security on all 35+ tables
+- Community-scoped data access via helper functions (`is_community_member`, `is_community_staff`, `is_unit_member`)
 - Audit logging for sensitive operations
-- Storage bucket policies for file uploads
+- Storage bucket policies for file uploads (community-scoped paths)
 - Service role only for Edge Functions (never client-side)
+- Anonymous violation reporter privacy protection
+- PKCE-based email verification flow
+
+## ⚙️ Edge Functions (18)
+
+| Function | Purpose |
+|----------|---------|
+| `create_community` | Community provisioning with slug validation |
+| `create_invite` | Token-based invite generation |
+| `accept_invite` | Invite acceptance with role/household assignment |
+| `verify_payment` | Staff payment verification workflow |
+| `book_amenity` | Amenity booking with conflict checking |
+| `create_upgrade_checkout` | PayMongo checkout session creation |
+| `paymongo_webhook` | Payment webhook processing |
+| `provision_community` | Community initialization |
+| `contact_us` | Contact form handler |
+| `request_access` | Beta/feature access requests |
+| `review_pass` | Security pass approval workflow |
+| `validate_pass` | Security pass QR validation |
+| `scan_invoice` | Invoice scanning/OCR |
+| `send_notification` | Push notification delivery |
+| `delete_user` | User account deletion |
+| `batch_operations` | Batch CRUD (announcements, invoices, tickets, bookings) |
+| `onesignal_cleanup` | Device token cleanup |
+| `_shared` | Shared utilities, middleware, helpers |
 
 ## 🧪 Testing
 
@@ -303,10 +423,11 @@ Comprehensive test suite with unit tests, widget tests, and integration tests.
 
 # Or use Makefile
 make test              # Run all tests
-make test:unit         # Unit tests only
-make test:widget       # Widget tests only
-make test:integration  # Integration tests only
-make test:coverage     # Generate coverage report
+make test-unit         # Unit tests only
+make test-widget       # Widget tests only
+make test-integration  # Integration tests only
+make test-coverage     # Generate coverage report
+make test-mocks        # Generate test mocks
 ```
 
 ### Test Coverage
@@ -317,21 +438,26 @@ make test:coverage     # Generate coverage report
 | Realtime Service | 9 | ✅ |
 | PDF Service | 7 | ✅ |
 | UI Widgets | 18 | ✅ |
-| Repositories | 5 | ⚠️ |
-| Integration | 10 | ⚠️ |
+| Signup Validation | 8 | ✅ |
+| Repositories | 5 | ⚠️ Requires DI refactoring |
+| Integration (App Flow) | 10 | ⚠️ Structural outline |
+| Integration (Signup) | 14 | ⚠️ Requires test Supabase |
 
 **Documentation**:
 - **[TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** - Complete testing guide
 - **[TEST_SUMMARY.md](TEST_SUMMARY.md)** - Implementation summary
+- **[TEST_REPORT.md](TEST_REPORT.md)** - Signup flow test report
 
 ## 📝 Demo Data
 
 The seed script creates:
 - Community: "Elevé Homes" (slug: `eleve-homes`)
-- Units: 401, 402, 407
-- Users: 1 admin, 1 officer, 1 resident (Unit 407)
-- Amenity: Pool + Function Room
-- Sample invoices and announcements
+  - Address: 123 Main Street, Metro Manila, Philippines
+  - Brand: Primary `#215E3F`, Surface `#ECEFF1`
+- Units: 401, 402, 407, 501, 502 (residential type)
+- Amenity: Pool + Function Room (₱6,000/day, 08:00–22:00, 60-day advance max, no same-day)
+
+Users must sign up via app — demo accounts created via admin signup.
 
 Login at: `http://localhost:3000/eleve-homes/login.html`
 
@@ -342,7 +468,7 @@ Login at: `http://localhost:3000/eleve-homes/login.html`
 cd supabase
 supabase migration new your_migration_name
 # Edit the generated file
-make db:push
+make db-push
 ```
 
 ### Deploy a single function
@@ -365,7 +491,7 @@ Mobile app supports invite deep links:
 
 ## 🎨 Branding
 
-Default theme: Material 3, Primary `#2E7D32` (green), Surface `#ECEFF1` (light gray)
+Default theme: Material 3 with FlexColorScheme, Primary `#2E7D32` (green), Surface `#ECEFF1` (light gray)
 
 Dynamic per-community branding via `communities.settings`:
 ```json
@@ -378,12 +504,30 @@ Dynamic per-community branding via `communities.settings`:
 }
 ```
 
+Community logos stored in `community-logos` storage bucket.
+
+## 📊 Project Statistics
+
+| Metric | Count |
+|--------|-------|
+| Database Migrations | 60 |
+| Database Tables | 35+ |
+| Edge Functions | 18 |
+| Domain Models | 23+ |
+| Repositories | 13 |
+| Services | 3 |
+| Web Screens | 45+ |
+| Storage Buckets | 8+ |
+| Test Files | 10 |
+| Roles | 6 (5 community + 1 platform) |
+
 ## 🤝 Contributing
 
 1. Create feature branch
 2. Make changes
 3. Run `flutter analyze`
-4. Submit PR
+4. Run `./run_tests.sh`
+5. Submit PR
 
 ## 📄 License
 
@@ -392,3 +536,7 @@ Proprietary - All rights reserved
 ## 🆘 Support
 
 For issues or questions, contact: support@hoapp.net
+
+---
+
+**Last Updated**: April 2026

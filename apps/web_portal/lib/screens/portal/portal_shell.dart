@@ -36,6 +36,7 @@ class _PortalShellState extends State<PortalShell> {
   int _openFeedback = 0;
   int _pendingBookings = 0;
   int _newAnnouncements = 0;
+  int _unpaidInvoices = 0;
   String? _profileName;
 
   /// Realtime channel for badge-count auto-refresh.
@@ -47,7 +48,8 @@ class _PortalShellState extends State<PortalShell> {
       _pendingViolations +
       _openFeedback +
       _pendingBookings +
-      _newAnnouncements;
+      _newAnnouncements +
+      _unpaidInvoices;
 
   @override
   void initState() {
@@ -238,6 +240,17 @@ class _PortalShellState extends State<PortalShell> {
           ),
           callback: (_) => _loadBadgeCounts(),
         )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'invoices',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'community_id',
+            value: communityId,
+          ),
+          callback: (_) => _loadBadgeCounts(),
+        )
         .subscribe();
   }
 
@@ -339,8 +352,34 @@ class _PortalShellState extends State<PortalShell> {
       final announcementResult =
           await announcementQuery.count(CountOption.exact);
 
+      // Unpaid invoices for the current user's units
+      int invoiceCount = 0;
+      if (userId != null) {
+        final householdRows = await client
+            .from('household_members')
+            .select('unit_id')
+            .eq('user_id', userId);
+        final unitIds = (householdRows as List)
+            .map((e) => e['unit_id'] as String)
+            .toSet()
+            .toList();
+        if (unitIds.isNotEmpty) {
+          final invoiceResult = await client
+              .from('invoices')
+              .select('id')
+              .eq('community_id', communityId)
+              .eq('status', 'unpaid')
+              .inFilter('unit_id', unitIds)
+              .count(CountOption.exact);
+          invoiceCount = invoiceResult.count;
+        }
+      }
+
       if (mounted) {
-        setState(() => _newAnnouncements = announcementResult.count);
+        setState(() {
+          _newAnnouncements = announcementResult.count;
+          _unpaidInvoices = invoiceCount;
+        });
       }
 
       // Staff-only badges
@@ -721,7 +760,7 @@ class _PortalShellState extends State<PortalShell> {
         children: [
           Expanded(
               child: navIcon(Icons.campaign_outlined, Icons.campaign, 'News', 0,
-                  _newAnnouncements, 'announcements')),
+                  0, 'announcements')),
           Expanded(
               child: navIcon(
                   Icons.family_restroom_outlined,
@@ -736,7 +775,7 @@ class _PortalShellState extends State<PortalShell> {
                   'Security', 3, 0, 'security-pass')),
           Expanded(
               child: navIcon(Icons.notifications_outlined, Icons.notifications,
-                  'Notifications', 4, _totalNotifications, 'notifications')),
+                  'Notifications', 4, 0, 'notifications')),
         ],
       ),
     );
@@ -995,16 +1034,23 @@ class _PortalShellState extends State<PortalShell> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.white.withOpacity(0.15),
-              child: Text(
-                initials,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  decoration: TextDecoration.none,
+            Badge(
+              isLabelVisible: _totalNotifications > 0,
+              label: Text('$_totalNotifications',
+                  style: const TextStyle(
+                      fontSize: 9, fontWeight: FontWeight.bold)),
+              backgroundColor: Colors.red.shade400,
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white.withOpacity(0.15),
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.none,
+                  ),
                 ),
               ),
             ),
@@ -1254,8 +1300,7 @@ class _PortalShellState extends State<PortalShell> {
                               'Announcements',
                               Icons.campaign_outlined,
                               '/announcements',
-                              currentPath,
-                              badge: _newAnnouncements),
+                              currentPath),
                           if (isResident && hasUnit) ...[
                             _buildSidebarItem(
                                 context,
@@ -1265,17 +1310,17 @@ class _PortalShellState extends State<PortalShell> {
                                 currentPath),
                           ],
                           _buildSidebarItem(context, 'Billing & Payments',
-                              Icons.payment_outlined, '/billing', currentPath,
-                              badge: _pendingPayments),
+                              Icons.payment_outlined, '/billing', currentPath),
                           _buildSidebarItem(context, 'Tickets',
-                              Icons.support_outlined, '/tickets', currentPath,
-                              badge: _openTickets),
-                          _buildSidebarItem(context, 'Violations',
-                              Icons.report_outlined, '/violations', currentPath,
-                              badge: _pendingViolations),
+                              Icons.support_outlined, '/tickets', currentPath),
+                          _buildSidebarItem(
+                              context,
+                              'Violations',
+                              Icons.report_outlined,
+                              '/violations',
+                              currentPath),
                           _buildSidebarItem(context, 'Amenities',
-                              Icons.pool_outlined, '/amenities', currentPath,
-                              badge: _pendingBookings),
+                              Icons.pool_outlined, '/amenities', currentPath),
                           if (isPro && (hasUnit || isStaff)) ...[
                             ...(!isGuard && !isMaintenance
                                 ? [
@@ -1364,9 +1409,12 @@ class _PortalShellState extends State<PortalShell> {
                                 '/settings',
                                 currentPath),
                           ],
-                          _buildSidebarItem(context, 'Feedback',
-                              Icons.feedback_outlined, '/feedback', currentPath,
-                              badge: _openFeedback),
+                          _buildSidebarItem(
+                              context,
+                              'Feedback',
+                              Icons.feedback_outlined,
+                              '/feedback',
+                              currentPath),
                         ],
                       ),
               ),
@@ -1636,8 +1684,7 @@ class _PortalShellState extends State<PortalShell> {
                       Icons.campaign,
                       '/${widget.communitySlug}/announcements',
                       currentPath,
-                      primary,
-                      badge: _newAnnouncements),
+                      primary),
                   if (isResident && hasUnit)
                     _buildDrawerItem(
                         context,
@@ -1654,8 +1701,7 @@ class _PortalShellState extends State<PortalShell> {
                       Icons.payment,
                       '/${widget.communitySlug}/billing',
                       currentPath,
-                      primary,
-                      badge: _pendingPayments),
+                      primary),
                   _buildDrawerItem(
                       context,
                       'Tickets',
@@ -1663,8 +1709,7 @@ class _PortalShellState extends State<PortalShell> {
                       Icons.support,
                       '/${widget.communitySlug}/tickets',
                       currentPath,
-                      primary,
-                      badge: _openTickets),
+                      primary),
                   _buildDrawerItem(
                       context,
                       'Violations',
@@ -1672,8 +1717,7 @@ class _PortalShellState extends State<PortalShell> {
                       Icons.report,
                       '/${widget.communitySlug}/violations',
                       currentPath,
-                      primary,
-                      badge: _pendingViolations),
+                      primary),
                   _buildDrawerItem(
                       context,
                       'Amenities',
@@ -1681,8 +1725,7 @@ class _PortalShellState extends State<PortalShell> {
                       Icons.pool,
                       '/${widget.communitySlug}/amenities',
                       currentPath,
-                      primary,
-                      badge: _pendingBookings),
+                      primary),
                   if (isPro && (hasUnit || isStaff)) ...[
                     if (!isGuard && !isMaintenance)
                       _buildDrawerItem(
@@ -1776,8 +1819,7 @@ class _PortalShellState extends State<PortalShell> {
                       Icons.feedback,
                       '/${widget.communitySlug}/feedback',
                       currentPath,
-                      primary,
-                      badge: _openFeedback),
+                      primary),
                 ],
               ),
             ),

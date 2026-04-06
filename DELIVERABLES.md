@@ -6,31 +6,50 @@ This is a **production-ready scaffold** for a multi-tenant HOA/Condo management 
 
 ### ✅ Complete Backend (Supabase)
 
-#### Database Schema (4 migrations)
-- ✅ 19 tables with proper relationships
+#### Database Schema (60 migrations)
+- ✅ 35+ tables with proper relationships
 - ✅ Multi-tenancy via `community_id` scoping
 - ✅ Row Level Security (RLS) on all tables
 - ✅ Triggers for `updated_at` timestamps
 - ✅ 3-month edit lock trigger for Pool Access
-- ✅ Exclusion constraint for amenity booking conflicts
-- ✅ Storage bucket policies for files
+- ✅ Exclusion constraint for amenity booking conflicts (tstzrange)
+- ✅ Storage bucket policies for files (8+ buckets)
+- ✅ Plan-based feature gating (starter/professional/enterprise)
+- ✅ CRON-based subscription expiry
 
 **Tables:**
-- Communities, Buildings, Units
+- Communities, Buildings, Units, Unit Types
 - Profiles, User Roles, Platform Roles
 - Invites, Household Members
-- Announcements, Violations, Tickets, Messages
+- Announcements, Announcement Reads, Announcement Attachments
+- Violations, Tickets, Messages
 - Amenities, Amenity Bookings
-- Invoices, Payments
-- Pool Access Registrations
+- Invoices, Invoice Line Items, Payments
+- Expenses, Manual Income, Recurring Billings
+- Pool Access Registrations, Pool Registered Swimmers
+- Pass Types, Security Passes, Pass Scan Logs
+- Plan Subscriptions, Plan Pricing
+- Feedback, Contact Messages, User Preferences, Beta Access Requests
 - Audit Logs, Notification Tokens
 
-#### Edge Functions (5 Deno TypeScript functions)
+#### Edge Functions (18 Deno TypeScript functions)
 - ✅ `create_community` – Self-serve community creation
 - ✅ `create_invite` – Staff/resident invite generation
 - ✅ `accept_invite` – Token-based invite acceptance
 - ✅ `verify_payment` – Payment verification workflow
 - ✅ `book_amenity` – Amenity booking with preconditions
+- ✅ `create_upgrade_checkout` – PayMongo checkout sessions
+- ✅ `paymongo_webhook` – Payment webhook processing
+- ✅ `provision_community` – Community initialization
+- ✅ `contact_us` – Contact form handler
+- ✅ `request_access` – Beta/feature access requests
+- ✅ `review_pass` – Security pass approval workflow
+- ✅ `validate_pass` – Security pass QR validation
+- ✅ `scan_invoice` – Invoice scanning/OCR
+- ✅ `send_notification` – Push notification delivery
+- ✅ `delete_user` – User account deletion
+- ✅ `batch_operations` – Batch CRUD operations
+- ✅ `onesignal_cleanup` – Device token cleanup
 
 All functions include:
 - Type-safe request/response DTOs
@@ -41,15 +60,19 @@ All functions include:
 
 ### ✅ Flutter Packages (3 shared packages)
 
-#### core_domain (13 models)
-- ✅ Community, UserProfile, UserRole, Unit
+#### core_domain (23+ models)
+- ✅ Community, UserProfile, UserRole, Unit, UnitType
 - ✅ HouseholdMember, Announcement, Violation
-- ✅ Ticket, Message, Amenity, AmenityBooking
-- ✅ Invoice, Payment, PoolAccessRegistration
+- ✅ Ticket, Amenity, AmenityBooking
+- ✅ Invoice, InvoiceLineItem, Payment
+- ✅ PoolAccess, PoolSwimmer
+- ✅ Expense, ManualIncome, RecurringBilling
+- ✅ SecurityPass, ORTemplateConfig
 - ✅ Enums for roles, statuses, categories
-- ✅ JSON serialization annotations (ready for code gen)
+- ✅ JSON serialization with freezed + json_serializable (code gen)
+- ✅ Type aliases for JSON/UUIDs
 
-#### core_data (13 repositories)
+#### core_data (13 repositories + 3 services)
 - ✅ Supabase client manager
 - ✅ AppState (active community, user roles)
 - ✅ AuthRepository (signup, signin, signout)
@@ -63,10 +86,17 @@ All functions include:
 - ✅ HouseholdRepository (unit and member management)
 - ✅ ExpenseRepository (financial tracking)
 - ✅ IncomeRepository (revenue tracking)
+- ✅ RecurringBillingRepository (automated invoicing)
+- ✅ SecurityPassRepository (pass requests & validation)
+- ✅ NotificationService (OneSignal push notifications)
+- ✅ RealtimeService (Supabase realtime subscriptions)
+- ✅ StorageService (file upload/download management)
 
-#### core_ui (theme + widgets)
-- ✅ Material 3 theme with dynamic branding
+#### core_ui (theme + widgets + services)
+- ✅ Material 3 theme with FlexColorScheme dynamic branding
 - ✅ HOAppButton, HOAppCard, LoadingIndicator
+- ✅ FileUploadWidget, ImageUploadWidget
+- ✅ PDFService (pool waivers, invoices)
 - ✅ Google Fonts integration
 - ✅ Reusable component library
 
@@ -78,22 +108,30 @@ All functions include:
 - ✅ Login page (with invite token support)
 - ✅ Create Community wizard
 
-**Community Portal (15+ screens):**
-- ✅ Portal Shell with role-aware navigation
-- ✅ Announcements page (full CRUD, pin, schedule)
-- ✅Violations page (submission, photo upload, staff workflow)
+**Community Portal (25+ screens):**
+- ✅ Portal Shell with role-aware sidebar navigation
+- ✅ Platform Admin Shell (cross-community management)
+- ✅ Plan Gate (plan-based feature gating component)
+- ✅ Onboarding Tour (first-time user guide)
+- ✅ Announcements page (full CRUD, pin, schedule, read tracking)
+- ✅ Violations page (submission, photo upload, anonymous reporting, staff workflow)
 - ✅ Tickets page (threaded chat, attachments, status tracking)
-- ✅ Amenities page (booking calendar, conflict detection)
-- ✅ Billing & Payments page (invoice creation, payment verification)
-- ✅ Pool Access page (registration, PDF generation, 3-month lock)
+- ✅ Amenities page (booking calendar, conflict detection) – PlanGated
+- ✅ Billing & Payments page (invoice creation, multi-category line items, payment verification)
+- ✅ Expenses page (financial tracking with categorization, receipt uploads)
+- ✅ Financial Reports page (income vs expense charts)
+- ✅ Pool Access page (registration, PDF generation, 3-month lock) – PlanGated
+- ✅ Registered Swimmers page (pool swimmer roster) – PlanGated
+- ✅ Security Pass page (visitor management, QR tokens) – PlanGated
+- ✅ QR Scanner page (pass validation for guards) – PlanGated
 - ✅ Households page (unit management, member CRUD)
 - ✅ Manage Users page (invite generation, role assignment)
-- ✅ Settings page (community branding, theme editor)
-- ✅ Expenses page (financial tracking with categorization)
-- ✅ Security Pass page (visitor management)
-- ✅ Registered Swimmers page (pool access management)
-- ✅ Beta Requests page (feature requests)
-- ✅ Feedback page (user feedback collection)
+- ✅ Settings page (community branding, theme editor, logo upload)
+- ✅ Feedback page (bug reports, feature requests, with image uploads)
+- ✅ Notifications page (notification history)
+- ✅ Beta Requests page (feature access management)
+- ✅ Plan Pricing page (upgrade display)
+- ✅ Chatbot widget (floating AI assistant with FAQ/knowledge base)
 
 **Features:**
 - ✅ GoRouter with path-based routing
@@ -128,12 +166,20 @@ All functions include:
 
 - ✅ `.env.example` – Environment template
 - ✅ `.gitignore` – Flutter + Supabase
-- ✅ `Makefile` – 12 development commands
+- ✅ `Makefile` – 18 development commands
 - ✅ `setup.sh` – Quick start script
+- ✅ `build_prod.sh` – Production build script
+- ✅ `deploy_supabase.sh` – Supabase deployment script
+- ✅ `run_tests.sh` – Test runner script
+- ✅ `cloudflare-build.sh` – Cloudflare Pages build
+- ✅ `netlify.toml` – Netlify deployment config
+- ✅ `vercel.json` – Vercel deployment config
 - ✅ `supabase/config.toml` – Supabase CLI config
 - ✅ `supabase/seed.sql` – Demo data (Elevé Homes)
+- ✅ `.github/workflows/deploy.yml` – Main CI/CD pipeline
+- ✅ `.github/workflows/deploy-vercel.yml` – Vercel auto-deploy
 
-### ✅ Documentation (5 comprehensive docs)
+### ✅ Documentation (18+ docs)
 
 1. **README.md** (200+ lines)
    - Overview, features, quick start
@@ -192,7 +238,7 @@ All functions include:
 4. **Multi-tenant Architecture** (RLS-enforced, community-scoped data)
 5. **Auto Community Detection** (Smart 0/1/>1 community logic)
 6. **Dynamic Theming** (Per-community branding and colors)
-7. **Role-based Access Control** (Admin, Officer, Guard, Resident)
+7. **Role-based Access Control** (Admin, Officer, Maintenance, Guard, Resident)
 
 #### Complete Feature Set
 8. **Announcements** – Full CRUD, pinning, scheduling, realtime updates
@@ -210,16 +256,20 @@ All functions include:
 
 ## 📊 Project Statistics
 
-- **Total Files Created:** 150+
+- **Total Files Created:** 300+
 - **Lines of Code (estimated):** 15,000+
-- **Database Tables:** 19 (all with RLS policies)
-- **Database Migrations:** 5
-- **Edge Functions:** 5 (all production-ready)
-- **Domain Models:** 13 (all with JSON serialization)
+- **Database Tables:** 35+ (all with RLS policies)
+- **Database Migrations:** 60
+- **Edge Functions:** 18 (all production-ready)
+- **Domain Models:** 23+ (all with JSON serialization)
 - **Repository Classes:** 13 (all fully implemented)
-- **Web Screens:** 15+ (all functional)
+- **Service Classes:** 3 (notification, realtime, storage)
+- **Web Screens:** 45+ (all functional)
 - **Mobile Screens:** 10+ (all functional)
-- **Documentation Pages:** 10+
+- **Storage Buckets:** 8+
+- **Test Files:** 10
+- **CI/CD Pipelines:** 2
+- **Documentation Pages:** 18+
 
 ---
 

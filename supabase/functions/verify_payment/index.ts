@@ -131,38 +131,83 @@ serve(async (req) => {
       },
     })
 
-    // Send email notification to user (non-blocking)
-    if (payment.user_id) {
-      const { data: payerProfile } = await supabaseAdmin
-        .from('profiles')
-        .select('full_name, email')
-        .eq('user_id', payment.user_id)
-        .eq('community_id', payment.community_id)
-        .maybeSingle()
-
+    // Send email notification (non-blocking)
+    // For rejected payments: notify the first primary household member of the unit
+    // For verified payments: notify only the payment submitter
+    if (payment.user_id && payment.invoices) {
       const { data: community } = await supabaseAdmin
         .from('communities')
         .select('name, slug')
         .eq('id', payment.community_id)
         .maybeSingle()
 
-      if (payerProfile?.email && community && payment.invoices) {
+      if (community) {
         const baseUrl = Deno.env.get('WEB_BASE_URL') || 'https://hoapp.net'
         const portalLink = `${baseUrl}/${community.slug}/billing`
+        const emailSubject = `Payment ${verified ? 'Verified' : 'Rejected'} - ${community.name}`
 
-        sendEmail({
-          to: payerProfile.email,
-          subject: `Payment ${verified ? 'Verified' : 'Rejected'} - ${community.name}`,
-          html: generatePaymentNotificationHTML({
-            recipientName: payerProfile.full_name || payerProfile.email.split('@')[0],
-            communityName: community.name,
-            invoiceNumber: payment.invoices.id,
-            amount: amount || payment.amount,
-            status: verified ? 'verified' : 'rejected',
-            rejectionReason: rejection_reason,
-            portalLink,
-          }),
-        }).catch(err => console.error('Email send failed:', err))
+        // Collect recipients
+        const recipients: { email: string; name: string }[] = []
+
+        if (!verified && payment.invoices?.unit_id) {
+          // Rejected: notify only the first primary household member (by created_at)
+          const { data: primaryMember } = await supabaseAdmin
+            .from('household_members')
+            .select('user_id')
+            .eq('unit_id', payment.invoices.unit_id)
+            .eq('member_role', 'primary')
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+
+          if (primaryMember) {
+            const { data: { user: memberUser } } = await supabaseAdmin.auth.admin.getUserById(primaryMember.user_id)
+            if (memberUser?.email) {
+              const { data: profile } = await supabaseAdmin
+                .from('profiles')
+                .select('full_name')
+                .eq('user_id', primaryMember.user_id)
+                .eq('community_id', payment.community_id)
+                .maybeSingle()
+              recipients.push({
+                email: memberUser.email,
+                name: profile?.full_name || memberUser.user_metadata?.full_name || memberUser.email.split('@')[0],
+              })
+            }
+          }
+        } else {
+          // Verified: notify only the submitter
+          const { data: { user: payerUser } } = await supabaseAdmin.auth.admin.getUserById(payment.user_id)
+          if (payerUser?.email) {
+            const { data: profile } = await supabaseAdmin
+              .from('profiles')
+              .select('full_name')
+              .eq('user_id', payment.user_id)
+              .eq('community_id', payment.community_id)
+              .maybeSingle()
+            recipients.push({
+              email: payerUser.email,
+              name: profile?.full_name || payerUser.user_metadata?.full_name || payerUser.email.split('@')[0],
+            })
+          }
+        }
+
+        // Send to all recipients
+        for (const recipient of recipients) {
+          sendEmail({
+            to: recipient.email,
+            subject: emailSubject,
+            html: generatePaymentNotificationHTML({
+              recipientName: recipient.name,
+              communityName: community.name,
+              invoiceNumber: payment.invoices.id,
+              amount: amount || payment.amount,
+              status: verified ? 'verified' : 'rejected',
+              rejectionReason: rejection_reason,
+              portalLink,
+            }),
+          }).catch(err => console.error('Email send failed for', recipient.email, err))
+        }
       }
     }
 

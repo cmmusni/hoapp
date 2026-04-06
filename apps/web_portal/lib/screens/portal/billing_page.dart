@@ -701,6 +701,9 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
             );
           }
 
+          // Admins can always submit payment; for My Invoices tab, everyone can.
+          final canSubmitPayment = widget.showMyInvoices || appState.isAdmin;
+
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: invoices.length,
@@ -710,6 +713,7 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
                 invoice: invoice,
                 isStaff: isStaff,
                 isAdmin: appState.isAdmin,
+                canSubmitPayment: canSubmitPayment,
                 onRefresh: _loadInvoices,
               );
             },
@@ -720,18 +724,56 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
   }
 }
 
-class _InvoiceCard extends StatelessWidget {
+class _InvoiceCard extends StatefulWidget {
   final Invoice invoice;
   final bool isStaff;
   final bool isAdmin;
+  final bool canSubmitPayment;
   final VoidCallback onRefresh;
 
   const _InvoiceCard({
     required this.invoice,
     required this.isStaff,
     required this.isAdmin,
+    required this.canSubmitPayment,
     required this.onRefresh,
   });
+
+  @override
+  State<_InvoiceCard> createState() => _InvoiceCardState();
+}
+
+class _InvoiceCardState extends State<_InvoiceCard> {
+  bool _hasSubmittedPayment = false;
+  bool _hasRejectedPayment = false;
+
+  Invoice get invoice => widget.invoice;
+
+  @override
+  void initState() {
+    super.initState();
+    if (invoice.status == InvoiceStatus.unpaid) {
+      _checkLatestPaymentStatus();
+    }
+  }
+
+  Future<void> _checkLatestPaymentStatus() async {
+    try {
+      final result = await Supabase.instance.client
+          .from('payments')
+          .select('id, status')
+          .eq('invoice_id', invoice.id)
+          .order('created_at', ascending: false)
+          .limit(1);
+      if (mounted && (result as List).isNotEmpty) {
+        final status = result.first['status'] as String;
+        setState(() {
+          _hasSubmittedPayment = status == 'submitted';
+          _hasRejectedPayment = status == 'rejected';
+        });
+      }
+    } catch (_) {}
+  }
 
   Color _getStatusColor(Invoice invoice) {
     if (invoice.status == InvoiceStatus.paid)
@@ -814,6 +856,60 @@ class _InvoiceCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (_hasSubmittedPayment) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.schedule,
+                                size: 12, color: Colors.blue.shade700),
+                            const SizedBox(width: 4),
+                            Text(
+                              'PAYMENT SUBMITTED',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (_hasRejectedPayment) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.cancel,
+                                size: 12, color: Colors.red.shade700),
+                            const SizedBox(width: 4),
+                            Text(
+                              'PAYMENT REJECTED',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.red.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (invoice.description != null) ...[
                       const SizedBox(height: 4),
                       Text(
@@ -871,9 +967,10 @@ class _InvoiceCard extends StatelessWidget {
       context: context,
       builder: (context) => _InvoiceDetailsDialog(
         invoice: invoice,
-        isStaff: isStaff,
-        isAdmin: isAdmin,
-        onRefresh: onRefresh,
+        isStaff: widget.isStaff,
+        isAdmin: widget.isAdmin,
+        canSubmitPayment: widget.canSubmitPayment,
+        onRefresh: widget.onRefresh,
       ),
     );
   }
@@ -883,12 +980,14 @@ class _InvoiceDetailsDialog extends StatefulWidget {
   final Invoice invoice;
   final bool isStaff;
   final bool isAdmin;
+  final bool canSubmitPayment;
   final VoidCallback onRefresh;
 
   const _InvoiceDetailsDialog({
     required this.invoice,
     required this.isStaff,
     required this.isAdmin,
+    required this.canSubmitPayment,
     required this.onRefresh,
   });
 
@@ -1355,7 +1454,8 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                       label: Text(_isPrintingAR ? 'Preparing...' : 'Print AR'),
                     ),
                   const Spacer(),
-                  if (_currentStatus == InvoiceStatus.unpaid)
+                  if (_currentStatus == InvoiceStatus.unpaid &&
+                      widget.canSubmitPayment)
                     SizedBox(
                       width: 180,
                       child: ElevatedButton.icon(
@@ -2031,6 +2131,7 @@ class _PaymentCardState extends State<_PaymentCard> {
       await repo.verifyPayment(paymentId: payment.id, verified: true);
 
       if (context.mounted) {
+        context.read<AppState>().requestBadgeRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Payment verified successfully')),
         );
@@ -2211,6 +2312,7 @@ class _PaymentCardState extends State<_PaymentCard> {
         );
 
         if (context.mounted) {
+          context.read<AppState>().requestBadgeRefresh();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Payment rejected')),
           );

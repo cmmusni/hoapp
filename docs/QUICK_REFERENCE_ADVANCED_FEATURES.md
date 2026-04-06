@@ -189,14 +189,17 @@ ElevatedButton(
 
 ---
 
-## 📋 Storage Buckets to Create
+## 📋 Storage Buckets (Created via Migrations)
 
 | Bucket Name | Public | Purpose |
 |-------------|--------|---------|
 | `violation-photos` | ✅ Yes | Violation report images |
-| `pool-documents` | ✅ Yes | Signed pool waivers |
-| `payment-proofs` | ❌ No | Payment receipts |
+| `pool-access-docs` | ❌ No | Signed pool access waivers |
+| `payment-proofs` | ✅ Yes | Payment receipts |
 | `community-logos` | ✅ Yes | Branding assets |
+| `announcement-attachments` | ✅ Yes | Announcement files |
+| `expense-receipts` | ✅ Yes | Expense documentation |
+| `feedback-images` | ❌ No | Feedback submission attachments |
 
 ---
 

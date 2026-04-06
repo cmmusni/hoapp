@@ -36,38 +36,55 @@
 │ └─────────────┘ └──────────────┘ └────────────┘ └───────────┘│
 │                                                                 │
 │ ┌─────────────────────────────────────────────────────────────┐│
-│ │              Edge Functions (Deno)                          ││
+│ │              Edge Functions (Deno) – 18 Functions           ││
 │ │  • create_community  • create_invite  • accept_invite      ││
-│ │  • verify_payment    • book_amenity                        ││
+│ │  • verify_payment    • book_amenity   • batch_operations   ││
+│ │  • create_upgrade_checkout  • paymongo_webhook             ││
+│ │  • provision_community  • contact_us  • request_access     ││
+│ │  • review_pass  • validate_pass  • scan_invoice            ││
+│ │  • send_notification  • delete_user  • onesignal_cleanup   ││
 │ └─────────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## 🏗️ Database Architecture
 
-### Multi-Tenancy Model
+### Multi-Tenancy Model (35+ Tables)
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                      communities                              │
-│  • id (UUID)                                                 │
-│  • slug (unique)                                             │
-│  • settings (JSONB) → dynamic branding                       │
+│  • id (UUID), slug (unique), plan (starter/pro/enterprise)   │
+│  • settings (JSONB) → dynamic branding, logo_url             │
 └────────────┬─────────────────────────────────────────────────┘
              │
              ├─► profiles (user_id, community_id) [PK]
              ├─► user_roles (role per community)
              ├─► units (household units)
-             │     └─► household_members (unit ↔ user many-to-many)
+             │     ├─► unit_types (configurable, max_pax)
+             │     └─► household_members (unit ↔ user, primary/member/child/tenant/other)
              ├─► announcements
-             ├─► violations
+             │     ├─► announcement_reads (read tracking)
+             │     └─► announcement_attachments
+             ├─► violations (anonymous reporting)
              ├─► tickets
-             │     └─► messages
-             ├─► amenities
+             │     └─► messages (threaded)
+             ├─► amenities (dynamic rules JSONB)
              │     └─► amenity_bookings (with tstzrange exclusion)
              ├─► invoices
-             │     └─► payments
-             └─► pool_access_registrations
+             │     ├─► invoice_line_items (multi-category)
+             │     └─► payments (proof upload, verification)
+             ├─► expenses (with line items)
+             ├─► manual_income
+             ├─► recurring_billings (monthly/quarterly/yearly)
+             ├─► pool_access_registrations
+             │     └─► pool_registered_swimmers (name, age)
+             ├─► pass_types → security_passes → pass_scan_logs
+             ├─► plan_subscriptions, plan_pricing
+             ├─► feedback, contact_messages
+             ├─► user_preferences, beta_access_requests
+             ├─► audit_logs
+             └─► notification_tokens
 ```
 
 ### Row Level Security (RLS) Strategy
@@ -182,19 +199,30 @@ Resident sees verified payment + receipt
 ### Web Portal (Flutter Web)
 
 **Routing Strategy:**
-- Root: Marketing & SaaS (`/`, `/signup`, `/login`)
-- Portal: `/:community/*` with role-aware menus
+- Root: Marketing & SaaS (`/`, `/signup`, `/login`, `/features`, `/pricing`, `/contact`)
+- Portal: `/:community/*` with role-aware menus (20+ routes)
+- Platform Admin: `/admin` for cross-community management
 - ShellRoute for consistent appbar/drawer
+- PlanGate component for plan-based feature gating
 
 **State Management:**
 - `AppState` (activeCommunity, userRoles)
 - Provider for dependency injection
-- Future: Riverpod or Bloc for complex state
+- 13 repository classes for data access
 
 **Responsive Design:**
-- Desktop: Side navigation + content area
+- Desktop: Side navigation + content area (responsive_framework)
 - Tablet: Drawer navigation
-- Mobile: Bottom navigation (future)
+- Mobile: Bottom navigation
+
+**Key Libraries:**
+- go_router ^13.0.0 (routing)
+- provider ^6.1.1 (state)
+- fl_chart ^0.70.2 (financial charts)
+- flex_color_scheme ^8.1.0 (theming)
+- mobile_scanner ^7.2.0 (QR scanning)
+- table_calendar ^3.1.3 (booking calendar)
+- pdf ^3.10.7 + printing ^5.12.0 (PDF generation)
 
 ### Mobile App (Flutter)
 
@@ -212,7 +240,8 @@ Splash
 **Navigation:**
 - BottomNavigationBar (Announcements, Violations, Tickets, Amenities, Profile)
 - Profile tab → My Household, Pool Access, Billing
-- Deep links for invite acceptance
+- Deep links for invite acceptance (uni_links)
+- supabase_flutter ^2.5.3 for backend
 
 ## 🔐 Security Model
 
@@ -227,7 +256,8 @@ Splash
 | Role              | Permissions                                    |
 |-------------------|------------------------------------------------|
 | `resident`        | View/create content, manage own household      |
-| `guard`           | Read announcements, view bookings              |
+| `guard`           | Read announcements, view bookings, scan passes |
+| `maintenance`     | Maintenance staff operations                   |
 | `hoa_officer`     | Manage content, verify payments, invite users  |
 | `community_admin` | Full community control + settings              |
 | `app_admin`       | Platform-level (via SECURITY DEFINER only)     |
