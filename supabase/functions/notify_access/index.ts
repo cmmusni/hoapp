@@ -36,30 +36,47 @@ serve(async (req) => {
 
     const supabase = createAdminClient()
 
-    // Check if this fingerprint already exists
-    const { data: existing } = await supabase
+    // Check if fingerprint OR IP is already known
+    const { data: knownFingerprint } = await supabase
       .from('portal_access_log')
       .select('id')
       .eq('fingerprint', fingerprint)
+      .limit(1)
       .maybeSingle()
 
-    if (existing) {
-      // Known device — just update last_seen_at, no email
+    const { data: knownIP } = await supabase
+      .from('portal_access_log')
+      .select('id')
+      .eq('ip_address', ipAddress)
+      .limit(1)
+      .maybeSingle()
+
+    // Always log the access (upsert by fingerprint+ip combo)
+    const { data: existingCombo } = await supabase
+      .from('portal_access_log')
+      .select('id')
+      .eq('fingerprint', fingerprint)
+      .eq('ip_address', ipAddress)
+      .maybeSingle()
+
+    if (existingCombo) {
       await supabase
         .from('portal_access_log')
-        .update({ last_seen_at: new Date().toISOString(), user_agent: userAgent, ip_address: ipAddress })
-        .eq('id', existing.id)
-
-      return jsonResponse({ ok: true, new_device: false })
+        .update({ last_seen_at: new Date().toISOString(), user_agent: userAgent })
+        .eq('id', existingCombo.id)
+    } else {
+      await supabase.from('portal_access_log').insert({
+        fingerprint,
+        user_agent: userAgent,
+        ip_address: ipAddress,
+        platform: platform ?? 'unknown',
+      })
     }
 
-    // New device — insert record
-    await supabase.from('portal_access_log').insert({
-      fingerprint,
-      user_agent: userAgent,
-      ip_address: ipAddress,
-      platform: platform ?? 'unknown',
-    })
+    // Only send email if BOTH fingerprint and IP are completely new
+    if (knownFingerprint || knownIP) {
+      return jsonResponse({ ok: true, new_access: false })
+    }
 
     // Look up the platform admin to send notification
     const { data: adminRole } = await supabase
@@ -70,7 +87,7 @@ serve(async (req) => {
 
     if (!adminRole) {
       console.warn('No platform admin found')
-      return jsonResponse({ ok: true, new_device: true, sent: false })
+      return jsonResponse({ ok: true, new_access: true, sent: false })
     }
 
     const { data: { user: adminUser } } = await supabase.auth.admin.getUserById(
@@ -79,7 +96,7 @@ serve(async (req) => {
 
     if (!adminUser?.email) {
       console.warn('Platform admin has no email')
-      return jsonResponse({ ok: true, new_device: true, sent: false })
+      return jsonResponse({ ok: true, new_access: true, sent: false })
     }
 
     const timestamp = new Date().toLocaleString('en-US', {
@@ -95,11 +112,11 @@ serve(async (req) => {
 
     const sent = await sendEmail({
       to: adminUser.email,
-      subject: `[HOApp] New device accessed portal – ${timestamp}`,
+      subject: `[HOApp] New device & IP accessed portal – ${timestamp}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #215e3f;">🆕 New Device Detected</h2>
-          <p>A <strong>new device</strong> accessed <strong>hoapp.net</strong> at <strong>${timestamp}</strong> (Asia/Manila).</p>
+          <h2 style="color: #215e3f;">🆕 New Device &amp; IP Detected</h2>
+          <p>A completely new visitor accessed <strong>hoapp.net</strong> at <strong>${timestamp}</strong> (Asia/Manila).</p>
           <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
             <tr>
               <td style="padding: 8px; font-weight: bold; vertical-align: top; width: 110px;">Platform:</td>
@@ -115,12 +132,12 @@ serve(async (req) => {
             </tr>
           </table>
           <hr style="margin-top: 24px; border: none; border-top: 1px solid #eee;" />
-          <p style="color: #888; font-size: 12px;">This is an automated new-device notification from HOApp.</p>
+          <p style="color: #888; font-size: 12px;">This is an automated access notification from HOApp.</p>
         </div>
       `,
     })
 
-    return jsonResponse({ ok: true, new_device: true, sent })
+    return jsonResponse({ ok: true, new_access: true, sent })
   } catch (err) {
     console.error('notify_access error:', err)
     return errorResponse('Internal server error', 500)

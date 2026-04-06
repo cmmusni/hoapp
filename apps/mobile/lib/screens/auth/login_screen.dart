@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -267,7 +268,8 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ],
                         ),
-                        child: Form(
+                        child: AutofillGroup(
+                          child: Form(
                           key: _formKey,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -348,6 +350,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   fillColor: Colors.grey.shade50,
                                 ),
                                 keyboardType: TextInputType.emailAddress,
+                                autofillHints: const [AutofillHints.email],
                                 textInputAction: TextInputAction.next,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -398,6 +401,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   fillColor: Colors.grey.shade50,
                                 ),
                                 obscureText: _obscurePassword,
+                                autofillHints: const [AutofillHints.password],
                                 textInputAction: TextInputAction.done,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -445,6 +449,7 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ],
                           ),
+                        ),
                         ),
                       ),
                       const SizedBox(height: 32),

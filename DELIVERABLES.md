@@ -51,7 +51,7 @@ This is a **production-ready scaffold** for a multi-tenant HOA/Condo management 
 - ✅ `batch_operations` – Batch CRUD operations
 - ✅ `onesignal_cleanup` – Device token cleanup
 - ✅ `invoice_email` – Invoice email notifications
-- ✅ `notify_access` – Portal access tracking and email alerts
+- ✅ `notify_access` – Portal access tracking with fingerprint+IP combo detection and email alerts
 - ✅ `send_pass_email` – Security pass QR code email delivery
 
 All functions include:

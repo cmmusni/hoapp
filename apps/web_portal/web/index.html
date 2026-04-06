@@ -117,5 +117,45 @@
   </noscript>
 
   <script src="flutter_bootstrap.js" async></script>
+
+  <!-- Workaround: Password managers (Google, iOS Keychain) fill hidden <input>
+       elements but Flutter's CanvasKit may not receive the change events.
+       This observer detects value changes on any <input> and dispatches
+       proper 'input' events so Flutter's text editing channel picks them up. -->
+  <script>
+    (function() {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+          m.addedNodes.forEach(function(node) {
+            if (node.tagName === 'INPUT') { attachAutofillWatcher(node); }
+            if (node.querySelectorAll) {
+              node.querySelectorAll('input').forEach(attachAutofillWatcher);
+            }
+          });
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      function attachAutofillWatcher(input) {
+        if (input._autofillWatched) return;
+        input._autofillWatched = true;
+
+        // Poll for value changes caused by password managers
+        var lastValue = input.value;
+        var interval = setInterval(function() {
+          if (input.value !== lastValue) {
+            lastValue = input.value;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          // Stop polling once the input is removed from DOM
+          if (!document.body.contains(input)) { clearInterval(interval); }
+        }, 300);
+      }
+
+      // Also watch inputs that already exist
+      document.querySelectorAll('input').forEach(attachAutofillWatcher);
+    })();
+  </script>
 </body>
 </html>

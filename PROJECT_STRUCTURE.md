@@ -158,14 +158,14 @@ hoapp/
 │   ├── config.toml               # Supabase CLI config
 │   ├── seed.sql                  # Demo data (Elevé Homes)
 │   ├── reset_schema.sql          # Schema reset script
-│   ├── migrations/               # 62 migration files (Mar 22 – Apr 2, 2026)
+│   ├── migrations/               # 62 migration files (Mar 22 – Apr 6, 2026)
 │   │   ├── 20260322000001_initial_schema.sql      # Core tables
 │   │   ├── 20260322000002_triggers.sql            # Triggers
 │   │   ├── 20260322000003_rls_policies.sql        # RLS
 │   │   ├── 20260322000004_storage_policies.sql    # Storage
 │   │   ├── 20260322000005_enable_realtime.sql     # Realtime
-│   │   ├── ...                                     # 55 more migrations
-│   │   └── 20260406000002_portal_access_log.sql         # Latest
+│   │   ├── ...                                     # 56 more migrations
+│   │   └── 20260406000003_portal_access_log_composite_key.sql  # Latest
 │   ├── functions/                # 21 Edge Functions (Deno)
 │   │   ├── _shared/              # Shared utilities & middleware
 │   │   ├── create_community/
