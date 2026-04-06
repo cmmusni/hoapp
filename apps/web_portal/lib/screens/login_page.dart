@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
-import 'package:core_ui/core_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
@@ -147,6 +147,9 @@ class _LoginPageState extends State<LoginPage> {
         }
         return;
       }
+
+      // Tell the browser the autofill context is done so it offers to save credentials
+      TextInput.finishAutofillContext();
 
       // Handle invite acceptance and unit assignment from metadata
       if (mounted) {
@@ -517,201 +520,459 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    const brand = Color(0xFF2E5C3F);
+
     return Scaffold(
       body: Stack(
         children: [
-          SingleChildScrollView(
-            child: Center(
+          // Gradient background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFF0F7F4),
+                  Color(0xFFE8F5E9),
+                  Color(0xFFF5F5F0),
+                ],
+              ),
+            ),
+          ),
+
+          // Decorative circles
+          Positioned(
+            top: -80,
+            right: -60,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: brand.withOpacity(0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -100,
+            left: -80,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: brand.withOpacity(0.04),
+              ),
+            ),
+          ),
+
+          // Main content
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 20 : 24,
+                vertical: 40,
+              ),
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 400),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 120),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _communityLogoUrl != null
-                          ? Image.network(
-                              _communityLogoUrl!,
-                              height: 120,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  'assets/images/hoapp-logo.png',
-                                  height: 120,
+                constraints: const BoxConstraints(maxWidth: 440),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: brand.withOpacity(0.08),
+                      blurRadius: 40,
+                      offset: const Offset(0, 12),
+                      spreadRadius: 4,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(isMobile ? 28 : 40),
+                  child: AutofillGroup(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Logo
+                          _communityLogoUrl != null
+                              ? Image.network(
+                                  _communityLogoUrl!,
+                                  height: isMobile ? 72 : 90,
+                                  fit: BoxFit.contain,
                                   errorBuilder: (context, error, stackTrace) {
-                                    return const SizedBox(height: 120);
+                                    return Image.asset(
+                                      'assets/images/hoapp-logo.png',
+                                      height: isMobile ? 72 : 90,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return SizedBox(
+                                            height: isMobile ? 72 : 90);
+                                      },
+                                    );
                                   },
-                                );
-                              },
-                            )
-                          : Image.asset(
-                              'assets/images/hoapp-logo.png',
-                              height: 150,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const SizedBox(height: 150);
-                              },
+                                )
+                              : Image.asset(
+                                  'assets/images/hoapp-logo.png',
+                                  height: isMobile ? 80 : 100,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return SizedBox(
+                                        height: isMobile ? 80 : 100);
+                                  },
+                                ),
+                          const SizedBox(height: 24),
+
+                          // Title
+                          Text(
+                            widget.communitySlug != null
+                                ? 'Welcome back'
+                                : 'Welcome back',
+                            style: TextStyle(
+                              fontSize: isMobile ? 22 : 26,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF1F2937),
                             ),
-                      if (widget.communitySlug != null) ...[
-                        const SizedBox(height: 24),
-                        Text(
-                          widget.communitySlug != null
-                              ? 'Login to $_communityDisplayName'
-                              : 'Login',
-                          style: Theme.of(context).textTheme.headlineMedium,
-                          textAlign: TextAlign.center,
-                        )
-                      ],
-                      const SizedBox(height: 32),
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.email),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _passwordController,
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock),
-                        ),
-                        obscureText: true,
-                        textInputAction: TextInputAction.done,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          return null;
-                        },
-                        onFieldSubmitted: (_) => _handleLogin(),
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed:
-                              _isLoading ? null : _showForgotPasswordDialog,
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            textAlign: TextAlign.center,
                           ),
-                          child: const Text(
-                            'Forgot Password?',
-                            style: TextStyle(fontSize: 13),
+                          const SizedBox(height: 6),
+                          Text(
+                            widget.communitySlug != null
+                                ? 'Sign in to $_communityDisplayName'
+                                : 'Sign in to your account',
+                            style: TextStyle(
+                              fontSize: isMobile ? 13 : 14,
+                              color: Colors.grey.shade500,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
-                      ),
-                      if (_errorMessage != null) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.red.shade200),
+                          const SizedBox(height: 32),
+
+                          // Invite banner
+                          if (widget.inviteToken != null) ...[
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    brand.withOpacity(0.08),
+                                    brand.withOpacity(0.04),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                border:
+                                    Border.all(color: brand.withOpacity(0.15)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: brand.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(
+                                        Icons.mail_outline_rounded,
+                                        color: brand,
+                                        size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'You\'ve been invited${widget.communitySlug != null ? ' to $_communityDisplayName' : ''}! Sign in or create an account.',
+                                      style: TextStyle(
+                                        color: brand.withOpacity(0.85),
+                                        fontSize: 12.5,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+
+                          // Error message
+                          if (_errorMessage != null) ...[
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                    color: Colors.red.shade200, width: 1),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.error_outline_rounded,
+                                      color: Colors.red.shade600, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage!,
+                                      style: TextStyle(
+                                        color: Colors.red.shade700,
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // Email field
+                          TextFormField(
+                            controller: _emailController,
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              hintText: 'you@example.com',
+                              prefixIcon: Icon(Icons.email_outlined,
+                                  color: Colors.grey.shade400, size: 20),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade200),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade200),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide:
+                                    const BorderSide(color: brand, width: 1.5),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                    color: Colors.red.shade300, width: 1),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 16),
+                              labelStyle: TextStyle(
+                                  color: Colors.grey.shade500, fontSize: 14),
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                            autofillHints: const [AutofillHints.email],
+                            textInputAction: TextInputAction.next,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your email';
+                              }
+                              return null;
+                            },
                           ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.error_outline,
-                                  color: Colors.red.shade700, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _errorMessage!,
+                          const SizedBox(height: 16),
+
+                          // Password field
+                          TextFormField(
+                            controller: _passwordController,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              prefixIcon: Icon(Icons.lock_outline_rounded,
+                                  color: Colors.grey.shade400, size: 20),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade200),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade200),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide:
+                                    const BorderSide(color: brand, width: 1.5),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                    color: Colors.red.shade300, width: 1),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 16),
+                              labelStyle: TextStyle(
+                                  color: Colors.grey.shade500, fontSize: 14),
+                            ),
+                            obscureText: true,
+                            autofillHints: const [AutofillHints.password],
+                            textInputAction: TextInputAction.done,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your password';
+                              }
+                              return null;
+                            },
+                            onFieldSubmitted: (_) => _handleLogin(),
+                          ),
+
+                          // Forgot password
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed:
+                                  _isLoading ? null : _showForgotPasswordDialog,
+                              style: TextButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                foregroundColor: brand,
+                              ),
+                              child: const Text(
+                                'Forgot Password?',
+                                style: TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Login button
+                          SizedBox(
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleLogin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: brand,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: brand.withOpacity(0.6),
+                                disabledForegroundColor:
+                                    Colors.white.withOpacity(0.8),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Sign In',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Create account / Sign up link
+                          if (widget.inviteToken != null)
+                            SizedBox(
+                              height: 52,
+                              child: OutlinedButton(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () {
+                                        final path = widget.communitySlug !=
+                                                null
+                                            ? '/${widget.communitySlug}/signup?invite=${widget.inviteToken}'
+                                            : '/signup?invite=${widget.inviteToken}';
+                                        context.go(path);
+                                      },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: brand,
+                                  side: const BorderSide(
+                                      color: brand, width: 1.5),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Create Account',
                                   style: TextStyle(
-                                    color: Colors.red.shade700,
-                                    fontSize: 13,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      if (widget.inviteToken != null) ...[
-                        Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.mail,
-                                  color: Theme.of(context).colorScheme.primary),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'You\'ve been invited${widget.communitySlug != null ? ' to $_communityDisplayName' : ''}! Go to your email to accept the invitation or login here with your credentials if already accepted.',
+                            )
+                          else ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Don\'t have an account? ',
                                   style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer,
                                     fontSize: 13,
+                                    color: Colors.grey.shade500,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      const SizedBox(height: 24),
-                      HOAppButton(
-                        label: 'Login',
-                        onPressed: _isLoading ? null : _handleLogin,
-                        isLoading: _isLoading,
+                                GestureDetector(
+                                  onTap: _isLoading
+                                      ? null
+                                      : () => context.go('/signup'),
+                                  child: const Text(
+                                    'Sign up',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: brand,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      if (widget.inviteToken != null)
-                        HOAppButton(
-                          label: 'Create Account',
-                          onPressed: _isLoading
-                              ? null
-                              : () {
-                                  final path = widget.communitySlug != null
-                                      ? '/${widget.communitySlug}/signup?invite=${widget.inviteToken}'
-                                      : '/signup?invite=${widget.inviteToken}';
-                                  context.go(path);
-                                },
-                          isOutlined: true,
-                        )
-                      else
-                        TextButton(
-                          onPressed:
-                              _isLoading ? null : () => context.go('/signup'),
-                          child: const Text('Don\'t have an account? Sign up'),
-                        ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
+
+          // Back button
           Positioned(
             top: 16,
             left: 16,
             child: SafeArea(
-              child: IconButton(
-                onPressed: () => context.go('/'),
-                icon: const Icon(Icons.arrow_back),
-                tooltip: 'Back to Home',
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.grey.shade100,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () => context.go('/'),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                  tooltip: 'Back to Home',
+                  color: const Color(0xFF374151),
                 ),
               ),
             ),

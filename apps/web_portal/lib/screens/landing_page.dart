@@ -1,6 +1,8 @@
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'marketing_nav_bar.dart';
+import 'cookie_consent_banner.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -280,6 +282,15 @@ class LandingPage extends StatelessWidget {
 
           // Fixed navigation bar at top
           const MarketingNavBar(activePage: 'Home'),
+
+          // Cookie consent banner
+          const CookieConsentBanner(),
+
+          // Chatbot
+          ChatbotWidget(
+            currentPage: 'landing',
+            onNavigate: (route) => context.go(route),
+          ),
         ],
       ),
     );

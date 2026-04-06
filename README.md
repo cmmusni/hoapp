@@ -27,8 +27,8 @@ hoapp/
 │   ├── core_domain/     # Business logic & models (23+ models)
 │   └── core_data/       # Data layer, repositories (13), services (3)
 ├── supabase/
-│   ├── migrations/      # 60 migration files (schema, RLS, triggers, storage)
-│   ├── functions/       # 18 Edge Functions (Deno)
+│   ├── migrations/      # 62 migration files (schema, RLS, triggers, storage)
+│   ├── functions/       # 21 Edge Functions (Deno)
 │   └── seed.sql         # Demo data
 ├── .github/workflows/   # CI/CD pipelines (deploy.yml, deploy-vercel.yml)
 └── Makefile             # Development commands
@@ -300,6 +300,8 @@ GitHub Actions workflows:
 - **QR Token Generation**: Unique tokens for pass validation
 - **QR Scanner**: Built-in scanner for guards at entry points
 - **Scan Logging**: Track entry/exit scans with timestamps
+- **Visitor Details**: Capture visitor name, contact info, and email
+- **Email Delivery**: Auto-send QR pass to visitor email
 
 #### 💳 Billing & Payments
 - **Invoice Management**: Create invoices with multi-category line items
@@ -326,6 +328,11 @@ GitHub Actions workflows:
 - **Subscription Tracking**: Plan subscription status with expiry management
 - **Automated Expiry**: CRON-based subscription expiry enforcement
 
+#### 🔒 Privacy & Compliance
+- **Cookie Consent Banner**: GDPR-compliant cookie consent with accept/decline
+- **Portal Access Tracking**: Browser fingerprint-based access logging
+- **Access Notifications**: Email alerts for new device access
+
 #### 🤖 User Engagement
 - **Onboarding Tour**: First-time user guided walkthrough
 - **Chatbot Widget**: Floating AI assistant with FAQ/knowledge base
@@ -335,10 +342,12 @@ GitHub Actions workflows:
 - **Contact Form**: Public contact form for inquiries
 
 #### 🔔 Notifications
-- **OneSignal Integration**: Push notification delivery
+- **OneSignal Integration**: Push notification delivery (mobile)
 - **Device Token Management**: Track notification tokens per user
 - **Notification History**: View past notifications
 - **Token Cleanup**: Automated stale token removal via edge function
+- **Invoice Email Notifications**: Email notifications for new invoices
+- **Portal Access Alerts**: Email notification on new device access
 
 ## 🗄️ Database Schema
 
@@ -371,11 +380,11 @@ GitHub Actions workflows:
 - `feedback`, `contact_messages`, `user_preferences`, `beta_access_requests`
 
 **System:**
-- `audit_logs`, `notification_tokens`
+- `audit_logs`, `notification_tokens`, `portal_access_log`
 
 **Storage Buckets:** violation-photos, payment-proofs, pool-access-docs, community-logos, announcement-attachments, expense-receipts, feedback-images
 
-All tables protected by Row Level Security (RLS). 60 migration files applied (March 22 – April 2, 2026).
+All tables protected by Row Level Security (RLS). 62 migration files applied (March 22 – April 6, 2026).
 
 ## 🔐 Security
 
@@ -388,7 +397,7 @@ All tables protected by Row Level Security (RLS). 60 migration files applied (Ma
 - Anonymous violation reporter privacy protection
 - PKCE-based email verification flow
 
-## ⚙️ Edge Functions (18)
+## ⚙️ Edge Functions (21)
 
 | Function | Purpose |
 |----------|---------|
@@ -409,6 +418,9 @@ All tables protected by Row Level Security (RLS). 60 migration files applied (Ma
 | `delete_user` | User account deletion |
 | `batch_operations` | Batch CRUD (announcements, invoices, tickets, bookings) |
 | `onesignal_cleanup` | Device token cleanup |
+| `invoice_email` | Invoice email notifications |
+| `notify_access` | Portal access tracking and notifications |
+| `send_pass_email` | Security pass QR code email delivery |
 | `_shared` | Shared utilities, middleware, helpers |
 
 ## 🧪 Testing
@@ -510,9 +522,9 @@ Community logos stored in `community-logos` storage bucket.
 
 | Metric | Count |
 |--------|-------|
-| Database Migrations | 60 |
+| Database Migrations | 62 |
 | Database Tables | 35+ |
-| Edge Functions | 18 |
+| Edge Functions | 21 |
 | Domain Models | 23+ |
 | Repositories | 13 |
 | Services | 3 |

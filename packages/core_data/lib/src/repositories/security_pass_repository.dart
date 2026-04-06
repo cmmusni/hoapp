@@ -38,7 +38,53 @@ class SecurityPassRepository {
     }
 
     final rows = await query.order('created_at', ascending: false);
-    return rows.map<SecurityPass>((r) => SecurityPass.fromJson(r)).toList();
+
+    // Collect unique requester IDs to batch-fetch profile names & units
+    final requesterIds = rows
+        .map((r) => r['requested_by'] as String?)
+        .whereType<String>()
+        .toSet()
+        .toList();
+
+    // Fetch profiles for requester names
+    Map<String, String> nameMap = {};
+    if (requesterIds.isNotEmpty) {
+      final profiles = await _client
+          .from('profiles')
+          .select('user_id, full_name')
+          .eq('community_id', communityId)
+          .inFilter('user_id', requesterIds);
+      for (final p in profiles) {
+        final uid = p['user_id'] as String?;
+        final name = p['full_name'] as String?;
+        if (uid != null && name != null) nameMap[uid] = name;
+      }
+    }
+
+    // Fetch household_members + units for requester unit numbers
+    Map<String, String> unitMap = {};
+    if (requesterIds.isNotEmpty) {
+      final members = await _client
+          .from('household_members')
+          .select('user_id, units(unit_no)')
+          .eq('community_id', communityId)
+          .inFilter('user_id', requesterIds);
+      for (final m in members) {
+        final uid = m['user_id'] as String?;
+        final unitData = m['units'];
+        if (uid != null && unitData is Map && unitData['unit_no'] != null) {
+          unitMap[uid] = unitData['unit_no'] as String;
+        }
+      }
+    }
+
+    // Merge requester info into pass rows
+    return rows.map<SecurityPass>((r) {
+      final uid = r['requested_by'] as String?;
+      r['requester_name'] = uid != null ? nameMap[uid] : null;
+      r['unit_no'] = uid != null ? unitMap[uid] : null;
+      return SecurityPass.fromJson(r);
+    }).toList();
   }
 
   Future<SecurityPass?> getPassByQrToken(String qrToken) async {
@@ -51,7 +97,7 @@ class SecurityPassRepository {
     return SecurityPass.fromJson(row);
   }
 
-  Future<void> createPass({
+  Future<Map<String, dynamic>?> createPass({
     required String communityId,
     required String passTypeId,
     required String visitorName,
@@ -74,12 +120,12 @@ class SecurityPassRepository {
     final random = Random.secure();
     final bytes = List<int>.generate(32, (_) => random.nextInt(256));
     final qrToken = base64Url.encode(bytes).replaceAll('=', '');
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
     final isNowValid = validFrom.isBefore(DateTime.now()) ||
         validFrom.isAtSameMomentAs(DateTime.now());
     final status = isNowValid ? 'active' : 'approved';
 
-    await _client.from('security_passes').insert({
+    final rows = await _client.from('security_passes').insert({
       'community_id': communityId,
       'pass_type_id': passTypeId,
       'requested_by': userId,
@@ -92,15 +138,37 @@ class SecurityPassRepository {
       'plate_number': plateNumber,
       'vehicle_description': vehicleDescription,
       'items_description': itemsDescription,
-      'valid_from': validFrom.toIso8601String(),
-      'valid_until': validUntil.toIso8601String(),
+      'valid_from': validFrom.toUtc().toIso8601String(),
+      'valid_until': validUntil.toUtc().toIso8601String(),
       'max_uses': maxUses,
       'notes': notes,
       'qr_token': qrToken,
       'qr_generated_at': now,
       'reviewed_by': userId,
       'reviewed_at': now,
-    });
+    }).select('id, qr_token');
+
+    if (rows.isNotEmpty) return rows.first;
+    return null;
+  }
+
+  /// Send QR code email to visitor (calls Edge Function)
+  Future<void> sendPassEmail({
+    required String passId,
+    required String communityId,
+  }) async {
+    final jwt = _client.auth.currentSession?.accessToken;
+    await _client.functions.invoke(
+      'send_pass_email',
+      headers: {
+        if (jwt != null) 'x-user-token': jwt,
+      },
+      body: {
+        'pass_id': passId,
+        'community_id': communityId,
+        if (jwt != null) '_jwt': jwt,
+      },
+    );
   }
 
   /// Approve or reject a pass (calls Edge Function)

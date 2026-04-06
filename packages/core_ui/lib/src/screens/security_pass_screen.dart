@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../adaptive/adaptive_layout.dart';
 
 const _brand = Color(0xff215e3f);
@@ -35,11 +37,13 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
       final appState = context.read<AppState>();
       final communityId = appState.activeCommunityId!;
       final isStaff = appState.isStaff;
+      final isGuard = appState.activeRole?.role == Role.guard;
       final userId = Supabase.instance.client.auth.currentUser?.id;
 
       final futures = await Future.wait([
         _repo.getPassTypes(communityId),
-        _repo.getPasses(communityId, requestedBy: isStaff ? null : userId),
+        _repo.getPasses(communityId,
+            requestedBy: (isStaff || isGuard) ? null : userId),
       ]);
 
       if (mounted) {
@@ -177,11 +181,19 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
                             itemCount: _filteredPasses.length,
                             itemBuilder: (_, i) {
                               final pass = _filteredPasses[i];
+                              final currentUserId =
+                                  Supabase.instance.client.auth.currentUser?.id;
+                              final canDelete = appState.isAdmin ||
+                                  (currentUserId != null &&
+                                      pass.requestedBy == currentUserId);
                               return _PassCard(
                                 pass: pass,
                                 isStaff: isStaff,
                                 onTap: () => _showPassDetails(
                                     context, pass, isStaff, isGuard),
+                                onDelete: canDelete
+                                    ? () => _confirmDelete(context, pass)
+                                    : null,
                               );
                             },
                           ),
@@ -289,6 +301,40 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
       ),
     );
   }
+
+  Future<void> _confirmDelete(BuildContext ctx, SecurityPass pass) async {
+    final confirmed = await showDialog<bool>(
+      context: ctx,
+      builder: (dlg) => AlertDialog(
+        title: const Text('Delete Pass'),
+        content: Text(
+          'Are you sure you want to permanently delete the pass for "${pass.visitorName ?? 'Unknown Visitor'}"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dlg).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dlg).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      try {
+        await SecurityPassRepository().deletePass(pass.id);
+        _loadData();
+      } catch (e) {
+        if (ctx.mounted) {
+          ScaffoldMessenger.of(ctx)
+              .showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      }
+    }
+  }
 }
 
 // ─── Pass Card ───────────────────────────────────────────────────────────────
@@ -297,11 +343,13 @@ class _PassCard extends StatelessWidget {
   final SecurityPass pass;
   final bool isStaff;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   const _PassCard({
     required this.pass,
     required this.isStaff,
     required this.onTap,
+    this.onDelete,
   });
 
   @override
@@ -351,6 +399,25 @@ class _PassCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
+                        Icon(Icons.person_outline,
+                            size: 12, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            [
+                              pass.requesterName ?? 'Unknown',
+                              if (pass.unitNo != null) 'Unit ${pass.unitNo}',
+                            ].join(' · '),
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.grey[500]),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
                         Icon(Icons.calendar_today,
                             size: 12, color: Colors.grey[500]),
                         const SizedBox(width: 4),
@@ -363,21 +430,41 @@ class _PassCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _statusLabel(statusStr),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _statusLabel(statusStr),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
                   ),
-                ),
+                  if (onDelete != null) ...[
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      height: 28,
+                      width: 28,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        iconSize: 18,
+                        icon: Icon(Icons.delete_outline,
+                            color: Colors.red.shade300),
+                        onPressed: onDelete,
+                        tooltip: 'Delete pass',
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -471,35 +558,100 @@ class _PassDetailsSheet extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // QR placeholder
-            Center(
-              child: Container(
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  color: _brand.withValues(alpha: 0.04),
-                  border: Border.all(
-                      color: _brand.withValues(alpha: 0.15), width: 1.5),
-                  borderRadius: BorderRadius.circular(16),
-                ),
+            // QR code
+            if (pass.qrToken != null)
+              Center(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.qr_code_2, size: 64, color: _brand),
-                    const SizedBox(height: 6),
-                    Text(
-                      pass.qrToken?.substring(0, 8) ?? 'N/A',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                        fontFamily: 'monospace',
-                        letterSpacing: 1,
+                    Container(
+                      width: 180,
+                      height: 180,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(
+                            color: _brand.withValues(alpha: 0.15), width: 1.5),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: QrImageView(
+                        data: pass.qrToken!,
+                        version: QrVersions.auto,
+                        size: 156,
+                        eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: _brand,
+                        ),
+                        dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: _brand,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: pass.qrToken!));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Token copied to clipboard'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                pass.qrToken!,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                  fontFamily: 'monospace',
+                                  letterSpacing: 0.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(Icons.copy, size: 14, color: Colors.grey[500]),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
+              )
+            else
+              Center(
+                child: Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    color: _brand.withValues(alpha: 0.04),
+                    border: Border.all(
+                        color: _brand.withValues(alpha: 0.15), width: 1.5),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.qr_code_2, size: 64, color: _brand),
+                      SizedBox(height: 6),
+                      Text('No QR',
+                          style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                ),
               ),
-            ),
             const SizedBox(height: 20),
 
             // Visitor name
@@ -528,11 +680,25 @@ class _PassDetailsSheet extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  _DetailRow(
+                      icon: Icons.person_outline,
+                      label: 'Requested By',
+                      value: pass.requesterName ?? 'Unknown'),
+                  if (pass.unitNo != null)
+                    _DetailRow(
+                        icon: Icons.home_outlined,
+                        label: 'Unit',
+                        value: pass.unitNo!),
                   if (pass.visitorPhone != null)
                     _DetailRow(
                         icon: Icons.phone_outlined,
                         label: 'Phone',
                         value: pass.visitorPhone!),
+                  if (pass.visitorEmail != null)
+                    _DetailRow(
+                        icon: Icons.email_outlined,
+                        label: 'Email',
+                        value: pass.visitorEmail!),
                   if (pass.companyName != null)
                     _DetailRow(
                         icon: Icons.business_outlined,
@@ -767,6 +933,7 @@ class _CreatePassSheetState extends State<_CreatePassSheet> {
   late PassType _selectedType;
   final _visitorNameCtrl = TextEditingController();
   final _visitorPhoneCtrl = TextEditingController();
+  final _visitorEmailCtrl = TextEditingController();
   final _purposeCtrl = TextEditingController();
   final _companyCtrl = TextEditingController();
   final _plateCtrl = TextEditingController();
@@ -785,6 +952,7 @@ class _CreatePassSheetState extends State<_CreatePassSheet> {
   void dispose() {
     _visitorNameCtrl.dispose();
     _visitorPhoneCtrl.dispose();
+    _visitorEmailCtrl.dispose();
     _purposeCtrl.dispose();
     _companyCtrl.dispose();
     _plateCtrl.dispose();
@@ -885,6 +1053,13 @@ class _CreatePassSheetState extends State<_CreatePassSheet> {
               label: 'Visitor Phone (optional)',
               icon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 12),
+            _styledField(
+              controller: _visitorEmailCtrl,
+              label: 'Visitor Email (optional)',
+              icon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 12),
             _styledField(
@@ -1080,13 +1255,17 @@ class _CreatePassSheetState extends State<_CreatePassSheet> {
     try {
       final appState = context.read<AppState>();
       final repo = SecurityPassRepository();
-      await repo.createPass(
+      final visitorEmail = _visitorEmailCtrl.text.trim().isEmpty
+          ? null
+          : _visitorEmailCtrl.text.trim();
+      final result = await repo.createPass(
         communityId: appState.activeCommunityId!,
         passTypeId: _selectedType.id,
         visitorName: _visitorNameCtrl.text.trim(),
         visitorPhone: _visitorPhoneCtrl.text.trim().isEmpty
             ? null
             : _visitorPhoneCtrl.text.trim(),
+        visitorEmail: visitorEmail,
         purpose: _purposeCtrl.text.trim(),
         companyName:
             _companyCtrl.text.trim().isEmpty ? null : _companyCtrl.text.trim(),
@@ -1097,6 +1276,17 @@ class _CreatePassSheetState extends State<_CreatePassSheet> {
         maxUses: 1,
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       );
+      // Send QR code email to visitor if email provided
+      if (visitorEmail != null && result != null) {
+        try {
+          await repo.sendPassEmail(
+            passId: result['id'],
+            communityId: appState.activeCommunityId!,
+          );
+        } catch (_) {
+          // Don't block pass creation if email fails
+        }
+      }
       if (mounted) {
         Navigator.of(context).pop();
         widget.onCreated();

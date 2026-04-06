@@ -315,3 +315,96 @@ export function generateInvoiceNotificationHTML(params: {
 </html>
   `.trim()
 }
+
+/**
+ * Generate security pass QR code email HTML
+ */
+export function generatePassQrEmailHTML(params: {
+  visitorName: string
+  communityName: string
+  qrToken: string
+  purpose?: string
+  validFrom: string
+  validUntil: string
+  requestedBy: string
+  unitNo?: string
+}): string {
+  const { visitorName, communityName, qrToken, purpose, validFrom, validUntil, requestedBy, unitNo } = params
+
+  // Use a QR code API to generate a QR image from the token
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrToken)}`
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Security Pass for ${communityName}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+  <div style="background: linear-gradient(135deg, #215E3F 0%, #1B5E20 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <h1 style="margin: 0; font-size: 24px;">&#128275; Security Pass</h1>
+    <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.85;">${communityName}</p>
+  </div>
+
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #e1e8ed; border-top: none; border-radius: 0 0 10px 10px;">
+    <p style="font-size: 16px; margin-top: 0;">Hi ${visitorName},</p>
+
+    <p style="font-size: 16px;">
+      A security pass has been created for your visit${unitNo ? ` to <strong>Unit ${unitNo}</strong>` : ''} at <strong>${communityName}</strong>.
+      Please present the QR code below upon arrival.
+    </p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <div style="display: inline-block; background: #f7fafc; border: 2px solid #215E3F; border-radius: 16px; padding: 20px;">
+        <img src="${qrImageUrl}" alt="Security Pass QR Code" width="200" height="200" style="display: block; margin: 0 auto;" />
+        <p style="margin: 10px 0 0; font-size: 11px; color: #718096; font-family: monospace; letter-spacing: 1px;">
+          ${qrToken.substring(0, 8)}...
+        </p>
+      </div>
+    </div>
+
+    <div style="background: #f7fafc; border-left: 4px solid #215E3F; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096; width: 120px;">Requested By</td>
+          <td style="padding: 6px 0; font-size: 14px; color: #333;">${requestedBy}</td>
+        </tr>
+        ${purpose ? `
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096;">Purpose</td>
+          <td style="padding: 6px 0; font-size: 14px; color: #333;">${purpose}</td>
+        </tr>
+        ` : ''}
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096;">Valid From</td>
+          <td style="padding: 6px 0; font-size: 14px; color: #333;">${validFrom}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096;">Valid Until</td>
+          <td style="padding: 6px 0; font-size: 14px; font-weight: 600; color: #333;">${validUntil}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="font-size: 14px; color: #718096;">
+      This pass is valid only during the dates shown above. Please ensure you arrive within the valid period.
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #e1e8ed; margin: 30px 0;">
+
+    <p style="font-size: 13px; color: #a0aec0; margin-bottom: 0;">
+      This is an automated notification from ${communityName} via HOApp. If you did not expect this, please disregard this email.
+    </p>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px; padding: 20px;">
+    <p style="font-size: 12px; color: #a0aec0; margin: 0;">
+      &copy; ${new Date().getFullYear()} HOApp. All rights reserved.
+    </p>
+  </div>
+</body>
+</html>
+  `.trim()
+}

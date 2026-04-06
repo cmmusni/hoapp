@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
-import 'package:core_ui/core_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignupPage extends StatefulWidget {
@@ -258,58 +257,126 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    const brand = Color(0xFF2E5C3F);
+
     if (_signupComplete) {
       return Scaffold(
-        body: SingleChildScrollView(
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 400),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.mark_email_read,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Check Your Email',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'We sent a confirmation email to ${_emailController.text}. Please click the link to verify your account, then log in.',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  HOAppButton(
-                    label: 'Go to Login',
-                    onPressed: () {
-                      // Build login path based on community slug and invite token
-                      String path = '/login';
-
-                      if (widget.communitySlug != null) {
-                        // Community-specific login
-                        path = '/${widget.communitySlug}/login';
-                        if (widget.inviteToken != null) {
-                          path += '?invite=${widget.inviteToken}';
-                        }
-                      } else if (widget.inviteToken != null) {
-                        // Regular login with invite token
-                        path = '/login?invite=${widget.inviteToken}';
-                      }
-
-                      context.go(path);
-                    },
-                  ),
-                ],
+        body: Stack(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFF0F7F4),
+                    Color(0xFFE8F5E9),
+                    Color(0xFFF5F5F0),
+                  ],
+                ),
               ),
             ),
-          ),
+            Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 20 : 24,
+                  vertical: 40,
+                ),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: brand.withOpacity(0.08),
+                        blurRadius: 40,
+                        offset: const Offset(0, 12),
+                        spreadRadius: 4,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(isMobile ? 28 : 40),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: brand.withOpacity(0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.mark_email_read_rounded,
+                              size: 56, color: brand),
+                        ),
+                        const SizedBox(height: 28),
+                        const Text(
+                          'Check Your Email',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'We sent a confirmation email to ${_emailController.text}. Please click the link to verify your account, then log in.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade500,
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              String path = '/login';
+                              if (widget.communitySlug != null) {
+                                path = '/${widget.communitySlug}/login';
+                                if (widget.inviteToken != null) {
+                                  path += '?invite=${widget.inviteToken}';
+                                }
+                              } else if (widget.inviteToken != null) {
+                                path = '/login?invite=${widget.inviteToken}';
+                              }
+                              context.go(path);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: brand,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text(
+                              'Go to Login',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -317,234 +384,523 @@ class _SignupPageState extends State<SignupPage> {
     return Scaffold(
       body: Stack(
         children: [
-          SingleChildScrollView(
-            child: Center(
+          // Gradient background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFF0F7F4),
+                  Color(0xFFE8F5E9),
+                  Color(0xFFF5F5F0),
+                ],
+              ),
+            ),
+          ),
+
+          // Decorative circles
+          Positioned(
+            top: -80,
+            right: -60,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: brand.withOpacity(0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -100,
+            left: -80,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: brand.withOpacity(0.04),
+              ),
+            ),
+          ),
+
+          // Main content
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 20 : 24,
+                vertical: 40,
+              ),
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 400),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Image.asset(
-                        'assets/images/hoapp-logo.png',
-                        height: 120,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        widget.inviteToken != null
-                            ? 'Create Account to Join'
-                            : widget.communitySlug != null
-                                ? 'Join ${_formatCommunityName(widget.communitySlug!)} Community'
-                                : 'Create Account',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      if (widget.communitySlug != null &&
-                          widget.inviteToken == null) ...[
-                        const SizedBox(height: 8),
+                constraints: const BoxConstraints(maxWidth: 440),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: brand.withOpacity(0.08),
+                      blurRadius: 40,
+                      offset: const Offset(0, 12),
+                      spreadRadius: 4,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(isMobile ? 28 : 40),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Logo
+                        Image.asset(
+                          'assets/images/hoapp-logo.png',
+                          height: isMobile ? 72 : 90,
+                          errorBuilder: (context, error, stackTrace) {
+                            return SizedBox(height: isMobile ? 72 : 90);
+                          },
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Title
                         Text(
-                          'Sign up as a resident and join your unit',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey.shade600,
-                                  ),
+                          widget.inviteToken != null
+                              ? 'Create Account to Join'
+                              : widget.communitySlug != null
+                                  ? 'Join ${_formatCommunityName(widget.communitySlug!)}'
+                                  : 'Create Account',
+                          style: TextStyle(
+                            fontSize: isMobile ? 22 : 26,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1F2937),
+                          ),
                           textAlign: TextAlign.center,
                         ),
-                      ],
-                      const SizedBox(height: 32),
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Name',
-                          prefixIcon: Icon(Icons.person),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.communitySlug != null &&
+                                  widget.inviteToken == null
+                              ? 'Sign up as a resident and join your unit'
+                              : 'Fill in your details to get started',
+                          style: TextStyle(
+                            fontSize: isMobile ? 13 : 14,
+                            color: Colors.grey.shade500,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textCapitalization: TextCapitalization.words,
-                        textInputAction: TextInputAction.next,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your name';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: const Icon(Icons.email),
-                          suffixIcon: _emailLocked
-                              ? const Icon(Icons.lock_outline, size: 18)
-                              : null,
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        readOnly: _emailLocked,
-                        enabled: !_emailLocked,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      // Show unit number field only for community-specific signups (not invite-based)
-                      if (widget.communitySlug != null &&
-                          widget.inviteToken == null) ...[
-                        if (_loadingUnits)
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Loading available units...',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                        const SizedBox(height: 32),
+
+                        // Name field
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: 'Full Name',
+                            hintText: 'Juan Dela Cruz',
+                            prefixIcon: Icon(Icons.person_outline_rounded,
+                                color: Colors.grey.shade400, size: 20),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
                             ),
-                          )
-                        else if (_availableUnits.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.orange.shade200,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  const BorderSide(color: brand, width: 1.5),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                  color: Colors.red.shade300, width: 1),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                            labelStyle: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 14),
+                          ),
+                          textCapitalization: TextCapitalization.words,
+                          textInputAction: TextInputAction.next,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Email field
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: InputDecoration(
+                            labelText: 'Email',
+                            hintText: 'you@example.com',
+                            prefixIcon: Icon(Icons.email_outlined,
+                                color: Colors.grey.shade400, size: 20),
+                            suffixIcon: _emailLocked
+                                ? Icon(Icons.lock_outline_rounded,
+                                    size: 18, color: Colors.grey.shade400)
+                                : null,
+                            filled: true,
+                            fillColor: _emailLocked
+                                ? Colors.grey.shade100
+                                : Colors.grey.shade50,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  const BorderSide(color: brand, width: 1.5),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                  color: Colors.red.shade300, width: 1),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                            labelStyle: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 14),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          readOnly: _emailLocked,
+                          enabled: !_emailLocked,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Unit selector (community signup only)
+                        if (widget.communitySlug != null &&
+                            widget.inviteToken == null) ...[
+                          if (_loadingUnits)
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.grey.shade200),
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: Colors.orange.shade700,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'No units available yet. Please contact your community admin.',
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: brand,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Loading available units...',
                                     style: TextStyle(
-                                      color: Colors.orange.shade900,
+                                      color: Colors.grey.shade500,
                                       fontSize: 13,
                                     ),
                                   ),
+                                ],
+                              ),
+                            )
+                          else if (_availableUnits.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade50,
+                                borderRadius: BorderRadius.circular(14),
+                                border:
+                                    Border.all(color: Colors.orange.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline_rounded,
+                                      color: Colors.orange.shade700, size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'No units available yet. Please contact your community admin.',
+                                      style: TextStyle(
+                                        color: Colors.orange.shade900,
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            DropdownButtonFormField<String>(
+                              value: _selectedUnit,
+                              decoration: InputDecoration(
+                                labelText: 'Select Your Unit',
+                                prefixIcon: Icon(Icons.home_outlined,
+                                    color: Colors.grey.shade400, size: 20),
+                                helperText: 'Choose your unit/lot number',
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade200),
                                 ),
-                              ],
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade200),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: const BorderSide(
+                                      color: brand, width: 1.5),
+                                ),
+                                errorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(
+                                      color: Colors.red.shade300, width: 1),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 16),
+                                labelStyle: TextStyle(
+                                    color: Colors.grey.shade500, fontSize: 14),
+                              ),
+                              items: _availableUnits.map((unit) {
+                                return DropdownMenuItem<String>(
+                                  value: unit,
+                                  child: Text(unit),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedUnit = value);
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please select your unit number';
+                                }
+                                return null;
+                              },
                             ),
-                          )
-                        else
-                          DropdownButtonFormField<String>(
-                            value: _selectedUnit,
-                            decoration: const InputDecoration(
-                              labelText: 'Select Your Unit',
-                              prefixIcon: Icon(Icons.home),
-                              helperText: 'Choose your unit/lot number',
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Password field
+                        TextFormField(
+                          controller: _passwordController,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: Icon(Icons.lock_outline_rounded,
+                                color: Colors.grey.shade400, size: 20),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
                             ),
-                            items: _availableUnits.map((unit) {
-                              return DropdownMenuItem<String>(
-                                value: unit,
-                                child: Text(unit),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() => _selectedUnit = value);
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please select your unit number';
-                              }
-                              return null;
-                            },
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  const BorderSide(color: brand, width: 1.5),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                  color: Colors.red.shade300, width: 1),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                            labelStyle: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 14),
                           ),
+                          obscureText: true,
+                          textInputAction: TextInputAction.next,
+                          validator: (value) {
+                            if (value == null || value.length < 6) {
+                              return 'Password must be at least 6 characters';
+                            }
+                            return null;
+                          },
+                        ),
                         const SizedBox(height: 16),
+
+                        // Confirm password field
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            prefixIcon: Icon(Icons.lock_outline_rounded,
+                                color: Colors.grey.shade400, size: 20),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  const BorderSide(color: brand, width: 1.5),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                  color: Colors.red.shade300, width: 1),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                            labelStyle: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 14),
+                          ),
+                          obscureText: true,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _handleSignup(),
+                          validator: (value) {
+                            if (value != _passwordController.text) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 28),
+
+                        // Sign up button
+                        SizedBox(
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleSignup,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: brand,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: brand.withOpacity(0.6),
+                              disabledForegroundColor:
+                                  Colors.white.withOpacity(0.8),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Login link
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Already have an account? ',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                if (widget.inviteToken != null) {
+                                  final path = widget.communitySlug != null
+                                      ? '/${widget.communitySlug}/login?invite=${widget.inviteToken}'
+                                      : '/login?invite=${widget.inviteToken}';
+                                  context.go(path);
+                                } else {
+                                  context.go('/login');
+                                }
+                              },
+                              child: const Text(
+                                'Sign in',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: brand,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                      TextFormField(
-                        controller: _passwordController,
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock),
-                        ),
-                        obscureText: true,
-                        textInputAction: TextInputAction.next,
-                        validator: (value) {
-                          if (value == null || value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _confirmPasswordController,
-                        decoration: const InputDecoration(
-                          labelText: 'Confirm Password',
-                          prefixIcon: Icon(Icons.lock_outline),
-                        ),
-                        obscureText: true,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _handleSignup(),
-                        validator: (value) {
-                          if (value != _passwordController.text) {
-                            return 'Passwords do not match';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      HOAppButton(
-                        label: 'Sign Up',
-                        onPressed: _handleSignup,
-                        isLoading: _isLoading,
-                      ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () {
-                          if (widget.inviteToken != null) {
-                            final path = widget.communitySlug != null
-                                ? '/${widget.communitySlug}/login?invite=${widget.inviteToken}'
-                                : '/login?invite=${widget.inviteToken}';
-                            context.go(path);
-                          } else {
-                            context.go('/login');
-                          }
-                        },
-                        child: const Text('Already have an account? Login'),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
+
+          // Back button
           Positioned(
             top: 16,
             left: 16,
             child: SafeArea(
-              child: IconButton(
-                onPressed: () => context.go('/'),
-                icon: const Icon(Icons.arrow_back),
-                tooltip: 'Back to Home',
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.grey.shade100,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () => context.go('/'),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                  tooltip: 'Back to Home',
+                  color: const Color(0xFF374151),
                 ),
               ),
             ),

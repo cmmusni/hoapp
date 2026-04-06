@@ -7,7 +7,6 @@ import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'onboarding_tour.dart';
 import 'chatbot/chatbot_widget.dart';
-import '../../core/onesignal_web.dart';
 
 class PortalShell extends StatefulWidget {
   final String communitySlug;
@@ -157,7 +156,6 @@ class _PortalShellState extends State<PortalShell> {
         setState(() => _isCommunityLoaded = true);
         _checkTour();
         _loadBadgeCounts();
-        _registerOneSignal();
         _subscribeToBadgeUpdates();
       }
     }
@@ -252,59 +250,6 @@ class _PortalShellState extends State<PortalShell> {
           callback: (_) => _loadBadgeCounts(),
         )
         .subscribe();
-  }
-
-  /// Register the current user with OneSignal for web push notifications.
-  void _registerOneSignal() {
-    try {
-      final appState = context.read<AppState>();
-      final user = context.read<AuthRepository>().currentUser;
-      if (user == null) {
-        print('OneSignal: skipped — no user');
-        return;
-      }
-
-      print('OneSignal: registering user ${user.id}');
-
-      // First clean up any stale alias server-side, then login client-side.
-      // The cleanup is fire-and-forget — login proceeds regardless.
-      _cleanupOneSignalAlias(user.id).then((_) {
-        OneSignalWeb.loginUser(user.id);
-      });
-
-      final tags = <String, String>{};
-      if (appState.activeCommunityId != null) {
-        tags['community_id'] = appState.activeCommunityId!;
-      }
-      if (appState.activeRole != null) {
-        tags['role'] = appState.activeRole!.role.name;
-      }
-      if (tags.isNotEmpty) {
-        print('OneSignal: setting tags $tags');
-        OneSignalWeb.setTags(tags);
-      }
-      // NOTE: Do NOT auto-call requestPermission() here.
-      // Browsers require notification permission requests to originate
-      // from a user gesture (click/tap). Prompt via a UI button instead.
-    } catch (e) {
-      print('OneSignal registration error: $e');
-    }
-  }
-
-  /// Call the onesignal_cleanup edge function to delete any stale OneSignal
-  /// user that holds this external_id, preventing 409 alias conflicts.
-  Future<void> _cleanupOneSignalAlias(String userId) async {
-    try {
-      final client = SupabaseClientManager.instance;
-      await client.functions.invoke(
-        'onesignal_cleanup',
-        body: {'external_id': userId},
-      );
-      print('OneSignal: alias cleanup completed for $userId');
-    } catch (e) {
-      // Non-fatal — login will still attempt
-      print('OneSignal: alias cleanup failed (non-fatal): $e');
-    }
   }
 
   void _updateFavicon(Community community) {
@@ -863,7 +808,6 @@ class _PortalShellState extends State<PortalShell> {
         } else if (value == 'switch_community') {
           if (context.mounted) context.go('/select-community');
         } else if (value == 'signout') {
-          OneSignalWeb.logoutUser();
           await context.read<AuthRepository>().signOut();
           if (context.mounted) context.go('/login');
         }
@@ -1440,7 +1384,6 @@ class _PortalShellState extends State<PortalShell> {
                       hoverColor: Colors.red.withOpacity(0.12),
                       splashColor: Colors.red.withOpacity(0.15),
                       onTap: () async {
-                        OneSignalWeb.logoutUser();
                         await context.read<AuthRepository>().signOut();
                         if (context.mounted) context.go('/login');
                       },
@@ -1845,7 +1788,6 @@ class _PortalShellState extends State<PortalShell> {
                     borderRadius: BorderRadius.circular(12)),
                 onTap: () async {
                   Navigator.of(context).pop();
-                  OneSignalWeb.logoutUser();
                   await context.read<AuthRepository>().signOut();
                   if (context.mounted) context.go('/login');
                 },

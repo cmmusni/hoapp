@@ -1,12 +1,41 @@
+import 'dart:convert';
+import 'dart:html' as html;
+import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_strategy/url_strategy.dart';
 import 'package:core_data/core_data.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/theme.dart';
 import 'core/responsive.dart';
 import 'router.dart';
+
+/// Generate a simple browser fingerprint from stable properties.
+String _browserFingerprint() {
+  final nav = html.window.navigator;
+  final screen = html.window.screen;
+  final raw = [
+    nav.userAgent,
+    nav.language,
+    '${screen?.width}x${screen?.height}',
+    '${screen?.colorDepth}',
+    DateTime.now().timeZoneOffset.inMinutes.toString(),
+    nav.platform ?? '',
+  ].join('|');
+  return sha256.convert(utf8.encode(raw)).toString();
+}
+
+String _detectPlatform() {
+  final ua = html.window.navigator.userAgent.toLowerCase();
+  if (ua.contains('iphone') || ua.contains('ipad')) return 'iOS';
+  if (ua.contains('android')) return 'Android';
+  if (ua.contains('macintosh') || ua.contains('mac os')) return 'macOS';
+  if (ua.contains('windows')) return 'Windows';
+  if (ua.contains('linux')) return 'Linux';
+  return 'Other';
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +48,12 @@ void main() async {
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseAnonKey,
   );
+
+  // Notify platform admin of site access (fire-and-forget, emails only on new device)
+  Supabase.instance.client.functions.invoke('notify_access', body: {
+    'fingerprint': _browserFingerprint(),
+    'platform': _detectPlatform(),
+  }).ignore();
 
   // Pre-load last active community slug for router redirect
   final prefs = await SharedPreferences.getInstance();

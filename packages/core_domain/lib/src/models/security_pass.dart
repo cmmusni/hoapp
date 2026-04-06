@@ -165,6 +165,12 @@ class SecurityPass {
   @JsonKey(name: 'pass_types')
   final PassType? passType;
 
+  @JsonKey(name: 'requester_name')
+  final String? requesterName;
+
+  @JsonKey(name: 'unit_no')
+  final String? unitNo;
+
   SecurityPass({
     required this.id,
     required this.communityId,
@@ -193,6 +199,8 @@ class SecurityPass {
     required this.createdAt,
     this.updatedAt,
     this.passType,
+    this.requesterName,
+    this.unitNo,
   });
 
   factory SecurityPass.fromJson(Map<String, dynamic> json) =>

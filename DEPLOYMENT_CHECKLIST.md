@@ -34,7 +34,7 @@ Migrations verified:
 - [x] `20260322000003_rls_policies.sql` - Row Level Security
 - [x] `20260322000004_storage_policies.sql` - File upload policies
 - [x] `20260322000005_enable_realtime.sql` - Realtime subscriptions
-- [x] 55 additional migrations through `20260402000003` - Security passes, plans, expenses, income, recurring billing, feedback, subscriptions, CRON jobs, and more
+- [x] 57 additional migrations through `20260406000002` - Security passes, plans, expenses, income, recurring billing, feedback, subscriptions, CRON jobs, and more
 
 **Action Items**:
 - [ ] Review all migration files for production readiness
@@ -64,6 +64,9 @@ Functions verified:
 - [x] `delete_user/` - User account deletion
 - [x] `batch_operations/` - Batch CRUD operations
 - [x] `onesignal_cleanup/` - Device token cleanup
+- [x] `invoice_email/` - Invoice email notifications
+- [x] `notify_access/` - Portal access tracking and alerts
+- [x] `send_pass_email/` - Security pass QR email delivery
 
 **Action Items**:
 - [ ] Test each function locally

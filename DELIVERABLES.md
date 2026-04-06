@@ -6,7 +6,7 @@ This is a **production-ready scaffold** for a multi-tenant HOA/Condo management 
 
 ### ✅ Complete Backend (Supabase)
 
-#### Database Schema (60 migrations)
+#### Database Schema (62 migrations)
 - ✅ 35+ tables with proper relationships
 - ✅ Multi-tenancy via `community_id` scoping
 - ✅ Row Level Security (RLS) on all tables
@@ -32,7 +32,7 @@ This is a **production-ready scaffold** for a multi-tenant HOA/Condo management 
 - Feedback, Contact Messages, User Preferences, Beta Access Requests
 - Audit Logs, Notification Tokens
 
-#### Edge Functions (18 Deno TypeScript functions)
+#### Edge Functions (21 Deno TypeScript functions)
 - ✅ `create_community` – Self-serve community creation
 - ✅ `create_invite` – Staff/resident invite generation
 - ✅ `accept_invite` – Token-based invite acceptance
@@ -50,6 +50,9 @@ This is a **production-ready scaffold** for a multi-tenant HOA/Condo management 
 - ✅ `delete_user` – User account deletion
 - ✅ `batch_operations` – Batch CRUD operations
 - ✅ `onesignal_cleanup` – Device token cleanup
+- ✅ `invoice_email` – Invoice email notifications
+- ✅ `notify_access` – Portal access tracking and email alerts
+- ✅ `send_pass_email` – Security pass QR code email delivery
 
 All functions include:
 - Type-safe request/response DTOs
@@ -132,6 +135,8 @@ All functions include:
 - ✅ Beta Requests page (feature access management)
 - ✅ Plan Pricing page (upgrade display)
 - ✅ Chatbot widget (floating AI assistant with FAQ/knowledge base)
+
+- ✅ Cookie consent banner (GDPR-compliant)
 
 **Features:**
 - ✅ GoRouter with path-based routing
@@ -249,8 +254,10 @@ All functions include:
 13. **Billing & Payments** – Invoice creation, GCash proof upload, verification workflow, receipt generation
 14. **Household Management** – Unit CRUD, member management (registered & non-registered)
 15. **Financial Tracking** – Income/expense categorization, reports, recurring billing
-16. **Security Passes** – Visitor registration and management
-17. **User Management** – Invite generation, role assignment, unit linking
+16. **Security Passes** – Visitor registration with visitor name/contact, QR email delivery
+17. **Portal Access Tracking** – Browser fingerprint logging with email alerts
+18. **Cookie Consent** – GDPR-compliant consent banner
+19. **User Management** – Invite generation, role assignment, unit linking
 
 ---
 
@@ -259,8 +266,8 @@ All functions include:
 - **Total Files Created:** 300+
 - **Lines of Code (estimated):** 15,000+
 - **Database Tables:** 35+ (all with RLS policies)
-- **Database Migrations:** 60
-- **Edge Functions:** 18 (all production-ready)
+- **Database Migrations:** 62
+- **Edge Functions:** 21 (all production-ready)
 - **Domain Models:** 23+ (all with JSON serialization)
 - **Repository Classes:** 13 (all fully implemented)
 - **Service Classes:** 3 (notification, realtime, storage)

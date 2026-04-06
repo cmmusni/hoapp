@@ -13,11 +13,41 @@ You are a CI/CD agent responsible for committing and pushing code changes made d
 2. **Review diffs**: Run `git --no-pager diff` on changed files to understand the nature of each change (new feature, bugfix, refactor, etc.). For large diffs, pipe through `head -500`.
 3. **Validate Supabase migrations**: If any files under `supabase/migrations/` were added or modified, run `supabase db push --dry-run` from the project root to validate them. If the dry run fails, stop immediately and report the migration error.
 4. **Apply Supabase migrations**: If the dry run succeeded and there are migration changes, run `supabase db push` to apply them to the remote database. If this fails, stop immediately and report the error.
-5. **Stage changes**: Run `git add -A` to stage all modified, added, and deleted files.
-6. **Generate commit message**: Based on the diff, write a conventional commit message to `/tmp/hoapp_commit.txt` using Python.
-7. **Commit**: Run `git commit -F /tmp/hoapp_commit.txt` using the file. NEVER use `-m` for multi-line messages.
-8. **Push**: Run `git push origin master` to push to the remote.
-9. **Report**: Summarize what was committed and pushed, including the commit hash and branch.
+5. **Update documentation**: Before committing, review and update ALL relevant `.md` documentation files to reflect the code changes. This step is MANDATORY for every deploy. See the Documentation Update Rules section below.
+6. **Stage changes**: Run `git add -A` to stage all modified, added, and deleted files.
+7. **Generate commit message**: Based on the diff, write a conventional commit message to `/tmp/hoapp_commit.txt` using Python.
+8. **Commit**: Run `git commit -F /tmp/hoapp_commit.txt` using the file. NEVER use `-m` for multi-line messages.
+9. **Push**: Run `git push origin master` to push to the remote.
+10. **Report**: Summarize what was committed and pushed, including the commit hash and branch.
+
+## Documentation Update Rules
+
+Every deploy MUST include updates to the relevant documentation files. Read each doc, compare against the code changes, and update sections that are outdated or missing new features.
+
+### Required docs to check (in project root and docs/):
+
+| File | What to update |
+|------|----------------|
+| README.md | Feature list, tech stack, getting started, architecture overview |
+| ARCHITECTURE.md | System diagrams, database schema, Edge Functions list, data flow |
+| PROJECT_STRUCTURE.md | New files/folders, package descriptions, module listings |
+| DELIVERABLES.md | Completed features, milestone progress |
+| TODO.md | Mark completed items, add new planned work |
+| DEPLOYMENT_CHECKLIST.md | New deployment steps, environment variables, Edge Functions |
+| DEPLOY_QUICK_REF.md | Quick reference commands for new functions/migrations |
+| DEPLOYMENT_READY.md | Readiness status of new features |
+| docs/ADVANCED_FEATURES.md | New advanced feature documentation |
+| docs/IMPLEMENTATION_SUMMARY_ADVANCED_FEATURES.md | Implementation details of new features |
+| docs/QUICK_REFERENCE_ADVANCED_FEATURES.md | Quick reference for new features |
+| docs/TESTING_GUIDE.md | Test instructions for new features |
+
+### Rules:
+- Read each doc file before editing to understand current content
+- Only update sections affected by the current changes
+- Add new sections for entirely new features
+- Update counts, lists, and tables that reference features or components
+- Do NOT rewrite docs from scratch -- make targeted updates
+- Keep the existing style and formatting of each doc
 
 ## Shell Safety Rules
 

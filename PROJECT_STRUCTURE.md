@@ -18,6 +18,7 @@ hoapp/
 │   │   │       ├── pricing_page.dart
 │   │   │       ├── support_page.dart
 │   │   │       ├── auth_callback_page.dart
+│   │   │       ├── cookie_consent_banner.dart
 │   │   │       ├── upgrade_success_page.dart
 │   │   │       ├── marketing_nav_bar.dart
 │   │   │       └── portal/      # Community portal screens
@@ -157,15 +158,15 @@ hoapp/
 │   ├── config.toml               # Supabase CLI config
 │   ├── seed.sql                  # Demo data (Elevé Homes)
 │   ├── reset_schema.sql          # Schema reset script
-│   ├── migrations/               # 60 migration files (Mar 22 – Apr 2, 2026)
+│   ├── migrations/               # 62 migration files (Mar 22 – Apr 2, 2026)
 │   │   ├── 20260322000001_initial_schema.sql      # Core tables
 │   │   ├── 20260322000002_triggers.sql            # Triggers
 │   │   ├── 20260322000003_rls_policies.sql        # RLS
 │   │   ├── 20260322000004_storage_policies.sql    # Storage
 │   │   ├── 20260322000005_enable_realtime.sql     # Realtime
 │   │   ├── ...                                     # 55 more migrations
-│   │   └── 20260402000003_subscription_expiry_cron.sql  # Latest
-│   ├── functions/                # 18 Edge Functions (Deno)
+│   │   └── 20260406000002_portal_access_log.sql         # Latest
+│   ├── functions/                # 21 Edge Functions (Deno)
 │   │   ├── _shared/              # Shared utilities & middleware
 │   │   ├── create_community/
 │   │   ├── create_invite/
@@ -228,8 +229,8 @@ hoapp/
 
 ## 📊 File Counts by Category
 
-- **Database Migrations:** 60 files
-- **Edge Functions:** 18 functions
+- **Database Migrations:** 62 files
+- **Edge Functions:** 21 functions
 - **Domain Models:** 23+ models (with generated .g.dart files)
 - **Repositories:** 13 repositories (all fully implemented)
 - **Services:** 3 services (notification, realtime, storage)

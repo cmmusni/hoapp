@@ -81,6 +81,8 @@ SecurityPass _$SecurityPassFromJson(Map<String, dynamic> json) => SecurityPass(
       passType: json['pass_types'] == null
           ? null
           : PassType.fromJson(json['pass_types'] as Map<String, dynamic>),
+      requesterName: json['requester_name'] as String?,
+      unitNo: json['unit_no'] as String?,
     );
 
 Map<String, dynamic> _$SecurityPassToJson(SecurityPass instance) =>
@@ -112,6 +114,8 @@ Map<String, dynamic> _$SecurityPassToJson(SecurityPass instance) =>
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
       'pass_types': instance.passType,
+      'requester_name': instance.requesterName,
+      'unit_no': instance.unitNo,
     };
 
 const _$PassStatusEnumMap = {

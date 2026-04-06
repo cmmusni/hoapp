@@ -19,6 +19,160 @@ class HelpTopic {
 }
 
 const List<HelpTopic> helpTopics = [
+  // ── About HOApp ─────────────────────────────────────────────────────
+  HelpTopic(
+    question: 'What is HOApp?',
+    keywords: [
+      'what is',
+      'hoapp',
+      'about',
+      'app',
+      'what does',
+      'tell me',
+      'describe',
+      'overview',
+      'introduction',
+      'explain',
+      'purpose',
+      'community management',
+    ],
+    answer:
+        'HOApp is a community management platform designed for homeowner associations (HOAs), '
+        'condominiums, and residential communities. It streamlines day-to-day operations including:\n\n'
+        '• **Announcements** – Keep residents informed with real-time updates\n'
+        '• **Billing & Payments** – Issue invoices and collect dues online\n'
+        '• **Amenity Reservations** – Book clubhouses, courts, and other facilities\n'
+        '• **Security Passes** – Generate QR-coded visitor and delivery passes\n'
+        '• **Pool Access** – Manage swimmer registrations and access requests\n'
+        '• **Violations & Tickets** – Track community issues and support requests\n'
+        '• **Household Directory** – Manage units, owners, and tenants\n'
+        '• **Expense Tracker** – Monitor community spending and budgets\n\n'
+        'HOApp is available as a **web portal** and a **mobile app** for iOS and Android.',
+    route: '/features',
+  ),
+  HelpTopic(
+    question: 'Who is HOApp for?',
+    keywords: [
+      'who',
+      'for whom',
+      'target',
+      'audience',
+      'hoa',
+      'homeowner',
+      'condo',
+      'condominium',
+      'residential',
+      'property manager',
+    ],
+    answer:
+        'HOApp is built for anyone involved in residential community management:\n\n'
+        '• **HOA Boards & Admins** – Run your community efficiently from one dashboard\n'
+        '• **Property Managers** – Manage multiple communities with ease\n'
+        '• **Residents & Homeowners** – Pay dues, book amenities, and stay informed\n'
+        '• **Security Guards** – Validate visitor passes with QR scanning\n'
+        '• **Staff & Maintenance** – Handle day-to-day operations and requests',
+  ),
+
+  // ── Pricing ─────────────────────────────────────────────────────────
+  HelpTopic(
+    question: 'What are the pricing plans?',
+    keywords: [
+      'pricing',
+      'price',
+      'plan',
+      'plans',
+      'cost',
+      'how much',
+      'subscription',
+      'fee',
+      'free',
+      'starter',
+      'professional',
+      'enterprise',
+      'upgrade',
+    ],
+    answer: 'HOApp offers three plans:\n\n'
+        '**Starter – Free**\n'
+        '• Up to 50 units\n'
+        '• Announcements, Violations & Tickets, Household Directory\n'
+        '• Community support\n\n'
+        '**Professional – ₱999/month**\n'
+        '• Up to 300 units\n'
+        '• Everything in Starter plus Billing & Payments, Amenity Reservations, '
+        'Pool Access, Security Passes & QR, Mobile App, and Priority support\n\n'
+        '**Enterprise – Custom pricing**\n'
+        '• Unlimited units, Multi-community dashboard, Custom features, '
+        'Dedicated account manager, SLA & uptime guarantee\n\n'
+        'Visit the Pricing page for the latest details.',
+    route: '/pricing',
+  ),
+  HelpTopic(
+    question: 'How do I upgrade my plan?',
+    keywords: [
+      'upgrade',
+      'change plan',
+      'switch plan',
+      'go pro',
+      'professional plan',
+      'enterprise plan',
+    ],
+    answer: '1. Go to **Settings** in your community portal.\n'
+        '2. Look for the **Plan & Billing** section.\n'
+        '3. Click **Upgrade** to switch to Professional or Enterprise.\n'
+        '4. Follow the checkout steps to complete payment.\n\n'
+        'You can also visit the Pricing page to compare plans.',
+    route: '/pricing',
+    roles: ['admin'],
+  ),
+
+  // ── Support ─────────────────────────────────────────────────────────
+  HelpTopic(
+    question: 'How do I get support?',
+    keywords: [
+      'support',
+      'help',
+      'assistance',
+      'documentation',
+      'faq',
+      'tutorial',
+      'video',
+      'guide',
+      'how to get help',
+    ],
+    answer: 'HOApp offers several support channels:\n\n'
+        '• **Documentation** – Browse guides and tutorials for all features\n'
+        '• **FAQ** – Quick answers to common questions about setup, billing, and features\n'
+        '• **Email Support** – Reach us at support@hoapp.net (response within 24 hours)\n'
+        '• **Feedback** – Submit bug reports or feature suggestions directly from the portal\n'
+        '• **Video Tutorials** – Step-by-step walkthroughs for onboarding and setup\n\n'
+        'Visit the Support page for more details.',
+    route: '/support',
+  ),
+
+  // ── Contact ─────────────────────────────────────────────────────────
+  HelpTopic(
+    question: 'How do I contact HOApp?',
+    keywords: [
+      'contact',
+      'reach',
+      'email',
+      'message',
+      'get in touch',
+      'contact us',
+      'sales',
+      'inquiry',
+      'talk to',
+      'phone',
+    ],
+    answer: 'You can reach us through the **Contact Us** page:\n\n'
+        '1. Go to the Contact page\n'
+        '2. Fill in your name, email, subject, and message\n'
+        '3. Click **Send Message**\n\n'
+        'You can also email us directly at **support@hoapp.net**. '
+        'We typically respond within 24 hours.',
+    route: '/contact',
+  ),
+
   // ── General Navigation ──────────────────────────────────────────────
   HelpTopic(
     question: 'How do I navigate the app?',

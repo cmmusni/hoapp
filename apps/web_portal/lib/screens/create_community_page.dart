@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
-import 'package:core_ui/core_ui.dart';
 
 class CreateCommunityPage extends StatefulWidget {
   const CreateCommunityPage({super.key});
@@ -139,72 +138,317 @@ class _CreateCommunityPageState extends State<CreateCommunityPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    const brand = Color(0xFF2E5C3F);
+
     return Scaffold(
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 500),
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Image.asset(
-                  'assets/images/hoapp-logo.png',
-                  height: 120,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Create Your Community',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Community Name',
-                    hintText: 'e.g., Elevé Homes',
-                    prefixIcon: Icon(Icons.home),
-                  ),
-                  onChanged: _generateSlug,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a community name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _slugController,
-                  decoration: const InputDecoration(
-                    labelText: 'URL Slug',
-                    hintText: 'e.g., eleve-homes',
-                    prefixIcon: Icon(Icons.link),
-                    helperText: 'This will be your portal URL',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a URL slug';
-                    }
-                    if (!RegExp(r'^[a-z0-9-]+$').hasMatch(value)) {
-                      return 'Only lowercase letters, numbers, and hyphens allowed';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                HOAppButton(
-                  label: 'Create Community',
-                  onPressed: _handleCreate,
-                  isLoading: _isLoading,
-                ),
-              ],
+      body: Stack(
+        children: [
+          // Gradient background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFF0F7F4),
+                  Color(0xFFE8F5E9),
+                  Color(0xFFF5F5F0),
+                ],
+              ),
             ),
           ),
-        ),
+
+          // Decorative circles
+          Positioned(
+            top: -80,
+            right: -60,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: brand.withOpacity(0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -100,
+            left: -80,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: brand.withOpacity(0.04),
+              ),
+            ),
+          ),
+
+          // Main content
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 20 : 24,
+                vertical: 40,
+              ),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 440),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: brand.withOpacity(0.08),
+                      blurRadius: 40,
+                      offset: const Offset(0, 12),
+                      spreadRadius: 4,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(isMobile ? 28 : 40),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Logo
+                        Image.asset(
+                          'assets/images/hoapp-logo.png',
+                          height: isMobile ? 72 : 90,
+                          errorBuilder: (context, error, stackTrace) {
+                            return SizedBox(height: isMobile ? 72 : 90);
+                          },
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Title
+                        Text(
+                          'Create Your Community',
+                          style: TextStyle(
+                            fontSize: isMobile ? 22 : 26,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1F2937),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Set up your HOA portal in seconds',
+                          style: TextStyle(
+                            fontSize: isMobile ? 13 : 14,
+                            color: Colors.grey.shade500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Community name field
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: 'Community Name',
+                            hintText: 'e.g., Elevé Homes',
+                            prefixIcon: Icon(Icons.home_outlined,
+                                color: Colors.grey.shade400, size: 20),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  const BorderSide(color: brand, width: 1.5),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                  color: Colors.red.shade300, width: 1),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                            labelStyle: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 14),
+                          ),
+                          onChanged: _generateSlug,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a community name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // URL slug field
+                        TextFormField(
+                          controller: _slugController,
+                          decoration: InputDecoration(
+                            labelText: 'URL Slug',
+                            hintText: 'e.g., eleve-homes',
+                            prefixIcon: Icon(Icons.link_rounded,
+                                color: Colors.grey.shade400, size: 20),
+                            helperText: 'This will be your portal URL',
+                            helperStyle: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 12,
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide:
+                                  const BorderSide(color: brand, width: 1.5),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                  color: Colors.red.shade300, width: 1),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                            labelStyle: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 14),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a URL slug';
+                            }
+                            if (!RegExp(r'^[a-z0-9-]+$').hasMatch(value)) {
+                              return 'Only lowercase letters, numbers, and hyphens allowed';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        // URL preview
+                        if (_slugController.text.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: brand.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(10),
+                              border:
+                                  Border.all(color: brand.withOpacity(0.12)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.public_rounded,
+                                    size: 16, color: brand.withOpacity(0.6)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'hoapp.net/${_slugController.text}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: brand.withOpacity(0.8),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 28),
+
+                        // Create button
+                        SizedBox(
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleCreate,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: brand,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: brand.withOpacity(0.6),
+                              disabledForegroundColor:
+                                  Colors.white.withOpacity(0.8),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Create Community',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Back button
+          Positioned(
+            top: 16,
+            left: 16,
+            child: SafeArea(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () => context.go('/'),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                  tooltip: 'Back to Home',
+                  color: const Color(0xFF374151),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

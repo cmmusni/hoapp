@@ -4,7 +4,6 @@ import 'package:core_data/core_data.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-
 /// Modes for the scanner page: camera live scan or manual token entry.
 enum _ScanMode { camera, manual }
 
@@ -37,11 +36,13 @@ class _QrScannerPageState extends State<QrScannerPage> {
 
   void _initCamera() {
     _cameraController = MobileScannerController(
+      autoStart: false,
       detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.back,
+      facing: CameraFacing.front,
       formats: [BarcodeFormat.qrCode],
     );
-    _cameraController!.start().catchError((_) {
+    _cameraController!.start().catchError((e) {
+      debugPrint('Camera error: $e');
       if (mounted) {
         setState(() {
           _cameraError = true;
@@ -148,24 +149,6 @@ class _QrScannerPageState extends State<QrScannerPage> {
 
                 const SizedBox(height: 20),
 
-                // Validating indicator
-                if (_validating)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2)),
-                        SizedBox(width: 12),
-                        Text('Validating pass…',
-                            style: TextStyle(fontSize: 14)),
-                      ],
-                    ),
-                  ),
-
                 // Result card
                 if (_lastResult != null) ...[
                   _buildResultCard(),
@@ -179,7 +162,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
                       label: const Text('Scan Next Pass'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Theme.of(context).colorScheme.primary,
-                        side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                        side: BorderSide(
+                            color: Theme.of(context).colorScheme.primary),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                       ),
@@ -309,8 +293,12 @@ class _QrScannerPageState extends State<QrScannerPage> {
           height: 300,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border:
-                Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 2),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.3),
+                width: 2),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -376,8 +364,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+              borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary, width: 1.5),
             ),
             prefixIcon: const Icon(Icons.qr_code),
             suffixIcon: IconButton(

@@ -39,8 +39,12 @@ All essential features are implemented and production-ready:
 - ✅ **Primary member household management**
 - ✅ **Member-level financial report access**
 - ✅ **Subscription expiry automation** via CRON
-- ✅ **18 Edge Functions** for backend business logic
-- ✅ **60 database migrations** with comprehensive RLS policies
+- ✅ **21 Edge Functions** for backend business logic (invoice_email, notify_access, send_pass_email added)
+- ✅ **62 database migrations** with comprehensive RLS policies
+- ✅ **Portal access tracking** with browser fingerprinting and email alerts
+- ✅ **Cookie consent banner** (GDPR-compliant)
+- ✅ **Security pass enhancements** with visitor name, contact, and email delivery
+- ✅ **Auth pages redesign** (login, signup, create community)
 - ✅ **CI/CD pipelines** (GitHub Actions + Vercel auto-deploy)
 - ✅ **File uploads** via Supabase Storage
 - ✅ **Search & pagination** across all major features
@@ -102,7 +106,7 @@ All essential features are implemented and production-ready:
 - [ ] **Late fees**: Automatic penalty calculation
 
 #### Notifications
-- [ ] **Email notifications**: Announcements, invoices, tickets
+- [x] **Email notifications**: Invoice emails, security pass QR emails, portal access alerts
 - [ ] **SMS notifications**: Critical alerts and payment reminders
 - [ ] **Notification preferences**: User-controlled channel selection (preferences table exists)
 

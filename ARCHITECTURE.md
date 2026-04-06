@@ -36,13 +36,14 @@
 │ └─────────────┘ └──────────────┘ └────────────┘ └───────────┘│
 │                                                                 │
 │ ┌─────────────────────────────────────────────────────────────┐│
-│ │              Edge Functions (Deno) – 18 Functions           ││
+│ │              Edge Functions (Deno) -- 21 Functions           ││
 │ │  • create_community  • create_invite  • accept_invite      ││
 │ │  • verify_payment    • book_amenity   • batch_operations   ││
 │ │  • create_upgrade_checkout  • paymongo_webhook             ││
 │ │  • provision_community  • contact_us  • request_access     ││
 │ │  • review_pass  • validate_pass  • scan_invoice            ││
-│ │  • send_notification  • delete_user  • onesignal_cleanup   ││
+│ │  • send_notification  • delete_user  • onesignal_cleanup   
+  • invoice_email  • notify_access  • send_pass_email      ││
 │ └─────────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -84,7 +85,8 @@
              ├─► feedback, contact_messages
              ├─► user_preferences, beta_access_requests
              ├─► audit_logs
-             └─► notification_tokens
+             ├─► notification_tokens
+             └─► portal_access_log
 ```
 
 ### Row Level Security (RLS) Strategy
