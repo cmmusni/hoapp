@@ -17,6 +17,7 @@ Announcement _$AnnouncementFromJson(Map<String, dynamic> json) => Announcement(
       imageUrl: json['image_url'] as String?,
       attachmentUrl: json['attachment_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
+      isArchived: json['is_archived'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$AnnouncementToJson(Announcement instance) =>
@@ -31,4 +32,5 @@ Map<String, dynamic> _$AnnouncementToJson(Announcement instance) =>
       'image_url': instance.imageUrl,
       'attachment_url': instance.attachmentUrl,
       'created_at': instance.createdAt.toIso8601String(),
+      'is_archived': instance.isArchived,
     };

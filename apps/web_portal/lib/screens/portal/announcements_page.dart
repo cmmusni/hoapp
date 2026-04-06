@@ -17,6 +17,7 @@ class AnnouncementsPage extends StatefulWidget {
 class _AnnouncementsPageState extends State<AnnouncementsPage> {
   Future<List<Announcement>>? _announcementsFuture;
   String? _lastCommunityId;
+  bool _showArchived = false;
 
   @override
   void initState() {
@@ -60,8 +61,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
     if (appState.activeCommunityId != null) {
       setState(() {
-        _announcementsFuture =
-            repo.getAnnouncements(appState.activeCommunityId!);
+        _announcementsFuture = repo.getAnnouncements(
+            appState.activeCommunityId!,
+            includeArchived: _showArchived);
       });
     }
   }
@@ -156,6 +158,37 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (isStaff && _showArchived)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            children: [
+                              Icon(Icons.archive_outlined,
+                                  size: 14, color: Colors.grey[400]),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Showing archived',
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey[400]),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() => _showArchived = false);
+                                  _loadAnnouncements();
+                                },
+                                child: Text(
+                                  'Hide',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       if (pinned.isNotEmpty) ...[
                         _buildGrid(pinned, crossAxisCount, isStaff),
                         if (regular.isNotEmpty) ...[
@@ -187,6 +220,25 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                       ],
                       if (regular.isNotEmpty)
                         _buildGrid(regular, crossAxisCount, isStaff),
+                      if (isStaff && !_showArchived)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 24, bottom: 80),
+                          child: Center(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() => _showArchived = true);
+                                _loadAnnouncements();
+                              },
+                              child: Text(
+                                'View archived',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[400],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 );
@@ -366,6 +418,15 @@ class _AnnouncementCard extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (announcement.isArchived) ...[
+                          Icon(Icons.archive_outlined,
+                              size: 13, color: Colors.grey[400]),
+                          const SizedBox(width: 3),
+                          Text('Archived',
+                              style: TextStyle(
+                                  fontSize: 11, color: Colors.grey[400])),
+                          const SizedBox(width: 8),
+                        ],
                         Icon(Icons.access_time,
                             size: 14, color: Colors.grey[400]),
                         const SizedBox(width: 4),
@@ -407,6 +468,16 @@ class _AnnouncementCard extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 10),
                                     Text(isPinned ? 'Unpin' : 'Pin'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'archive',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.archive_outlined, size: 18),
+                                    SizedBox(width: 10),
+                                    Text('Archive'),
                                   ],
                                 ),
                               ),
@@ -569,6 +640,24 @@ class _AnnouncementCard extends StatelessWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Error: $e')),
+            );
+          }
+        }
+        break;
+
+      case 'archive':
+        try {
+          await repo.archiveAnnouncement(announcement.id);
+          onUpdated();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Announcement archived')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error: \$e')),
             );
           }
         }

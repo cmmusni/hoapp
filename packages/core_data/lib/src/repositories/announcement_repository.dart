@@ -11,9 +11,13 @@ class AnnouncementRepository {
     String? searchQuery,
     int? limit,
     int? offset,
+    bool includeArchived = false,
   }) async {
     var query =
         _client.from('announcements').select().eq('community_id', communityId);
+    if (!includeArchived) {
+      query = query.eq('is_archived', false);
+    }
 
     // Apply search filter
     if (searchQuery != null && searchQuery.isNotEmpty) {
@@ -45,7 +49,8 @@ class AnnouncementRepository {
     var query = _client
         .from('announcements')
         .select('id')
-        .eq('community_id', communityId);
+        .eq('community_id', communityId)
+        .eq('is_archived', false);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       query = query.or('title.ilike.%$searchQuery%,body.ilike.%$searchQuery%');
@@ -94,6 +99,12 @@ class AnnouncementRepository {
 
   Future<void> deleteAnnouncement(String id) async {
     await _client.from('announcements').delete().eq('id', id);
+  }
+
+  Future<void> archiveAnnouncement(String id, {bool archived = true}) async {
+    await _client
+        .from('announcements')
+        .update({'is_archived': archived}).eq('id', id);
   }
 
   /// Subscribe to realtime announcements for a community

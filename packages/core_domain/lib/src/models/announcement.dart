@@ -28,6 +28,9 @@ class Announcement {
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
+  @JsonKey(name: 'is_archived')
+  final bool isArchived;
+
   Announcement({
     required this.id,
     required this.communityId,
@@ -39,6 +42,7 @@ class Announcement {
     this.imageUrl,
     this.attachmentUrl,
     required this.createdAt,
+    this.isArchived = false,
   });
 
   factory Announcement.fromJson(Map<String, dynamic> json) =>

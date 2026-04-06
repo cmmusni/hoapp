@@ -16,6 +16,7 @@ class AnnouncementsTab extends StatefulWidget {
 class _AnnouncementsTabState extends State<AnnouncementsTab> {
   List<dynamic> _announcements = [];
   bool _isLoading = true;
+  bool _showArchived = false;
   RealtimeChannel? _realtimeChannel;
 
   @override
@@ -40,8 +41,9 @@ class _AnnouncementsTabState extends State<AnnouncementsTab> {
 
     try {
       final repo = context.read<AnnouncementRepository>();
-      final announcements =
-          await repo.getAnnouncements(appState.activeCommunityId!);
+      final announcements = await repo.getAnnouncements(
+          appState.activeCommunityId!,
+          includeArchived: _showArchived);
 
       if (mounted) {
         setState(() {
@@ -129,8 +131,25 @@ class _AnnouncementsTabState extends State<AnnouncementsTab> {
         onRefresh: () async => _loadAnnouncements(),
         child: ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: _announcements.length,
+          itemCount: _announcements.length + (isStaff ? 1 : 0),
           itemBuilder: (context, index) {
+            if (isStaff && index == _announcements.length) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 80),
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() => _showArchived = !_showArchived);
+                      _loadAnnouncements();
+                    },
+                    child: Text(
+                      _showArchived ? 'Hide archived' : 'View archived',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                    ),
+                  ),
+                ),
+              );
+            }
             final announcement = _announcements[index];
             return _AnnouncementCard(
               announcement: announcement,
@@ -226,6 +245,15 @@ class _AnnouncementsTabState extends State<AnnouncementsTab> {
                       tooltip: 'Edit',
                       style: IconButton.styleFrom(
                         foregroundColor: const Color(0xff215e3f),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () =>
+                          _archiveAnnouncement(context, announcement),
+                      icon: const Icon(Icons.archive_outlined, size: 20),
+                      tooltip: 'Archive',
+                      style: IconButton.styleFrom(
+                        foregroundColor: Colors.orange[700],
                       ),
                     ),
                     IconButton(
@@ -441,6 +469,27 @@ class _AnnouncementsTabState extends State<AnnouncementsTab> {
     return '${localDate.month}/${localDate.day}/${localDate.year}';
   }
 
+  void _archiveAnnouncement(
+      BuildContext sheetContext, dynamic announcement) async {
+    final repo = context.read<AnnouncementRepository>();
+    try {
+      await repo.archiveAnnouncement(announcement.id);
+      if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+      _loadAnnouncements();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Announcement archived')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: \$e')),
+        );
+      }
+    }
+  }
+
   void _confirmDelete(BuildContext sheetContext, dynamic announcement) {
     showDialog(
       context: this.context,
@@ -605,6 +654,18 @@ class _AnnouncementCard extends StatelessWidget {
               const SizedBox(height: 10),
               Row(
                 children: [
+                  if (announcement.isArchived) ...[
+                    Icon(Icons.archive_outlined,
+                        size: 13,
+                        color: colorScheme.onSurface.withValues(alpha: 0.35)),
+                    const SizedBox(width: 3),
+                    Text('Archived',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                colorScheme.onSurface.withValues(alpha: 0.35))),
+                    const SizedBox(width: 8),
+                  ],
                   Icon(Icons.access_time_rounded,
                       size: 13,
                       color: colorScheme.onSurface.withValues(alpha: 0.4)),
