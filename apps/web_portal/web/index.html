@@ -118,43 +118,64 @@
 
   <script src="flutter_bootstrap.js" async></script>
 
-  <!-- Workaround: Password managers (Google, iOS Keychain) fill hidden <input>
-       elements but Flutter's CanvasKit may not receive the change events.
-       This observer detects value changes on any <input> and dispatches
-       proper 'input' events so Flutter's text editing channel picks them up. -->
+  <!-- Workaround: iOS/Android password managers fill hidden <input> elements
+       but Flutter CanvasKit may not see the change events.
+       Uses CSS :-webkit-autofill animation trick + aggressive polling. -->
+  <style>
+    @keyframes _autofillDetect { from { opacity: 1; } to { opacity: 1; } }
+    input:-webkit-autofill { animation-name: _autofillDetect !important; animation-duration: 0.01s !important; }
+  </style>
   <script>
     (function() {
+      function forceSync(input) {
+        // Swap the value through the native setter to trigger all listeners
+        var nativeSetter = Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype, 'value'
+        ).set;
+        if (nativeSetter) {
+          nativeSetter.call(input, input.value);
+        }
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      // Detect CSS autofill animation
+      document.addEventListener('animationstart', function(e) {
+        if (e.animationName === '_autofillDetect' && e.target.tagName === 'INPUT') {
+          setTimeout(function() { forceSync(e.target); }, 50);
+          setTimeout(function() { forceSync(e.target); }, 300);
+        }
+      }, true);
+
+      // Watch for newly added inputs and poll them
       var observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(m) {
           m.addedNodes.forEach(function(node) {
-            if (node.tagName === 'INPUT') { attachAutofillWatcher(node); }
-            if (node.querySelectorAll) {
-              node.querySelectorAll('input').forEach(attachAutofillWatcher);
-            }
+            if (node.nodeType !== 1) return;
+            var inputs = node.tagName === 'INPUT' ? [node] :
+                         (node.querySelectorAll ? Array.from(node.querySelectorAll('input')) : []);
+            inputs.forEach(function(input) {
+              if (input._afPoll) return;
+              input._afPoll = true;
+              var last = input.value;
+              var id = setInterval(function() {
+                if (!document.body.contains(input)) { clearInterval(id); return; }
+                if (input.value !== last) {
+                  last = input.value;
+                  forceSync(input);
+                }
+              }, 200);
+            });
           });
         });
       });
-      observer.observe(document.body, { childList: true, subtree: true });
-
-      function attachAutofillWatcher(input) {
-        if (input._autofillWatched) return;
-        input._autofillWatched = true;
-
-        // Poll for value changes caused by password managers
-        var lastValue = input.value;
-        var interval = setInterval(function() {
-          if (input.value !== lastValue) {
-            lastValue = input.value;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-          // Stop polling once the input is removed from DOM
-          if (!document.body.contains(input)) { clearInterval(interval); }
-        }, 300);
+      if (document.body) {
+        observer.observe(document.body, { childList: true, subtree: true });
+      } else {
+        document.addEventListener('DOMContentLoaded', function() {
+          observer.observe(document.body, { childList: true, subtree: true });
+        });
       }
-
-      // Also watch inputs that already exist
-      document.querySelectorAll('input').forEach(attachAutofillWatcher);
     })();
   </script>
 </body>

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:html' as html;
 
 class LoginPage extends StatefulWidget {
   final String? communitySlug;
@@ -124,7 +126,48 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  /// Reads values directly from native DOM <input> elements.
+  /// Password managers on iOS/Android fill these hidden inputs but
+  /// Flutter's CanvasKit text editing channel may not pick up the change.
+  void _syncAutofillValuesFromDom() {
+    try {
+      final inputs = html.document.querySelectorAll('input');
+      for (var i = 0; i < inputs.length; i++) {
+        final input = inputs[i] as html.InputElement;
+        final value = input.value ?? '';
+        if (value.isEmpty) continue;
+
+        final autocomplete = input.getAttribute('autocomplete') ?? '';
+        final type = input.type ?? '';
+
+        // Sync email field
+        if ((autocomplete.contains('email') ||
+                autocomplete.contains('username') ||
+                type == 'email') &&
+            _emailController.text.trim().isEmpty) {
+          _emailController.text = value;
+          debugPrint('Autofill sync: email from DOM');
+        }
+
+        // Sync password field
+        if ((autocomplete.contains('password') || type == 'password') &&
+            _passwordController.text.isEmpty) {
+          _passwordController.text = value;
+          debugPrint('Autofill sync: password from DOM');
+        }
+      }
+    } catch (e) {
+      debugPrint('Autofill DOM sync error: $e');
+    }
+  }
+
   Future<void> _handleLogin() async {
+    // On web, read values directly from DOM inputs in case a password manager
+    // filled them but Flutter's text editing channel didn't pick them up.
+    if (kIsWeb) {
+      _syncAutofillValuesFromDom();
+    }
+
     if (!_formKey.currentState!.validate()) return;
     if (_isLoading) return; // Prevent multiple simultaneous calls
 
