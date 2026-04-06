@@ -169,7 +169,9 @@ class _LoginPageState extends State<LoginPage> {
         final tp = (input.type ?? '').toLowerCase();
 
         if (foundEmail.isEmpty &&
-            (ac.contains('email') || ac.contains('username') || tp == 'email')) {
+            (ac.contains('email') ||
+                ac.contains('username') ||
+                tp == 'email')) {
           foundEmail = value;
         }
         if (foundPassword.isEmpty &&
@@ -191,7 +193,8 @@ class _LoginPageState extends State<LoginPage> {
 
       if (changed && mounted) {
         setState(() {});
-        debugPrint('Autofill sync: email=${foundEmail.isNotEmpty}, pass=${foundPassword.isNotEmpty}');
+        debugPrint(
+            'Autofill sync: email=${foundEmail.isNotEmpty}, pass=${foundPassword.isNotEmpty}');
       }
 
       // Stop polling once both fields are filled
