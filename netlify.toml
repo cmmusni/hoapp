@@ -2,6 +2,14 @@
   publish = "apps/web_portal/build/web"
   command = "cd apps/web_portal && flutter build web --release --no-tree-shake-icons --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"
 
+# Prerender.io integration for SEO — serves static HTML to search engine bots
+# Set PRERENDER_TOKEN in Netlify Environment Variables
+# Docs: https://docs.prerender.io/docs/netlify
+[[plugins]]
+  package = "netlify-plugin-prerender"
+  [plugins.inputs]
+    prerenderToken = ""  # Set via PRERENDER_TOKEN env var
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -656,9 +656,22 @@ class MarketingFooter extends StatelessWidget {
             context,
             'Company',
             {
+              'About': '/about',
               'Contact': '/contact',
-              'Data Security': '/security',
               'Login': '/login',
+            },
+          ),
+        ),
+
+        // Legal
+        Expanded(
+          child: _buildLinkColumn(
+            context,
+            'Legal',
+            {
+              'Data Security': '/security',
+              'Privacy Policy': '/privacy',
+              'Terms of Service': '/terms',
             },
           ),
         ),
@@ -745,9 +758,18 @@ class MarketingFooter extends StatelessWidget {
               context,
               'Company',
               {
+                'About': '/about',
                 'Contact': '/contact',
-                'Data Security': '/security',
                 'Login': '/login',
+              },
+            ),
+            _buildLinkColumn(
+              context,
+              'Legal',
+              {
+                'Privacy': '/privacy',
+                'Terms': '/terms',
+                'Security': '/security',
               },
             ),
           ],
