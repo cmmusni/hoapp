@@ -30,6 +30,7 @@ class HouseholdsPage extends StatefulWidget {
 class _HouseholdsPageState extends State<HouseholdsPage> {
   Future<List<Unit>>? _unitsFuture;
   Future<int>? _memberCountFuture;
+  Future<Map<String, int>>? _memberCountsByUnitFuture;
   Unit? _selectedUnit;
 
   @override
@@ -53,6 +54,7 @@ class _HouseholdsPageState extends State<HouseholdsPage> {
             ? repo.getTotalMemberCount(communityId)
             : unitsFuture.then((units) =>
                 repo.getMemberCountForUnits(units.map((u) => u.id).toList()));
+        _memberCountsByUnitFuture = repo.getMemberCountsByUnit(communityId);
       });
     }
   }
@@ -72,6 +74,7 @@ class _HouseholdsPageState extends State<HouseholdsPage> {
                 child: _UnitList(
                   unitsFuture: _unitsFuture,
                   memberCountFuture: _memberCountFuture,
+                  memberCountsByUnitFuture: _memberCountsByUnitFuture,
                   selectedUnit: _selectedUnit,
                   onUnitSelected: (unit) {
                     setState(() => _selectedUnit = unit);
@@ -106,6 +109,7 @@ class _HouseholdsPageState extends State<HouseholdsPage> {
         return _UnitList(
           unitsFuture: _unitsFuture,
           memberCountFuture: _memberCountFuture,
+          memberCountsByUnitFuture: _memberCountsByUnitFuture,
           selectedUnit: _selectedUnit,
           onUnitSelected: (unit) {
             setState(() => _selectedUnit = unit);
@@ -122,6 +126,7 @@ class _HouseholdsPageState extends State<HouseholdsPage> {
 class _UnitList extends StatefulWidget {
   final Future<List<Unit>>? unitsFuture;
   final Future<int>? memberCountFuture;
+  final Future<Map<String, int>>? memberCountsByUnitFuture;
   final Unit? selectedUnit;
   final Function(Unit) onUnitSelected;
   final VoidCallback onRefresh;
@@ -129,6 +134,7 @@ class _UnitList extends StatefulWidget {
   const _UnitList({
     required this.unitsFuture,
     this.memberCountFuture,
+    this.memberCountsByUnitFuture,
     required this.selectedUnit,
     required this.onUnitSelected,
     required this.onRefresh,
@@ -398,67 +404,91 @@ class _UnitListState extends State<_UnitList> {
       );
     }
 
-    return DataTable2(
-      columnSpacing: 12,
-      horizontalMargin: 16,
-      minWidth: 300,
-      sortColumnIndex: _sortColumnIndex,
-      sortAscending: _sortAscending,
-      headingRowColor: WidgetStateProperty.all(
-        theme.colorScheme.surfaceContainerHighest,
-      ),
-      columns: [
-        DataColumn2(
-          label:
-              const Text('Unit', style: TextStyle(fontWeight: FontWeight.w600)),
-          size: ColumnSize.S,
-          onSort: (col, asc) => setState(() {
-            _sortColumnIndex = col;
-            _sortAscending = asc;
-          }),
-        ),
-        DataColumn2(
-          label:
-              const Text('Type', style: TextStyle(fontWeight: FontWeight.w600)),
-          size: ColumnSize.L,
-          onSort: (col, asc) => setState(() {
-            _sortColumnIndex = col;
-            _sortAscending = asc;
-          }),
-        ),
-      ],
-      rows: filtered.map((unit) {
-        final isSelected = widget.selectedUnit?.id == unit.id;
-        return DataRow2(
-          selected: isSelected,
-          color: isSelected
-              ? WidgetStateProperty.all(
-                  theme.colorScheme.primary.withOpacity(0.08))
-              : null,
-          onTap: () => widget.onUnitSelected(unit),
-          cells: [
-            DataCell(
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.home, size: 18, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(unit.unitNo,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                ],
-              ),
+    return FutureBuilder<Map<String, int>>(
+      future: widget.memberCountsByUnitFuture,
+      builder: (context, countsSnapshot) {
+        final counts = countsSnapshot.data ?? {};
+
+        return DataTable2(
+          columnSpacing: 12,
+          horizontalMargin: 16,
+          minWidth: 300,
+          sortColumnIndex: _sortColumnIndex,
+          sortAscending: _sortAscending,
+          headingRowColor: WidgetStateProperty.all(
+            theme.colorScheme.surfaceContainerHighest,
+          ),
+          columns: [
+            DataColumn2(
+              label: const Text('Unit',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              size: ColumnSize.S,
+              onSort: (col, asc) => setState(() {
+                _sortColumnIndex = col;
+                _sortAscending = asc;
+              }),
             ),
-            DataCell(
-              Text(
-                unit.unitType ?? '—',
-                style: TextStyle(
-                  color: unit.unitType != null ? null : Colors.grey[400],
-                ),
-              ),
+            DataColumn2(
+              label: const Text('Type',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              size: ColumnSize.L,
+              onSort: (col, asc) => setState(() {
+                _sortColumnIndex = col;
+                _sortAscending = asc;
+              }),
+            ),
+            const DataColumn2(
+              label: Text('Members',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              size: ColumnSize.S,
+              numeric: true,
             ),
           ],
+          rows: filtered.map((unit) {
+            final isSelected = widget.selectedUnit?.id == unit.id;
+            final memberCount = counts[unit.id] ?? 0;
+            return DataRow2(
+              selected: isSelected,
+              color: isSelected
+                  ? WidgetStateProperty.all(
+                      theme.colorScheme.primary.withOpacity(0.08))
+                  : null,
+              onTap: () => widget.onUnitSelected(unit),
+              cells: [
+                DataCell(
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.home,
+                          size: 18, color: theme.colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(unit.unitNo,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    unit.unitType ?? '—',
+                    style: TextStyle(
+                      color: unit.unitType != null ? null : Colors.grey[400],
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    '$memberCount',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: memberCount > 0 ? null : Colors.grey[400],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 

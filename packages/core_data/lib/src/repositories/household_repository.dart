@@ -38,6 +38,21 @@ class HouseholdRepository {
     return (response as List).length;
   }
 
+  /// Get member counts grouped by unit ID
+  Future<Map<String, int>> getMemberCountsByUnit(String communityId) async {
+    final response = await _client
+        .from('household_members')
+        .select('unit_id')
+        .eq('community_id', communityId);
+
+    final counts = <String, int>{};
+    for (final row in response as List) {
+      final unitId = row['unit_id'] as String;
+      counts[unitId] = (counts[unitId] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   /// Get members of a unit
   Future<List<HouseholdMember>> getHouseholdMembers(String unitId) async {
     final response = await _client

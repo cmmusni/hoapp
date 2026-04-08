@@ -27,6 +27,7 @@ class HouseholdScreen extends StatefulWidget {
 class _HouseholdScreenState extends State<HouseholdScreen> {
   Future<List<Unit>>? _unitsFuture;
   Future<int>? _memberCountFuture;
+  Future<Map<String, int>>? _memberCountsByUnitFuture;
   Unit? _selectedUnit;
 
   @override
@@ -52,6 +53,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
           ? repo.getTotalMemberCount(communityId)
           : unitsFuture.then((units) =>
               repo.getMemberCountForUnits(units.map((u) => u.id).toList()));
+      _memberCountsByUnitFuture = repo.getMemberCountsByUnit(communityId);
     });
   }
 
@@ -205,30 +207,43 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
         ),
         // Unit list
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: units.length,
-            itemBuilder: (context, index) {
-              final unit = units[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    child: Text(
-                      unit.unitNo.length > 2
-                          ? unit.unitNo.substring(0, 2)
-                          : unit.unitNo,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+          child: FutureBuilder<Map<String, int>>(
+            future: _memberCountsByUnitFuture,
+            builder: (context, countsSnapshot) {
+              final counts = countsSnapshot.data ?? {};
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: units.length,
+                itemBuilder: (context, index) {
+                  final unit = units[index];
+                  final memberCount = counts[unit.id] ?? 0;
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        child: Text(
+                          unit.unitNo.length > 2
+                              ? unit.unitNo.substring(0, 2)
+                              : unit.unitNo,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      title: Text(
+                        'Unit ${unit.unitNo}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        [
+                          if (unit.unitType != null) unit.unitType!,
+                          '$memberCount member${memberCount == 1 ? '' : 's'}',
+                        ].join(' · '),
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => setState(() => _selectedUnit = unit),
                     ),
-                  ),
-                  title: Text(
-                    'Unit ${unit.unitNo}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: unit.unitType != null ? Text(unit.unitType!) : null,
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => setState(() => _selectedUnit = unit),
-                ),
+                  );
+                },
               );
             },
           ),
