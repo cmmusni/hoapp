@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:html' as html;
+import 'dart:js' as js;
 import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +38,16 @@ String _detectPlatform() {
   return 'Other';
 }
 
+/// Safely read navigator.deviceMemory (not in dart:html).
+num? _getDeviceMemory() {
+  try {
+    final val = js.context['navigator']['deviceMemory'];
+    return val is num ? val : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -50,9 +61,23 @@ void main() async {
   );
 
   // Notify platform admin of site access (fire-and-forget, emails only on new device)
+  final screen = html.window.screen;
   Supabase.instance.client.functions.invoke('notify_access', body: {
     'fingerprint': _browserFingerprint(),
     'platform': _detectPlatform(),
+    'screen_resolution': '${screen?.width ?? 0}x${screen?.height ?? 0}',
+    'color_depth': screen?.colorDepth ?? 0,
+    'language': html.window.navigator.language,
+    'languages': html.window.navigator.languages?.join(', ') ?? '',
+    'timezone': DateTime.now().timeZoneName,
+    'timezone_offset': DateTime.now().timeZoneOffset.inMinutes,
+    'referrer': html.document.referrer,
+    'page_url': html.window.location.href,
+    'cookie_enabled': html.window.navigator.cookieEnabled,
+    'online': html.window.navigator.onLine,
+    'hardware_concurrency': js.context['navigator']['hardwareConcurrency'],
+    'device_memory': _getDeviceMemory(),
+    'touch_support': js.context['navigator']['maxTouchPoints'] ?? 0,
   }).ignore();
 
   // Pre-load last active community slug for router redirect
