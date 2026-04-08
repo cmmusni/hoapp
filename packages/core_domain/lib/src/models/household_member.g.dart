@@ -17,6 +17,7 @@ HouseholdMember _$HouseholdMemberFromJson(Map<String, dynamic> json) =>
       relationship: json['relationship'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       userName: json['user_name'] as String?,
+      userEmail: json['user_email'] as String?,
     );
 
 Map<String, dynamic> _$HouseholdMemberToJson(HouseholdMember instance) =>
@@ -30,6 +31,7 @@ Map<String, dynamic> _$HouseholdMemberToJson(HouseholdMember instance) =>
       'relationship': instance.relationship,
       'created_at': instance.createdAt.toIso8601String(),
       'user_name': instance.userName,
+      'user_email': instance.userEmail,
     };
 
 const _$MemberRoleEnumMap = {

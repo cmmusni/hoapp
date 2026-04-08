@@ -80,14 +80,16 @@ class HouseholdRepository {
       // Fetch profiles for all user IDs
       final profilesResponse = await _client
           .from('profiles')
-          .select('user_id, full_name')
+          .select('user_id, full_name, email')
           .inFilter('user_id', userIds);
 
       // Create a map of user_id to full_name
       final profileMap = <String, String?>{};
+      final emailMap = <String, String?>{};
       for (final profile in profilesResponse as List) {
         profileMap[profile['user_id'] as String] =
             profile['full_name'] as String?;
+        emailMap[profile['user_id'] as String] = profile['email'] as String?;
       }
 
       // Merge profile names into member data
@@ -95,6 +97,7 @@ class HouseholdRepository {
         final userId = member['user_id'] as String?;
         if (userId != null) {
           member['user_name'] = profileMap[userId];
+          member['user_email'] = emailMap[userId];
         }
       }
     }
