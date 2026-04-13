@@ -500,15 +500,30 @@ class _InvoiceCard extends StatefulWidget {
 class _InvoiceCardState extends State<_InvoiceCard> {
   bool _hasSubmittedPayment = false;
   bool _hasRejectedPayment = false;
+  String? _unitNo;
 
   Invoice get invoice => widget.invoice;
 
   @override
   void initState() {
     super.initState();
+    _loadUnitNo();
     if (invoice.status == InvoiceStatus.unpaid) {
       _checkLatestPaymentStatus();
     }
+  }
+
+  void _loadUnitNo() async {
+    try {
+      final result = await Supabase.instance.client
+          .from('units')
+          .select('unit_no')
+          .eq('id', invoice.unitId)
+          .maybeSingle();
+      if (result != null && mounted) {
+        setState(() => _unitNo = result['unit_no'] as String?);
+      }
+    } catch (_) {}
   }
 
   Future<void> _checkLatestPaymentStatus() async {
@@ -575,6 +590,16 @@ class _InvoiceCardState extends State<_InvoiceCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_unitNo != null) ...[
+                Text(
+                  'Unit $_unitNo',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
               Row(
                 children: [
                   Text(

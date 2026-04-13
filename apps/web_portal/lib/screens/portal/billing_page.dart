@@ -746,15 +746,30 @@ class _InvoiceCard extends StatefulWidget {
 class _InvoiceCardState extends State<_InvoiceCard> {
   bool _hasSubmittedPayment = false;
   bool _hasRejectedPayment = false;
+  String? _unitNo;
 
   Invoice get invoice => widget.invoice;
 
   @override
   void initState() {
     super.initState();
+    _loadUnitNo();
     if (invoice.status == InvoiceStatus.unpaid) {
       _checkLatestPaymentStatus();
     }
+  }
+
+  void _loadUnitNo() async {
+    try {
+      final result = await Supabase.instance.client
+          .from('units')
+          .select('unit_no')
+          .eq('id', invoice.unitId)
+          .maybeSingle();
+      if (result != null && mounted) {
+        setState(() => _unitNo = result['unit_no'] as String?);
+      }
+    } catch (_) {}
   }
 
   Future<void> _checkLatestPaymentStatus() async {
@@ -825,6 +840,16 @@ class _InvoiceCardState extends State<_InvoiceCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_unitNo != null) ...[
+                      Text(
+                        'Unit $_unitNo',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     Row(
                       children: [
                         Text(
@@ -1408,76 +1433,93 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
             ),
 
             // Actions bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(
-                children: [
-                  if (widget.isAdmin)
-                    TextButton.icon(
-                      onPressed: _isDeleting
-                          ? null
-                          : () => _confirmDeleteInvoice(context),
-                      icon: _isDeleting
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.delete_outline,
-                              size: 18, color: Colors.red),
-                      label: Text(_isDeleting ? 'Deleting...' : 'Delete'),
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    ),
-                  TextButton.icon(
-                    onPressed:
-                        _isPrinting ? null : () => _printInvoice(context),
-                    icon: _isPrinting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.print, size: 18),
-                    label: Text(_isPrinting ? 'Preparing...' : 'Print Invoice'),
-                  ),
-                  if (_currentStatus == InvoiceStatus.paid)
-                    TextButton.icon(
-                      onPressed:
-                          _isPrintingAR ? null : () => _generateOR(context),
-                      icon: _isPrintingAR
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.receipt_long, size: 18),
-                      label: Text(_isPrintingAR ? 'Preparing...' : 'Print AR'),
-                    ),
-                  const Spacer(),
-                  if (_currentStatus == InvoiceStatus.unpaid &&
-                      widget.canSubmitPayment)
-                    SizedBox(
-                      width: 180,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _showPaymentSubmissionDialog(context);
-                        },
-                        icon: const Icon(Icons.payment, color: Colors.white),
-                        label: const Text('Submit Payment',
-                            style: TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w600)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 400;
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (widget.isAdmin)
+                        TextButton.icon(
+                          onPressed: _isDeleting
+                              ? null
+                              : () => _confirmDeleteInvoice(context),
+                          icon: _isDeleting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.delete_outline,
+                                  size: 18, color: Colors.red),
+                          label: Text(_isDeleting ? '...' : 'Delete'),
+                          style:
+                              TextButton.styleFrom(foregroundColor: Colors.red),
                         ),
+                      TextButton.icon(
+                        onPressed:
+                            _isPrinting ? null : () => _printInvoice(context),
+                        icon: _isPrinting
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.print, size: 18),
+                        label: Text(_isPrinting
+                            ? '...'
+                            : isCompact
+                                ? 'Print'
+                                : 'Print Invoice'),
                       ),
-                    ),
-                ],
-              ),
+                      if (_currentStatus == InvoiceStatus.paid)
+                        TextButton.icon(
+                          onPressed:
+                              _isPrintingAR ? null : () => _generateOR(context),
+                          icon: _isPrintingAR
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.receipt_long, size: 18),
+                          label: Text(_isPrintingAR
+                              ? '...'
+                              : isCompact
+                                  ? 'AR'
+                                  : 'Print AR'),
+                        ),
+                      if (_currentStatus == InvoiceStatus.unpaid &&
+                          widget.canSubmitPayment)
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _showPaymentSubmissionDialog(context);
+                          },
+                          icon: const Icon(Icons.payment, color: Colors.white),
+                          label: Text(isCompact ? 'Pay' : 'Submit Payment',
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w600)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
