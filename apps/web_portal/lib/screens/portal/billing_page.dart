@@ -826,6 +826,10 @@ class _InvoiceCardState extends State<_InvoiceCard> {
         categoryLabel = 'OTHER';
         break;
     }
+    // Use description for multi-category invoices (e.g. "Water + Monthly Dues")
+    if (invoice.description != null && invoice.description!.contains('+')) {
+      categoryLabel = invoice.description!.toUpperCase();
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1115,7 +1119,10 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _getCategoryLabel(widget.invoice.category),
+                              widget.invoice.description != null &&
+                                      widget.invoice.description!.contains('+')
+                                  ? widget.invoice.description!.toUpperCase()
+                                  : _getCategoryLabel(widget.invoice.category),
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,

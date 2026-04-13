@@ -603,7 +603,10 @@ class _InvoiceCardState extends State<_InvoiceCard> {
               Row(
                 children: [
                   Text(
-                    _getCategoryLabel(invoice.category),
+                    invoice.description != null &&
+                            invoice.description!.contains('+')
+                        ? invoice.description!.toUpperCase()
+                        : _getCategoryLabel(invoice.category),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -856,7 +859,10 @@ class _InvoiceDetailsSheetState extends State<_InvoiceDetailsSheet> {
                     children: [
                       Expanded(
                         child: Text(
-                          _getCategoryLabel(widget.invoice.category),
+                          widget.invoice.description != null &&
+                                  widget.invoice.description!.contains('+')
+                              ? widget.invoice.description!.toUpperCase()
+                              : _getCategoryLabel(widget.invoice.category),
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
