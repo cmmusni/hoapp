@@ -69,6 +69,9 @@ class HouseholdRepository {
       return [];
     }
 
+    // Get community_id from the first member for scoping profile queries
+    final communityId = members.first['community_id'] as String?;
+
     // Get user IDs to fetch profile names (filter out nulls)
     final userIds = members
         .map((m) => m['user_id'] as String?)
@@ -77,19 +80,65 @@ class HouseholdRepository {
         .toList();
 
     if (userIds.isNotEmpty) {
-      // Fetch profiles for all user IDs
-      final profilesResponse = await _client
-          .from('profiles')
-          .select('user_id, full_name, email')
-          .inFilter('user_id', userIds);
-
-      // Create a map of user_id to full_name
+      // Fetch profiles for all user IDs, scoped to community
       final profileMap = <String, String?>{};
       final emailMap = <String, String?>{};
-      for (final profile in profilesResponse as List) {
-        profileMap[profile['user_id'] as String] =
-            profile['full_name'] as String?;
-        emailMap[profile['user_id'] as String] = profile['email'] as String?;
+
+      // Try fetching via community-scoped profiles first
+      try {
+        var query = _client
+            .from('profiles')
+            .select('user_id, full_name, email')
+            .inFilter('user_id', userIds);
+        if (communityId != null) {
+          query = query.eq('community_id', communityId);
+        }
+        final profilesResponse = await query;
+
+        for (final profile in profilesResponse as List) {
+          profileMap[profile['user_id'] as String] =
+              profile['full_name'] as String?;
+          emailMap[profile['user_id'] as String] = profile['email'] as String?;
+        }
+      } catch (_) {}
+
+      // For any user IDs still missing, try the RPC fallback
+      final missingIds = userIds
+          .where((id) => profileMap[id] == null && emailMap[id] == null)
+          .toList();
+      if (missingIds.isNotEmpty && communityId != null) {
+        try {
+          final result =
+              await _client.rpc('get_community_user_emails', params: {
+            'p_community_id': communityId,
+          });
+          for (final row in (result as List)) {
+            final uid = row['user_id'] as String;
+            if (userIds.contains(uid)) {
+              profileMap.putIfAbsent(uid, () => row['display_name'] as String?);
+              emailMap.putIfAbsent(uid, () => row['email'] as String?);
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Last resort: for users still unresolved, try fetching profiles
+      // without community scope (picks any community's profile)
+      final stillMissing = userIds
+          .where((id) => profileMap[id] == null && emailMap[id] == null)
+          .toList();
+      if (stillMissing.isNotEmpty) {
+        try {
+          final fallbackProfiles = await _client
+              .from('profiles')
+              .select('user_id, full_name, email')
+              .inFilter('user_id', stillMissing);
+          for (final profile in fallbackProfiles as List) {
+            final uid = profile['user_id'] as String;
+            profileMap.putIfAbsent(uid, () => profile['full_name'] as String?);
+            emailMap.putIfAbsent(uid, () => profile['email'] as String?);
+          }
+        } catch (_) {}
       }
 
       // Merge profile names into member data
