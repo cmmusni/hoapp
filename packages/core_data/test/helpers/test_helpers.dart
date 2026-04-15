@@ -46,20 +46,18 @@ Announcement createMockAnnouncement({
 Invoice createMockInvoice({
   String? id,
   String? communityId,
-  String? unitNumber,
   double amount = 150.0,
-  bool paid = false,
+  InvoiceStatus status = InvoiceStatus.unpaid,
 }) {
   return Invoice(
     id: id ?? 'test-invoice-id',
     communityId: communityId ?? 'test-community-id',
     unitId: 'test-unit-id',
-    unitNumber: unitNumber ?? '101',
-    type: 'monthly_dues',
+    category: InvoiceCategory.dues,
+    currency: 'PHP',
     amount: amount,
     dueDate: DateTime.now().add(const Duration(days: 7)),
-    notes: null,
-    paidAt: paid ? DateTime.now() : null,
+    status: status,
     createdAt: DateTime.now(),
   );
 }
@@ -69,17 +67,21 @@ Payment createMockPayment({
   String? id,
   String? invoiceId,
   double amount = 150.0,
-  bool verified = false,
+  PaymentStatus status = PaymentStatus.submitted,
 }) {
   return Payment(
     id: id ?? 'test-payment-id',
+    communityId: 'test-community-id',
     invoiceId: invoiceId ?? 'test-invoice-id',
+    userId: 'test-user-id',
     amount: amount,
     method: 'gcash',
-    referenceNumber: 'REF123456',
+    currency: 'PHP',
+    status: status,
     proofUrl: 'https://example.com/proof.jpg',
-    verifiedAt: verified ? DateTime.now() : null,
-    verifiedBy: verified ? 'admin-id' : null,
+    verifiedAt: status == PaymentStatus.verified ? DateTime.now() : null,
+    verifiedBy: status == PaymentStatus.verified ? 'admin-id' : null,
+    postedAt: DateTime.now(),
     createdAt: DateTime.now(),
   );
 }
@@ -120,17 +122,15 @@ Message createMockMessage({
 Violation createMockViolation({
   String? id,
   String? communityId,
-  ViolationStatus status = ViolationStatus.newViolation,
+  ViolationStatus status = ViolationStatus.newStatus,
   bool anonymous = false,
 }) {
   return Violation(
     id: id ?? 'test-violation-id',
     communityId: communityId ?? 'test-community-id',
-    reportedBy: anonymous ? null : 'test-user-id',
-    unitNumber: '101',
-    description: 'Test violation description',
-    location: 'Building A',
-    photoUrl: null,
+    title: 'Test Violation',
+    body: 'Test violation description',
+    reporterUserId: anonymous ? null : 'test-user-id',
     status: status,
     staffNotes: null,
     createdAt: DateTime.now(),
@@ -149,9 +149,11 @@ Amenity createMockAmenity({
     id: id ?? 'test-amenity-id',
     communityId: communityId ?? 'test-community-id',
     name: name ?? 'Test Pool',
-    description: 'Test pool description',
-    capacity: capacity,
-    ratePerHour: ratePerHour,
+    rules: {
+      'description': 'Test pool description',
+      'capacity': capacity,
+      'rate_per_hour': ratePerHour,
+    },
     createdAt: DateTime.now(),
   );
 }
@@ -163,38 +165,41 @@ AmenityBooking createMockAmenityBooking({
   DateTime? bookingDate,
 }) {
   final date = bookingDate ?? DateTime.now().add(const Duration(days: 1));
+  final start = DateTime(date.year, date.month, date.day, 9, 0);
+  final end = DateTime(date.year, date.month, date.day, 11, 0);
   return AmenityBooking(
     id: id ?? 'test-booking-id',
+    communityId: 'test-community-id',
     amenityId: amenityId ?? 'test-amenity-id',
+    userId: 'test-user-id',
     unitId: 'test-unit-id',
-    unitNumber: '101',
-    bookingDate: date,
-    startTime: DateTime(date.year, date.month, date.day, 9, 0),
-    endTime: DateTime(date.year, date.month, date.day, 11, 0),
-    totalCost: 200.0,
-    createdBy: 'test-user-id',
+    timeRange: '[$start,$end)',
+    status: BookingStatus.pending,
     createdAt: DateTime.now(),
   );
 }
 
 /// Create a mock PoolAccess for testing
-PoolAccess createMockPoolAccess({
+PoolAccessRegistration createMockPoolAccess({
   String? id,
   String? communityId,
   bool approved = false,
 }) {
-  return PoolAccess(
+  return PoolAccessRegistration(
     id: id ?? 'test-pool-access-id',
     communityId: communityId ?? 'test-community-id',
     userId: 'test-user-id',
-    phoneNumber: '123-456-7890',
+    occupantType: OccupantType.resident,
+    fullName: 'John Doe',
+    phone: '123-456-7890',
     email: 'test@example.com',
     emergencyContactName: 'Jane Doe',
-    emergencyContactRelationship: 'Spouse',
     emergencyContactPhone: '098-765-4321',
-    signedDocumentUrl: null,
-    approvedAt: approved ? DateTime.now() : null,
+    rulesVersion: '1.0',
+    approved: approved,
     approvedBy: approved ? 'admin-id' : null,
+    approvedAt: approved ? DateTime.now() : null,
+    lastEditedAt: DateTime.now(),
     createdAt: DateTime.now(),
   );
 }
@@ -203,14 +208,12 @@ PoolAccess createMockPoolAccess({
 Unit createMockUnit({
   String? id,
   String? communityId,
-  String? unitNumber,
+  String? unitNo,
 }) {
   return Unit(
     id: id ?? 'test-unit-id',
     communityId: communityId ?? 'test-community-id',
-    unitNumber: unitNumber ?? '101',
-    floor: 1,
-    ownerName: 'John Doe',
+    unitNo: unitNo ?? '101',
     createdAt: DateTime.now(),
   );
 }
@@ -219,33 +222,31 @@ Unit createMockUnit({
 HouseholdMember createMockHouseholdMember({
   String? id,
   String? unitId,
-  String? fullName,
-  HouseholdRole role = HouseholdRole.primary,
+  String? memberName,
+  MemberRole memberRole = MemberRole.primary,
 }) {
   return HouseholdMember(
     id: id ?? 'test-member-id',
+    communityId: 'test-community-id',
     unitId: unitId ?? 'test-unit-id',
     userId: null,
-    fullName: fullName ?? 'John Doe',
-    role: role,
-    dateOfBirth: DateTime(1990, 1, 1),
+    memberName: memberName ?? 'John Doe',
+    memberRole: memberRole,
     createdAt: DateTime.now(),
   );
 }
 
 /// Create a mock UserRole for testing
 UserRole createMockUserRole({
-  String? id,
+  int? id,
   String? communityId,
-  String role = 'resident',
+  Role role = Role.resident,
 }) {
   return UserRole(
-    id: id ?? 'test-role-id',
+    id: id ?? 1,
     communityId: communityId ?? 'test-community-id',
     userId: 'test-user-id',
     role: role,
-    unitId: role == 'resident' ? 'test-unit-id' : null,
-    unitNumber: role == 'resident' ? '101' : null,
     createdAt: DateTime.now(),
   );
 }
@@ -265,7 +266,7 @@ Future<void> waitForCondition(
   Duration pollInterval = const Duration(milliseconds: 100),
 }) async {
   final endTime = DateTime.now().add(timeout);
-  
+
   while (!condition()) {
     if (DateTime.now().isAfter(endTime)) {
       throw TimeoutException('Condition not met within timeout');

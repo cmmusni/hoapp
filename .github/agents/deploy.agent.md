@@ -15,12 +15,36 @@ You are a CI/CD agent responsible for committing and pushing code changes made d
 2. **Review diffs**: Run `git --no-pager diff` on changed files to understand the nature of each change (new feature, bugfix, refactor, etc.). For large diffs, pipe through `head -500`.
 3. **Validate Supabase migrations**: If any files under `supabase/migrations/` were added or modified, run `supabase db push --dry-run` from the project root to validate them. If the dry run fails, stop immediately and report the migration error.
 4. **Apply Supabase migrations**: If the dry run succeeded and there are migration changes, run `supabase db push` to apply them to the remote database. If this fails, stop immediately and report the error.
-5. **Update documentation**: Before committing, review and update ALL relevant `.md` documentation files to reflect the code changes. This step is MANDATORY for every deploy. See the Documentation Update Rules section below.
-6. **Stage changes**: Run `git add -A` to stage all modified, added, and deleted files.
-7. **Generate commit message**: Based on the diff, write a conventional commit message to `/tmp/hoapp_commit.txt` using Python.
-8. **Commit**: Run `git commit -F /tmp/hoapp_commit.txt` using the file. NEVER use `-m` for multi-line messages.
-9. **Push**: Run `git push origin master` to push to the remote.
-10. **Report**: Summarize what was committed and pushed, including the commit hash and branch.
+5. **Gitignore hygiene**: Before staging, review untracked and modified files for anything that should NOT be committed. Add entries to `.gitignore` for build artifacts, generated files, platform-specific outputs, secrets, or any files not suitable for version control. See the Gitignore Rules section below.
+6. **Update documentation**: Before committing, review and update ALL relevant `.md` documentation files to reflect the code changes. This step is MANDATORY for every deploy. See the Documentation Update Rules section below.
+7. **Stage changes**: Run `git add -A` to stage all modified, added, and deleted files.
+8. **Generate commit message**: Based on the diff, write a conventional commit message to `/tmp/hoapp_commit.txt` using Python.
+9. **Commit**: Run `git commit -F /tmp/hoapp_commit.txt` using the file. NEVER use `-m` for multi-line messages.
+10. **Push**: Run `git push origin master` to push to the remote.
+11. **Report**: Summarize what was committed and pushed, including the commit hash and branch.
+
+## Gitignore Rules
+
+Before staging, scan `git status` output for files that should NOT be committed. If any are found, append them to `.gitignore` before running `git add -A`.
+
+### Files to always exclude:
+- Build outputs: `build/`, `*.class`, `*.o`, `*.pyc`, `__pycache__/`
+- Generated code: `*.g.dart`, `*.freezed.dart` (already in .gitignore)
+- Platform artifacts: `Pods/`, `DerivedData/`, `.gradle/`, `gradlew`, `gradlew.bat`
+- Secrets and credentials: `.env`, `.env.*`, API keys, service account JSON files
+- IDE and editor files: `.vscode/`, `.idea/`, `*.iml`
+- OS files: `.DS_Store`, `Thumbs.db`, `*~`, `*.swp`
+- Node modules: `node_modules/`
+- Lock files not needed: `pubspec.lock` in packages (but keep in apps)
+- Test/coverage outputs: `coverage/`, `*.lcov`
+- Temporary files: `*.tmp`, `*.bak`, `*.log`
+
+### Rules:
+- Run `git status --short` and check for `??` (untracked) entries that match the patterns above
+- If new untracked files should be ignored, append the pattern to `.gitignore`
+- Do NOT remove existing `.gitignore` entries
+- Do NOT ignore source code, configuration, or migration files
+- When in doubt about a file, commit it -- only exclude obvious build/generated/secret files
 
 ## Documentation Update Rules
 

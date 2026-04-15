@@ -2030,8 +2030,7 @@ class _PaymentNotificationSectionState
           Map<String, dynamic>.from(widget.community.settings ?? {});
 
       // Empty list = notify all admins (default)
-      currentSettings['payment_notification_admin_ids'] =
-          _selectedIds.toList();
+      currentSettings['payment_notification_admin_ids'] = _selectedIds.toList();
 
       await repo.updateCommunitySettings(
         communityId: widget.community.id,
@@ -2040,8 +2039,7 @@ class _PaymentNotificationSectionState
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Payment notification settings saved')),
+          const SnackBar(content: Text('Payment notification settings saved')),
         );
         widget.onUpdated();
       }
@@ -2091,9 +2089,8 @@ class _PaymentNotificationSectionState
                                   if (_selectedIds.isEmpty) {
                                     // Switching from "all" to individual:
                                     // populate with all, then toggle this one
-                                    _selectedIds = _admins
-                                        .map((a) => a.userId)
-                                        .toSet();
+                                    _selectedIds =
+                                        _admins.map((a) => a.userId).toSet();
                                   }
                                   if (checked == true) {
                                     _selectedIds.add(admin.userId);
@@ -2101,16 +2098,13 @@ class _PaymentNotificationSectionState
                                     _selectedIds.remove(admin.userId);
                                   }
                                   // If all are selected, clear to mean "all"
-                                  if (_selectedIds.length ==
-                                      _admins.length) {
+                                  if (_selectedIds.length == _admins.length) {
                                     _selectedIds.clear();
                                   }
                                 });
                               },
                               title: Text(
-                                admin.name.isNotEmpty
-                                    ? admin.name
-                                    : 'Unknown',
+                                admin.name.isNotEmpty ? admin.name : 'Unknown',
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w500),
                               ),
@@ -2133,8 +2127,7 @@ class _PaymentNotificationSectionState
                                   ),
                                 ),
                               ),
-                              controlAffinity:
-                                  ListTileControlAffinity.trailing,
+                              controlAffinity: ListTileControlAffinity.trailing,
                               contentPadding: EdgeInsets.zero,
                             );
                           }),
@@ -2152,30 +2145,26 @@ class _PaymentNotificationSectionState
                             child: ElevatedButton(
                               onPressed: _isSaving ? null : _save,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    theme.colorScheme.primary,
+                                backgroundColor: theme.colorScheme.primary,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                               child: _isSaving
                                   ? const SizedBox(
                                       height: 20,
                                       width: 20,
-                                      child:
-                                          CircularProgressIndicator(
+                                      child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                         color: Colors.white,
                                       ),
                                     )
                                   : const Text('Save',
                                       style: TextStyle(
-                                          fontWeight:
-                                              FontWeight.w600)),
+                                          fontWeight: FontWeight.w600)),
                             ),
                           ),
                         ],

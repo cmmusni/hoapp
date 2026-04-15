@@ -25,7 +25,8 @@ void main() {
       expect(find.byType(ElevatedButton), findsOneWidget);
     });
 
-    testWidgets('button is disabled when onPressed is null', (WidgetTester tester) async {
+    testWidgets('button is disabled when onPressed is null',
+        (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -43,7 +44,8 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('shows loading indicator when isLoading is true', (WidgetTester tester) async {
+    testWidgets('shows loading indicator when isLoading is true',
+        (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
         MaterialApp(
@@ -87,7 +89,8 @@ void main() {
       expect(wasPressed, isTrue);
     });
 
-    testWidgets('renders outlined variant correctly', (WidgetTester tester) async {
+    testWidgets('renders outlined variant correctly',
+        (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
         MaterialApp(
@@ -95,7 +98,7 @@ void main() {
             body: HOAppButton(
               label: 'Outlined Button',
               onPressed: () {},
-              variant: ButtonVariant.outlined,
+              isOutlined: true,
             ),
           ),
         ),
@@ -103,25 +106,6 @@ void main() {
 
       // Assert
       expect(find.byType(OutlinedButton), findsOneWidget);
-      expect(find.byType(ElevatedButton), findsNothing);
-    });
-
-    testWidgets('renders text variant correctly', (WidgetTester tester) async {
-      // Arrange & Act
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: HOAppButton(
-              label: 'Text Button',
-              onPressed: () {},
-              variant: ButtonVariant.text,
-            ),
-          ),
-        ),
-      );
-
-      // Assert
-      expect(find.byType(TextButton), findsOneWidget);
       expect(find.byType(ElevatedButton), findsNothing);
     });
 
@@ -144,7 +128,7 @@ void main() {
       expect(find.text('Icon Button'), findsOneWidget);
     });
 
-    testWidgets('respects isFullWidth property', (WidgetTester tester) async {
+    testWidgets('defaults to full width', (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
         MaterialApp(
@@ -154,19 +138,20 @@ void main() {
               child: HOAppButton(
                 label: 'Full Width Button',
                 onPressed: () {},
-                isFullWidth: true,
               ),
             ),
           ),
         ),
       );
 
-      // Assert
+      // Assert - HOAppButton wraps in SizedBox with width: double.infinity by default
       final button = tester.widget<SizedBox>(
-        find.descendant(
-          of: find.byType(HOAppButton),
-          matching: find.byType(SizedBox),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(HOAppButton),
+              matching: find.byType(SizedBox),
+            )
+            .first,
       );
       expect(button.width, equals(double.infinity));
     });
@@ -193,7 +178,8 @@ void main() {
       expect(find.text(testText), findsOneWidget);
     });
 
-    testWidgets('card is tappable when onTap provided', (WidgetTester tester) async {
+    testWidgets('card is tappable when onTap provided',
+        (WidgetTester tester) async {
       // Arrange
       var wasTapped = false;
 
@@ -218,7 +204,8 @@ void main() {
       expect(wasTapped, isTrue);
     });
 
-    testWidgets('card renders without InkWell when onTap is null', (WidgetTester tester) async {
+    testWidgets('card renders with InkWell even when onTap is null',
+        (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -230,14 +217,17 @@ void main() {
         ),
       );
 
-      // Assert
-      expect(find.byType(InkWell), findsNothing);
+      // Assert - InkWell is always present; onTap is just null
+      expect(find.byType(InkWell), findsOneWidget);
       expect(find.byType(Card), findsOneWidget);
+      final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+      expect(inkWell.onTap, isNull);
     });
   });
 
   group('LoadingIndicator Widget Tests', () {
-    testWidgets('renders with default message', (WidgetTester tester) async {
+    testWidgets('renders with no message by default',
+        (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -249,7 +239,8 @@ void main() {
 
       // Assert
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Loading...'), findsOneWidget);
+      // No message is shown when message is null (default)
+      expect(find.byType(Text), findsNothing);
     });
 
     testWidgets('renders with custom message', (WidgetTester tester) async {

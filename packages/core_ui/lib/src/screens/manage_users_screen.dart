@@ -159,12 +159,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 ? roles
                 : roles.where((r) {
                     final profile = _userProfiles[r.userId];
-                    final name =
-                        (profile?.fullName ?? '').toLowerCase();
-                    final email = (profile?.email ??
-                            _userEmails[r.userId] ??
-                            '')
-                        .toLowerCase();
+                    final name = (profile?.fullName ?? '').toLowerCase();
+                    final email =
+                        (profile?.email ?? _userEmails[r.userId] ?? '')
+                            .toLowerCase();
                     return name.contains(query) || email.contains(query);
                   }).toList();
 
@@ -182,8 +180,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Search by name or email',
-                      prefixIcon:
-                          const Icon(Icons.search, size: 20),
+                      prefixIcon: const Icon(Icons.search, size: 20),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 20),
@@ -197,20 +194,17 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                           borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                            color: _getBrandColor(context),
-                            width: 1.5),
+                            color: _getBrandColor(context), width: 1.5),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 12),
                     ),
-                    onChanged: (value) =>
-                        setState(() => _searchQuery = value),
+                    onChanged: (value) => setState(() => _searchQuery = value),
                   ),
                 ),
                 if (filteredRoles.isEmpty && query.isNotEmpty)
@@ -531,10 +525,12 @@ class _RoleSection extends StatelessWidget {
         ),
         ...roles.map((r) {
           final profile = profiles[r.userId];
-          final name = profile?.fullName ??
-              profile?.email ??
-              emails[r.userId] ??
-              'Unknown User';
+          final email = profile?.email ?? emails[r.userId];
+          final name =
+              profile?.fullName ?? email ?? 'User ${r.userId.substring(0, 8)}';
+          final subtitle = email != null && email != name
+              ? '${_roleDisplayName(r.role)} · $email'
+              : _roleDisplayName(r.role);
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
@@ -547,7 +543,7 @@ class _RoleSection extends StatelessWidget {
                 ),
               ),
               title: Text(name),
-              subtitle: Text(_roleDisplayName(r.role),
+              subtitle: Text(subtitle,
                   style: TextStyle(fontSize: 12, color: Colors.grey[600])),
               trailing: PopupMenuButton<String>(
                 onSelected: (action) {
