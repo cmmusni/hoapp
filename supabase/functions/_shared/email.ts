@@ -408,3 +408,89 @@ export function generatePassQrEmailHTML(params: {
 </html>
   `.trim()
 }
+
+/**
+ * Generate payment submitted notification email HTML (sent to community admins)
+ */
+export function generatePaymentSubmittedHTML(params: {
+  adminName: string
+  communityName: string
+  submitterName: string
+  unitNo: string
+  amount: number
+  invoiceId: string
+  portalLink: string
+}): string {
+  const { adminName, communityName, submitterName, unitNo, amount, invoiceId, portalLink } = params
+
+  const formattedAmount = amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Submitted — ${communityName}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+  <div style="background: linear-gradient(135deg, #E65100 0%, #BF360C 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <h1 style="margin: 0; font-size: 24px;">&#128176; Payment Submitted</h1>
+    <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.85;">${communityName}</p>
+  </div>
+
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #e1e8ed; border-top: none; border-radius: 0 0 10px 10px;">
+    <p style="font-size: 16px; margin-top: 0;">Hi ${adminName},</p>
+
+    <p style="font-size: 16px;">
+      A new payment has been submitted and is awaiting your verification.
+    </p>
+
+    <div style="background: #f7fafc; border-left: 4px solid #E65100; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096; width: 120px;">Submitted By</td>
+          <td style="padding: 6px 0; font-size: 14px; font-weight: 600; color: #333;">${submitterName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096;">Unit</td>
+          <td style="padding: 6px 0; font-size: 14px; color: #333;">${unitNo}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096;">Amount</td>
+          <td style="padding: 6px 0; font-size: 20px; font-weight: bold; color: #E65100;">\u20B1${formattedAmount}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; font-size: 14px; color: #718096;">Invoice</td>
+          <td style="padding: 6px 0; font-size: 14px; color: #333;">${invoiceId.substring(0, 8).toUpperCase()}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="font-size: 15px; color: #4a5568;">
+      Please review and verify this payment at your earliest convenience.
+    </p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${portalLink}"
+         style="display: inline-block; background: linear-gradient(135deg, #E65100 0%, #BF360C 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+        Review Payment
+      </a>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #e1e8ed; margin: 30px 0;">
+
+    <p style="font-size: 13px; color: #a0aec0; margin-bottom: 0;">
+      This is an automated notification from ${communityName} via HOApp.
+    </p>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px; padding: 20px;">
+    <p style="font-size: 12px; color: #a0aec0; margin: 0;">
+      &copy; ${new Date().getFullYear()} HOApp. All rights reserved.
+    </p>
+  </div>
+</body>
+</html>
+  `.trim()
+}

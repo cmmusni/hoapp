@@ -462,8 +462,12 @@ class _UnitListState extends State<_UnitList> {
                       Icon(Icons.home,
                           size: 18, color: theme.colorScheme.primary),
                       const SizedBox(width: 8),
-                      Text(unit.unitNo,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Flexible(
+                        child: Text(unit.unitNo,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
+                      ),
                     ],
                   ),
                 ),

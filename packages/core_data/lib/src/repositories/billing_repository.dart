@@ -308,7 +308,42 @@ class BillingRepository {
         .select()
         .single();
 
+    // Fire-and-forget: notify community admin(s) of submitted payment
+    _sendPaymentSubmittedEmail(
+      communityId: communityId,
+      invoiceId: invoiceId,
+      amount: amount,
+    );
+
     return response['id'] as String;
+  }
+
+  /// Send payment-submitted email notification to community admin(s).
+  void _sendPaymentSubmittedEmail({
+    required String communityId,
+    required String invoiceId,
+    required double amount,
+  }) {
+    Future(() async {
+      try {
+        final jwt = _client.auth.currentSession?.accessToken;
+        await _client.functions.invoke(
+          'payment_submitted_email',
+          headers: {
+            if (jwt != null) 'x-user-token': jwt,
+          },
+          body: {
+            'community_id': communityId,
+            'invoice_id': invoiceId,
+            'amount': amount,
+            if (jwt != null) '_jwt': jwt,
+          },
+        );
+      } catch (e) {
+        // Email is non-critical; silently ignore failures
+        print('Payment submitted email notification failed (non-critical): $e');
+      }
+    });
   }
 
   /// Verify payment via Edge Function (staff only)

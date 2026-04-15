@@ -67,4 +67,14 @@ class Community {
     }
     return ORTemplateConfig.defaultConfig;
   }
+
+  /// User IDs of community admins who should receive payment submission
+  /// email notifications. Empty list means all admins will be notified.
+  List<String> get paymentNotificationAdminIds {
+    final raw = settings?['payment_notification_admin_ids'];
+    if (raw is List) {
+      return raw.cast<String>();
+    }
+    return [];
+  }
 }

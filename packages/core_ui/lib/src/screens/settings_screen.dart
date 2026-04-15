@@ -162,6 +162,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 24),
                 ],
 
+                // Payment Notification Recipients (admin only)
+                if (isAdmin) ...[
+                  _PaymentNotificationSection(
+                    community: community,
+                    onUpdated: _loadCommunity,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
                 // Sign out
                 SizedBox(
                   width: double.infinity,
@@ -1929,4 +1938,263 @@ class _UpgradeFeatureRow extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─── Payment Notification Recipients ──────────────────────────────────────
+
+class _PaymentNotificationSection extends StatefulWidget {
+  final Community community;
+  final VoidCallback onUpdated;
+
+  const _PaymentNotificationSection({
+    required this.community,
+    required this.onUpdated,
+  });
+
+  @override
+  State<_PaymentNotificationSection> createState() =>
+      _PaymentNotificationSectionState();
+}
+
+class _PaymentNotificationSectionState
+    extends State<_PaymentNotificationSection> {
+  List<_AdminInfo> _admins = [];
+  Set<String> _selectedIds = {};
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdmins();
+  }
+
+  Future<void> _loadAdmins() async {
+    final repo = context.read<CommunityRepository>();
+    final client = SupabaseClientManager.instance;
+    final communityId = widget.community.id;
+
+    try {
+      // Get all community user roles
+      final roles = await repo.getCommunityUserRoles(communityId);
+      final adminRoles =
+          roles.where((r) => r.role == Role.communityAdmin).toList();
+
+      // Get emails & names via RPC
+      final emailMap = <String, _AdminInfo>{};
+      try {
+        final result = await client.rpc('get_community_user_emails', params: {
+          'p_community_id': communityId,
+        });
+        for (final row in (result as List)) {
+          final uid = row['user_id'] as String;
+          emailMap[uid] = _AdminInfo(
+            userId: uid,
+            name: (row['display_name'] as String?) ?? '',
+            email: (row['email'] as String?) ?? '',
+          );
+        }
+      } catch (_) {}
+
+      final adminList = adminRoles.map((r) {
+        final info = emailMap[r.userId];
+        return _AdminInfo(
+          userId: r.userId,
+          name: info?.name ?? 'Unknown',
+          email: info?.email ?? '',
+        );
+      }).toList();
+
+      // Pre-select from saved settings
+      final savedIds = widget.community.paymentNotificationAdminIds;
+
+      if (mounted) {
+        setState(() {
+          _admins = adminList;
+          _selectedIds = savedIds.isEmpty
+              ? {} // empty means "all admins" (default behavior)
+              : savedIds.toSet();
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() => _isSaving = true);
+    try {
+      final repo = context.read<CommunityRepository>();
+      final currentSettings =
+          Map<String, dynamic>.from(widget.community.settings ?? {});
+
+      // Empty list = notify all admins (default)
+      currentSettings['payment_notification_admin_ids'] =
+          _selectedIds.toList();
+
+      await repo.updateCommunitySettings(
+        communityId: widget.community.id,
+        settings: currentSettings,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Payment notification settings saved')),
+        );
+        widget.onUpdated();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Payment Notifications', style: theme.textTheme.titleLarge),
+        const SizedBox(height: 4),
+        Text(
+          'Choose which community admins receive email notifications when a payment is submitted.',
+          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _admins.isEmpty
+                    ? const Text('No community admins found.')
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ..._admins.map((admin) {
+                            final isSelected =
+                                _selectedIds.contains(admin.userId);
+                            final allSelected = _selectedIds.isEmpty;
+                            return CheckboxListTile(
+                              value: allSelected || isSelected,
+                              onChanged: (checked) {
+                                setState(() {
+                                  if (_selectedIds.isEmpty) {
+                                    // Switching from "all" to individual:
+                                    // populate with all, then toggle this one
+                                    _selectedIds = _admins
+                                        .map((a) => a.userId)
+                                        .toSet();
+                                  }
+                                  if (checked == true) {
+                                    _selectedIds.add(admin.userId);
+                                  } else {
+                                    _selectedIds.remove(admin.userId);
+                                  }
+                                  // If all are selected, clear to mean "all"
+                                  if (_selectedIds.length ==
+                                      _admins.length) {
+                                    _selectedIds.clear();
+                                  }
+                                });
+                              },
+                              title: Text(
+                                admin.name.isNotEmpty
+                                    ? admin.name
+                                    : 'Unknown',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w500),
+                              ),
+                              subtitle: admin.email.isNotEmpty
+                                  ? Text(admin.email,
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600]))
+                                  : null,
+                              secondary: CircleAvatar(
+                                backgroundColor: theme.colorScheme.primary
+                                    .withValues(alpha: 0.1),
+                                child: Text(
+                                  admin.name.isNotEmpty
+                                      ? admin.name[0].toUpperCase()
+                                      : '?',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              controlAffinity:
+                                  ListTileControlAffinity.trailing,
+                              contentPadding: EdgeInsets.zero,
+                            );
+                          }),
+                          const SizedBox(height: 8),
+                          Text(
+                            _selectedIds.isEmpty
+                                ? 'All community admins will be notified.'
+                                : '${_selectedIds.length} of ${_admins.length} admin(s) will be notified.',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[500]),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isSaving ? null : _save,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    theme.colorScheme.primary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12),
+                              ),
+                              child: _isSaving
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child:
+                                          CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text('Save',
+                                      style: TextStyle(
+                                          fontWeight:
+                                              FontWeight.w600)),
+                            ),
+                          ),
+                        ],
+                      ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdminInfo {
+  final String userId;
+  final String name;
+  final String email;
+
+  const _AdminInfo({
+    required this.userId,
+    required this.name,
+    required this.email,
+  });
 }
