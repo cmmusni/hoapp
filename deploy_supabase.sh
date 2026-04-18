@@ -68,16 +68,27 @@ FUNCTIONS=(
     "accept_invite"
     "verify_payment"
     "book_amenity"
+    "invoice_email"
+    "payment_submitted_email"
+    "delete_user"
+    "contact_us"
+    "send_notification"
+    "send_pass_email"
+    "validate_pass"
+    "review_pass"
+    "notify_access"
+    "scan_invoice"
+    "request_access"
+    "provision_community"
+    "create_upgrade_checkout"
+    "paymongo_webhook"
+    "batch_operations"
+    "onesignal_cleanup"
 )
 
 for FUNC in "${FUNCTIONS[@]}"; do
     echo "  Deploying $FUNC..."
-    if [ "$FUNC" == "create_community" ]; then
-        # create_community doesn't verify JWT for public access
-        supabase functions deploy "$FUNC" --no-verify-jwt
-    else
-        supabase functions deploy "$FUNC"
-    fi
+    supabase functions deploy "$FUNC" --no-verify-jwt
     echo -e "  ${GREEN}✓ $FUNC deployed${NC}"
 done
 

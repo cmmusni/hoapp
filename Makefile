@@ -44,11 +44,27 @@ db-reset:
 
 fn-deploy:
 	@echo "Deploying Edge Functions..."
-	cd supabase && supabase functions deploy create_community
-	cd supabase && supabase functions deploy create_invite
-	cd supabase && supabase functions deploy accept_invite
-	cd supabase && supabase functions deploy verify_payment
-	cd supabase && supabase functions deploy book_amenity
+	cd supabase && supabase functions deploy create_community --no-verify-jwt
+	cd supabase && supabase functions deploy create_invite --no-verify-jwt
+	cd supabase && supabase functions deploy accept_invite --no-verify-jwt
+	cd supabase && supabase functions deploy verify_payment --no-verify-jwt
+	cd supabase && supabase functions deploy book_amenity --no-verify-jwt
+	cd supabase && supabase functions deploy invoice_email --no-verify-jwt
+	cd supabase && supabase functions deploy payment_submitted_email --no-verify-jwt
+	cd supabase && supabase functions deploy delete_user --no-verify-jwt
+	cd supabase && supabase functions deploy contact_us --no-verify-jwt
+	cd supabase && supabase functions deploy send_notification --no-verify-jwt
+	cd supabase && supabase functions deploy send_pass_email --no-verify-jwt
+	cd supabase && supabase functions deploy validate_pass --no-verify-jwt
+	cd supabase && supabase functions deploy review_pass --no-verify-jwt
+	cd supabase && supabase functions deploy notify_access --no-verify-jwt
+	cd supabase && supabase functions deploy scan_invoice --no-verify-jwt
+	cd supabase && supabase functions deploy request_access --no-verify-jwt
+	cd supabase && supabase functions deploy provision_community --no-verify-jwt
+	cd supabase && supabase functions deploy create_upgrade_checkout --no-verify-jwt
+	cd supabase && supabase functions deploy paymongo_webhook --no-verify-jwt
+	cd supabase && supabase functions deploy batch_operations --no-verify-jwt
+	cd supabase && supabase functions deploy onesignal_cleanup --no-verify-jwt
 
 seed:
 	@echo "Seeding demo data..."
