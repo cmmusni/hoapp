@@ -61,7 +61,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Last Updated: April 7, 2026',
+                          'Last Updated: April 20, 2026',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: isMobile ? 13 : 15,
@@ -172,23 +172,36 @@ class PrivacyPolicyPage extends StatelessWidget {
                               ],
                             ),
                             _section(
-                              '7. Cookies',
+                              '7. How to Request Account Deletion',
+                              'You can request deletion of your HOApp account and associated personal data at any time. Follow these steps:',
+                              bullets: [
+                                'Send an email to support@hoapp.net from the email address associated with your HOApp account.',
+                                'Use the subject line: "Account Deletion Request".',
+                                'Include your registered email and the name of your community for verification.',
+                                'We will verify the request and confirm receipt within 5 business days.',
+                                'Your account and associated personal data will be permanently deleted within 30 days of verification.',
+                                'Data we may retain after deletion: financial and billing records required by law (e.g., tax records), and anonymized usage logs that no longer identify you.',
+                                'Once deleted, your account cannot be recovered. You will lose access to your community data, payment history, and uploaded files.',
+                              ],
+                            ),
+                            _section(
+                              '8. Cookies',
                               'We use cookies and similar technologies to remember your preferences, maintain your session, and analyze platform usage. You can control cookies through your browser settings, but disabling them may affect platform functionality.',
                             ),
                             _section(
-                              '8. Third-Party Services',
+                              '9. Third-Party Services',
                               'Our platform may integrate with third-party services (e.g., payment processors, analytics). We are not responsible for the privacy practices of these external services and encourage you to review their privacy policies.',
                             ),
                             _section(
-                              '9. Children\'s Privacy',
+                              '10. Children\'s Privacy',
                               'HOApp is not intended for individuals under 18 years of age. We do not knowingly collect personal information from children.',
                             ),
                             _section(
-                              '10. Changes to This Policy',
+                              '11. Changes to This Policy',
                               'We may update this Privacy Policy periodically. We will notify you of significant changes via email or platform notification. Your continued use of HOApp after changes indicates acceptance of the updated policy.',
                             ),
                             _section(
-                              '11. Contact Us',
+                              '12. Contact Us',
                               'If you have questions about this Privacy Policy, please contact us:',
                               bullets: [
                                 'Email: support@hoapp.net',
