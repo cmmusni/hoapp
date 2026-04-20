@@ -159,7 +159,8 @@ class _HomeScreenState extends State<HomeScreen> {
         label: 'Notifications',
         icon: Icons.notifications_outlined,
         selectedIcon: Icons.notifications,
-        pageBuilder: () => const shared.NotificationsScreen(),
+        pageBuilder: () =>
+            shared.NotificationsScreen(onNavigate: _navigateToSection),
       ),
       _NavItem(
         label: 'Feedback',
@@ -321,7 +322,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const shared.NotificationsScreen(),
+                      builder: (_) => shared.NotificationsScreen(
+                        onNavigate: (section) {
+                          Navigator.of(context).pop();
+                          _navigateToSection(section);
+                        },
+                      ),
                     ),
                   );
                 },
@@ -505,12 +511,33 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Jumps to the drawer page matching [section]. Used by NotificationsScreen
+  /// taps so a tap on a notification opens the relevant feature page.
+  void _navigateToSection(String section) {
+    final appState = context.read<AppState>();
+    final visibleItems = _getVisibleItems(appState);
+    final idx = visibleItems.indexWhere((item) => item.label == section);
+    if (idx >= 0) {
+      setState(() {
+        _selectedIndex = idx;
+        _drawerItemIndex = null;
+      });
+    }
+  }
+
   void _selectBottomTab(int tabIndex, List<_NavItem> visibleItems) {
     final label = _bottomNavLabels[tabIndex];
     // Notifications is not in the drawer list — push it as a route instead.
     if (label == 'Notifications') {
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const shared.NotificationsScreen()),
+        MaterialPageRoute(
+          builder: (_) => shared.NotificationsScreen(
+            onNavigate: (section) {
+              Navigator.of(context).pop();
+              _navigateToSection(section);
+            },
+          ),
+        ),
       );
       return;
     }

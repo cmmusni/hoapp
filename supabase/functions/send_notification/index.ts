@@ -42,14 +42,6 @@ serve(async (req) => {
 
     const { community_id, heading, content, url, target_user_ids, data } = body
 
-    console.log('[send_notification] DIAG body:', JSON.stringify({
-      community_id,
-      heading,
-      content,
-      target_user_ids,
-      caller: user.id,
-    }))
-
     if (!community_id) return errorResponse('community_id is required', 400)
     if (!heading?.trim()) return errorResponse('heading is required', 400)
     if (!content?.trim()) return errorResponse('content is required', 400)
@@ -57,18 +49,12 @@ serve(async (req) => {
     const supabase = createAdminClient()
 
     // Verify the caller belongs to this community
-    const { data: roleRow, error: roleErr } = await supabase
+    const { data: roleRow } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .eq('community_id', community_id)
       .maybeSingle()
-
-    console.log('[send_notification] DIAG roleCheck:', {
-      hasRole: !!roleRow,
-      role: roleRow?.role,
-      error: roleErr?.message,
-    })
 
     if (!roleRow) {
       return errorResponse('User does not belong to this community', 403)
@@ -79,51 +65,30 @@ serve(async (req) => {
 
     if (target_user_ids && Array.isArray(target_user_ids) && target_user_ids.length > 0) {
       // Send to specific users
-      const { data: tokenRows, error: tokErr } = await supabase
+      const { data: tokenRows } = await supabase
         .from('notification_tokens')
         .select('token')
         .in('user_id', target_user_ids)
 
-      console.log('[send_notification] DIAG targeted tokens:', {
-        targetCount: target_user_ids.length,
-        rowCount: tokenRows?.length ?? 0,
-        error: tokErr?.message,
-      })
-
       tokens = (tokenRows || []).map((r: { token: string }) => r.token)
     } else {
       // Send to all community members
-      const { data: memberRows, error: memErr } = await supabase
+      const { data: memberRows } = await supabase
         .from('user_roles')
         .select('user_id')
         .eq('community_id', community_id)
 
       const memberIds = (memberRows || []).map((r: { user_id: string }) => r.user_id)
 
-      console.log('[send_notification] DIAG members:', {
-        community_id,
-        memberCount: memberIds.length,
-        sampleIds: memberIds.slice(0, 3),
-        error: memErr?.message,
-      })
-
       if (memberIds.length > 0) {
-        const { data: tokenRows, error: tokErr } = await supabase
+        const { data: tokenRows } = await supabase
           .from('notification_tokens')
-          .select('token, user_id, platform')
+          .select('token')
           .in('user_id', memberIds)
-
-        console.log('[send_notification] DIAG tokens:', {
-          rowCount: tokenRows?.length ?? 0,
-          rows: tokenRows,
-          error: tokErr?.message,
-        })
 
         tokens = (tokenRows || []).map((r: { token: string }) => r.token)
       }
     }
-
-    console.log('[send_notification] DIAG final tokens count:', tokens.length)
 
     if (tokens.length === 0) {
       return jsonResponse({ ok: true, sent: 0, message: 'No registered tokens found' })

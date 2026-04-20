@@ -203,22 +203,22 @@ class _SecurityPassScreenState extends State<SecurityPassScreen> {
             ),
       floatingActionButton: isGuard
           ? null
-          : screenSizeOf(context) == ScreenSize.mobile
-              ? FloatingActionButton(
-                  onPressed: () => _showCreateDialog(context),
-                  child: const Icon(Icons.add, color: Colors.white),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                )
-              : FloatingActionButton.extended(
+          : screenSizeOf(context) == ScreenSize.desktop
+              ? FloatingActionButton.extended(
                   onPressed: () => _showCreateDialog(context),
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   icon: const Icon(Icons.add, color: Colors.white),
                   label: const Text('Request Pass',
                       style: TextStyle(color: Colors.white)),
+                )
+              : FloatingActionButton(
+                  onPressed: () => _showCreateDialog(context),
+                  child: const Icon(Icons.add, color: Colors.white),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                 ),
-      floatingActionButtonLocation: screenSizeOf(context) == ScreenSize.mobile
-          ? FloatingActionButtonLocation.endFloat
-          : FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: screenSizeOf(context) == ScreenSize.desktop
+          ? FloatingActionButtonLocation.centerFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 
