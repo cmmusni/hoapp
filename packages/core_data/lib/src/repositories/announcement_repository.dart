@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/notification_service.dart';
 import '../supabase_client.dart';
 
 class AnnouncementRepository {
@@ -88,6 +89,14 @@ class AnnouncementRepository {
     }
 
     await _client.from('announcements').insert(data);
+
+    // Push notification to all community members.
+    NotificationService().send(
+      communityId: communityId,
+      heading: pinned ? '📌 $title' : title,
+      content: body,
+      data: {'type': 'announcement'},
+    );
   }
 
   Future<void> updateAnnouncement(

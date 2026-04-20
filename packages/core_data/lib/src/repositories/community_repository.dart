@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/notification_service.dart';
 import '../supabase_client.dart';
 import '../config.dart';
 
@@ -434,6 +435,15 @@ class CommunityRepository {
     if (imageUrl != null) row['image_url'] = imageUrl;
 
     await _client.from('feedback').insert(row);
+
+    // Push notification to community staff.
+    NotificationService().send(
+      communityId: communityId,
+      heading: 'New feedback: $category',
+      content: subject,
+      targetRoles: const ['community_admin', 'hoa_officer'],
+      data: {'type': 'feedback'},
+    );
   }
 
   /// Get feedback for a community (staff sees all, residents see own)

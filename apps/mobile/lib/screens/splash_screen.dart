@@ -161,7 +161,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              AppConfig.isCommunityBuild
+              AppConfig.isBrandedBuild
                   ? 'assets/flavors/elevehomes/icon.png'
                   : 'assets/images/hoapp-icon.png',
               height: 100,

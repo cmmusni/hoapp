@@ -22,6 +22,19 @@ class AppConfig {
     defaultValue: 'HOApp',
   );
 
+  /// Build flavor identifier (e.g. "standard", "elevehomes").
+  /// Set via `--dart-define=FLAVOR=elevehomes` at build time.
+  static const flavor = String.fromEnvironment(
+    'FLAVOR',
+    defaultValue: 'standard',
+  );
+
   /// Whether a specific community is hardcoded for this build
   static bool get isCommunityBuild => defaultCommunityId.isNotEmpty;
+
+  /// Whether this is the Eleve Homes branded build.
+  static bool get isElevehomes => flavor == 'elevehomes';
+
+  /// Whether this is any white-label / branded build (not the standard HOApp).
+  static bool get isBrandedBuild => isCommunityBuild || isElevehomes;
 }

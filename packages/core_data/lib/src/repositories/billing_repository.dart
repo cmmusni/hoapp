@@ -179,7 +179,53 @@ class BillingRepository {
       description: description,
     );
 
+    // Push notification to the unit's household members.
+    _notifyInvoiceCreated(
+      invoiceId: invoiceId,
+      communityId: communityId,
+      unitId: unitId,
+      amount: amount,
+      dueDate: dueDate,
+      category: category,
+    );
+
     return invoiceId;
+  }
+
+  /// Fire-and-forget push to all household members of [unitId] about a new
+  /// invoice. Never throws.
+  void _notifyInvoiceCreated({
+    required String invoiceId,
+    required String communityId,
+    required String unitId,
+    required double amount,
+    required DateTime dueDate,
+    required InvoiceCategory category,
+  }) {
+    Future(() async {
+      try {
+        final rows = await _client
+            .from('household_members')
+            .select('user_id')
+            .eq('unit_id', unitId);
+        final userIds = (rows as List)
+            .map((e) => e['user_id'] as String?)
+            .whereType<String>()
+            .toSet()
+            .toList();
+        if (userIds.isEmpty) return;
+        final due = dueDate.toIso8601String().split('T').first;
+        await NotificationService().send(
+          communityId: communityId,
+          heading: 'New invoice: ${category.name.toUpperCase()}',
+          content: '\u20B1${amount.toStringAsFixed(2)} due $due',
+          targetUserIds: userIds,
+          data: {'type': 'invoice', 'invoice_id': invoiceId},
+        );
+      } catch (e) {
+        print('Invoice push notification failed: $e');
+      }
+    });
   }
 
   /// Send invoice email notification (fire-and-forget, never throws).
@@ -384,6 +430,30 @@ class BillingRepository {
     if (data['ok'] != true) {
       throw Exception(data['error'] ?? 'Verification failed');
     }
+
+    // Push notification to the payment's owner.
+    Future(() async {
+      try {
+        final row = await _client
+            .from('payments')
+            .select('community_id, user_id, amount')
+            .eq('id', paymentId)
+            .maybeSingle();
+        if (row == null) return;
+        final amt = (row['amount'] as num?)?.toDouble() ?? amount ?? 0;
+        await NotificationService().send(
+          communityId: row['community_id'] as String,
+          heading: verified ? 'Payment verified' : 'Payment rejected',
+          content: verified
+              ? 'Your payment of \u20B1${amt.toStringAsFixed(2)} was verified.'
+              : 'Your payment of \u20B1${amt.toStringAsFixed(2)} was rejected${rejectionReason != null ? ': $rejectionReason' : '.'}',
+          targetUserIds: [row['user_id'] as String],
+          data: {'type': 'payment', 'payment_id': paymentId},
+        );
+      } catch (e) {
+        print('Payment review notification failed: $e');
+      }
+    });
   }
 
   /// Delete invoice (staff only)

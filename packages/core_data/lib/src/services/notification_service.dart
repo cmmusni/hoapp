@@ -6,7 +6,10 @@ class NotificationService {
   final SupabaseClient _client = SupabaseClientManager.instance;
 
   /// Send a push notification to all members of [communityId], or to specific
-  /// users if [targetUserIds] is provided.
+  /// users if [targetUserIds] is provided. When [targetRoles] is set (and
+  /// [targetUserIds] is not), the broadcast is filtered to only members
+  /// matching one of the given role names (e.g. `['community_admin',
+  /// 'community_staff']`).
   ///
   /// Returns silently on failure so callers aren't blocked by notification
   /// errors — the primary action (create violation, etc.) has already succeeded.
@@ -16,6 +19,7 @@ class NotificationService {
     required String content,
     String? url,
     List<String>? targetUserIds,
+    List<String>? targetRoles,
     Map<String, dynamic>? data,
   }) async {
     try {
@@ -26,6 +30,7 @@ class NotificationService {
       };
       if (url != null) body['url'] = url;
       if (targetUserIds != null) body['target_user_ids'] = targetUserIds;
+      if (targetRoles != null) body['target_roles'] = targetRoles;
       if (data != null) body['data'] = data;
 
       print('NotificationService: sending to $communityId — "$heading"');

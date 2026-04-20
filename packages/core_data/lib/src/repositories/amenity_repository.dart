@@ -1,5 +1,6 @@
 import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/notification_service.dart';
 import '../supabase_client.dart';
 
 class AmenityRepository {
@@ -179,7 +180,28 @@ class AmenityRepository {
       throw Exception(data['error'] ?? 'Booking failed');
     }
 
-    return data['booking_id'] as String;
+    final bookingId = data['booking_id'] as String;
+
+    // Notify staff of pending booking.
+    Future(() async {
+      try {
+        final row = await _client
+            .from('amenity_bookings')
+            .select('community_id')
+            .eq('id', bookingId)
+            .maybeSingle();
+        if (row == null) return;
+        NotificationService().send(
+          communityId: row['community_id'] as String,
+          heading: 'New amenity booking',
+          content: 'A resident requested an amenity booking.',
+          targetRoles: const ['community_admin', 'hoa_officer'],
+          data: {'type': 'booking', 'booking_id': bookingId},
+        );
+      } catch (_) {}
+    });
+
+    return bookingId;
   }
 
   /// Approve booking (staff only) - sets status to confirmed
@@ -188,6 +210,9 @@ class AmenityRepository {
       'status': 'confirmed',
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', bookingId);
+
+    // Notify the booking owner.
+    _notifyBookingStatus(bookingId, approved: true);
   }
 
   /// Cancel booking
@@ -196,6 +221,32 @@ class AmenityRepository {
       'status': 'cancelled',
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', bookingId);
+
+    // Notify the booking owner.
+    _notifyBookingStatus(bookingId, approved: false);
+  }
+
+  /// Fire-and-forget push to the booking owner about its new status.
+  void _notifyBookingStatus(String bookingId, {required bool approved}) {
+    Future(() async {
+      try {
+        final row = await _client
+            .from('amenity_bookings')
+            .select('community_id, user_id, amenity_id')
+            .eq('id', bookingId)
+            .maybeSingle();
+        if (row == null) return;
+        NotificationService().send(
+          communityId: row['community_id'] as String,
+          heading: approved ? 'Booking confirmed' : 'Booking cancelled',
+          content: approved
+              ? 'Your amenity booking has been approved.'
+              : 'Your amenity booking was cancelled.',
+          targetUserIds: [row['user_id'] as String],
+          data: {'type': 'booking', 'booking_id': bookingId},
+        );
+      } catch (_) {}
+    });
   }
 
   /// Get all bookings for a community (staff only)

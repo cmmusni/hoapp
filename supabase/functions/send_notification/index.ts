@@ -40,7 +40,7 @@ serve(async (req) => {
     if (authResult instanceof Response) return authResult
     const { user } = authResult
 
-    const { community_id, heading, content, url, target_user_ids, data } = body
+    const { community_id, heading, content, url, target_user_ids, target_roles, data } = body
 
     if (!community_id) return errorResponse('community_id is required', 400)
     if (!heading?.trim()) return errorResponse('heading is required', 400)
@@ -72,13 +72,23 @@ serve(async (req) => {
 
       tokens = (tokenRows || []).map((r: { token: string }) => r.token)
     } else {
-      // Send to all community members
-      const { data: memberRows } = await supabase
+      // Send to all community members, optionally filtered by role
+      let memberQuery = supabase
         .from('user_roles')
         .select('user_id')
         .eq('community_id', community_id)
 
-      const memberIds = (memberRows || []).map((r: { user_id: string }) => r.user_id)
+      if (target_roles && Array.isArray(target_roles) && target_roles.length > 0) {
+        memberQuery = memberQuery.in('role', target_roles)
+      }
+
+      const { data: memberRows } = await memberQuery
+
+      // Exclude the caller from broadcast notifications so they don't get
+      // notified about their own action.
+      const memberIds = (memberRows || [])
+        .map((r: { user_id: string }) => r.user_id)
+        .filter((id: string) => id !== user.id)
 
       if (memberIds.length > 0) {
         const { data: tokenRows } = await supabase

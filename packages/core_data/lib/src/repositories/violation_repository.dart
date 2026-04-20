@@ -1,5 +1,6 @@
 import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/notification_service.dart';
 import '../supabase_client.dart';
 
 class ViolationRepository {
@@ -93,6 +94,15 @@ class ViolationRepository {
         })
         .select()
         .single();
+
+    // Push notification to community staff.
+    NotificationService().send(
+      communityId: communityId,
+      heading: 'New violation report',
+      content: title,
+      targetRoles: const ['community_admin', 'hoa_officer'],
+      data: {'type': 'violation', 'violation_id': response['id']},
+    );
 
     return response['id'] as String;
   }

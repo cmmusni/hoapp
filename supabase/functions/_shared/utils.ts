@@ -1,7 +1,7 @@
 // Shared utilities for Edge Functions
 // Error handling, rate limiting, and common helpers
 
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { createClient, SupabaseClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/+esm'
 
 export interface ErrorResponse {
   ok: false

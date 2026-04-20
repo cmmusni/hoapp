@@ -230,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ],
                         ),
                         child: Image.asset(
-                          AppConfig.isCommunityBuild
+                          AppConfig.isBrandedBuild
                               ? 'assets/flavors/elevehomes/icon.png'
                               : 'assets/images/hoapp-logo.png',
                           height: 80,
