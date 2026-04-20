@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../supabase_client.dart';
+import '../services/push_notification_service.dart';
 
 class AuthRepository {
   final SupabaseClient _client = SupabaseClientManager.instance;
@@ -40,6 +41,8 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
+    // Remove push notification tokens before signing out
+    await PushNotificationService().unregisterAllTokens();
     await _client.auth.signOut();
   }
 

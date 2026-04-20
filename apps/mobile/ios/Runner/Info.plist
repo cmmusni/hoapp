@@ -81,6 +81,11 @@
 	</array>
 	<key>FlutterDeepLinkingEnabled</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is needed to scan QR codes for security passes.</string>
 </dict>

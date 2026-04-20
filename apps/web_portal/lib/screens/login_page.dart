@@ -8,6 +8,7 @@ import 'package:core_data/core_data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:js' as js;
 import 'dart:html' as html;
+import '../services/web_push_service.dart';
 
 class LoginPage extends StatefulWidget {
   final String? communitySlug;
@@ -251,6 +252,9 @@ class _LoginPageState extends State<LoginPage> {
 
       // Tell the browser the autofill context is done so it offers to save credentials
       TextInput.finishAutofillContext();
+
+      // Initialize web push notifications after successful login
+      WebPushService().initialize();
 
       // Handle invite acceptance and unit assignment from metadata
       if (mounted) {

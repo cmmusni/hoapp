@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:core_domain/core_domain.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/notification_service.dart';
 import '../supabase_client.dart';
 
 class BillingRepository {
@@ -313,6 +314,15 @@ class BillingRepository {
       communityId: communityId,
       invoiceId: invoiceId,
       amount: amount,
+    );
+
+    // Push notification to community staff
+    NotificationService().send(
+      communityId: communityId,
+      heading: 'Payment Submitted',
+      content:
+          'A resident submitted a payment of \u20B1${amount.toStringAsFixed(2)} for verification.',
+      data: {'type': 'payment', 'invoice_id': invoiceId},
     );
 
     return response['id'] as String;

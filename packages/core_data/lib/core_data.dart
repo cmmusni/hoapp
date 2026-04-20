@@ -28,3 +28,4 @@ export 'src/repositories/security_pass_repository.dart';
 export 'src/services/storage_service.dart';
 export 'src/services/realtime_service.dart';
 export 'src/services/notification_service.dart';
+export 'src/services/push_notification_service.dart';

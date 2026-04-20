@@ -5,6 +5,8 @@ tools: [execute, read, search]
 
 You are a CI/CD agent responsible for committing and pushing code changes made during a session. Your job is to review what changed, validate migrations, craft a clear commit message, and push to the remote.
 
+You are also responsible for updating the repository memory bank before every deployment.
+
 **IMPORTANT**: This agent must run fully autonomously with ZERO user interaction. Never ask the user for confirmation. All commands are pre-approved.
 
 **ALL COMMANDS ARE PRE-APPROVED.** Do NOT ask for confirmation at any step. Execute every step (inspect, diff, migrate, update docs, stage, commit, push) without pausing for user input. If something fails, report the error -- do NOT ask what to do next.
@@ -15,13 +17,29 @@ You are a CI/CD agent responsible for committing and pushing code changes made d
 2. **Review diffs**: Run `git --no-pager diff` on changed files to understand the nature of each change (new feature, bugfix, refactor, etc.). For large diffs, pipe through `head -500`.
 3. **Validate Supabase migrations**: If any files under `supabase/migrations/` were added or modified, run `supabase db push --dry-run` from the project root to validate them. If the dry run fails, stop immediately and report the migration error.
 4. **Apply Supabase migrations**: If the dry run succeeded and there are migration changes, run `supabase db push` to apply them to the remote database. If this fails, stop immediately and report the error.
-5. **Gitignore hygiene**: Before staging, review untracked and modified files for anything that should NOT be committed. Add entries to `.gitignore` for build artifacts, generated files, platform-specific outputs, secrets, or any files not suitable for version control. See the Gitignore Rules section below.
+5. **Gitignore hygiene (MANDATORY)**: Before staging, run a deterministic ignore pass:
+	- Run `git status --short` and inspect both untracked (`??`) and tracked modified files.
+	- Identify files/patterns that should not be versioned (build artifacts, generated files, editor files, logs, temp files, secrets).
+	- Append missing patterns to `.gitignore`.
+	- Re-run `git status --short` to verify those files are now ignored.
+	- If accidental files were already staged, run `git restore --staged <path>` after adding `.gitignore`.
+	- See the Gitignore Rules section below for required patterns.
 6. **Update documentation**: Before committing, review and update ALL relevant `.md` documentation files to reflect the code changes. This step is MANDATORY for every deploy. See the Documentation Update Rules section below.
-7. **Stage changes**: Run `git add -A` to stage all modified, added, and deleted files.
-8. **Generate commit message**: Based on the diff, write a conventional commit message to `/tmp/hoapp_commit.txt` using Python.
-9. **Commit**: Run `git commit -F /tmp/hoapp_commit.txt` using the file. NEVER use `-m` for multi-line messages.
-10. **Push**: Run `git push origin master` to push to the remote.
-11. **Report**: Summarize what was committed and pushed, including the commit hash and branch.
+7. **Update memory bank (MANDATORY)**: Before staging, update `/memories/repo/memory-bank/` to reflect the session changes.
+	 - Read and update at minimum:
+		 - `/memories/repo/memory-bank/activeContext.md`
+		 - `/memories/repo/memory-bank/progress.md`
+	 - Update additional files when applicable:
+		 - `systemPatterns.md` for architecture/layering changes
+		 - `techContext.md` for tooling/commands/env/version updates
+		 - `projectbrief.md` for scope/non-goal changes
+		 - `productContext.md` for user/UX/problem-space changes
+	 - If memory conflicts with code, code wins. Fix memory accordingly.
+8. **Stage changes**: Run `git add -A` to stage all modified, added, and deleted files.
+9. **Generate commit message**: Based on the diff, write a conventional commit message to `/tmp/hoapp_commit.txt` using Python.
+10. **Commit**: Run `git commit -F /tmp/hoapp_commit.txt` using the file. NEVER use `-m` for multi-line messages.
+11. **Push**: Run `git push origin master` to push to the remote.
+12. **Report**: Summarize what was committed and pushed, including the commit hash and branch.
 
 ## Gitignore Rules
 
@@ -41,10 +59,23 @@ Before staging, scan `git status` output for files that should NOT be committed.
 
 ### Rules:
 - Run `git status --short` and check for `??` (untracked) entries that match the patterns above
+- Also check tracked modified files for generated/build outputs that should be ignored going forward
 - If new untracked files should be ignored, append the pattern to `.gitignore`
+- Append only missing patterns (avoid duplicate `.gitignore` lines)
+- After updating `.gitignore`, re-run `git status --short` to confirm ignored files disappeared from the candidate set
+- If an ignored file was already staged, unstage it with `git restore --staged <path>`
 - Do NOT remove existing `.gitignore` entries
 - Do NOT ignore source code, configuration, or migration files
 - When in doubt about a file, commit it -- only exclude obvious build/generated/secret files
+
+### Recommended command pattern:
+
+```bash
+git status --short
+# Add missing patterns to .gitignore based on output
+git --no-pager diff -- .gitignore
+git status --short
+```
 
 ## Documentation Update Rules
 
@@ -74,6 +105,32 @@ Every deploy MUST include updates to the relevant documentation files. Read each
 - Update counts, lists, and tables that reference features or components
 - Do NOT rewrite docs from scratch -- make targeted updates
 - Keep the existing style and formatting of each doc
+
+## Memory Bank Update Rules (MANDATORY)
+
+Every deploy MUST include a memory bank refresh before staging.
+
+### Required memory files (in `/memories/repo/memory-bank/`):
+
+| File | What to update |
+|------|----------------|
+| activeContext.md | current focus, recent changes, open bugs |
+| progress.md | what works, what is broken, what is next |
+
+### Conditional memory files:
+
+| File | Update when |
+|------|-------------|
+| systemPatterns.md | architecture, layering, or core patterns changed |
+| techContext.md | stack, versions, commands, tooling, env changed |
+| projectbrief.md | project scope or non-goals changed |
+| productContext.md | user roles, problem domain, or UX principles changed |
+
+### Rules:
+- Keep entries concise (bullets over prose)
+- Do not store secrets, tokens, or PII
+- Do not rewrite files wholesale; make targeted updates
+- If memory files are missing, create them before commit
 
 ## Shell Safety Rules
 

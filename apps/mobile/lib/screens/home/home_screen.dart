@@ -292,7 +292,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final currentItem = visibleItems[_selectedIndex];
-    final totalBadge = _pendingPayments +
+    final totalBadge =
+        _pendingPayments +
         _openTickets +
         _pendingViolations +
         _openFeedback +
@@ -307,13 +308,23 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.only(right: 8),
             child: Badge(
               isLabelVisible: totalBadge > 0,
-              label: Text('$totalBadge',
-                  style: const TextStyle(
-                      fontSize: 9, fontWeight: FontWeight.bold)),
+              label: Text(
+                '$totalBadge',
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               backgroundColor: Colors.red.shade400,
               child: IconButton(
                 icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const shared.NotificationsScreen(),
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -328,8 +339,12 @@ class _HomeScreenState extends State<HomeScreen> {
         activeBottomTab,
         primary,
       ),
-      floatingActionButton:
-          _buildCenterFab(context, appState, visibleItems, primary),
+      floatingActionButton: _buildCenterFab(
+        context,
+        appState,
+        visibleItems,
+        primary,
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
@@ -341,8 +356,13 @@ class _HomeScreenState extends State<HomeScreen> {
     int? activeTab,
     Color primary,
   ) {
-    Widget navIcon(IconData icon, IconData selectedIcon, String label,
-        int tabIndex, int badge) {
+    Widget navIcon(
+      IconData icon,
+      IconData selectedIcon,
+      String label,
+      int tabIndex,
+      int badge,
+    ) {
       final isActive = activeTab == tabIndex;
       return InkWell(
         onTap: () => _selectBottomTab(tabIndex, visibleItems),
@@ -354,9 +374,13 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Badge(
                 isLabelVisible: badge > 0,
-                label: Text('$badge',
-                    style: const TextStyle(
-                        fontSize: 9, fontWeight: FontWeight.bold)),
+                label: Text(
+                  '$badge',
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 backgroundColor: Colors.red.shade400,
                 child: Icon(
                   isActive ? selectedIcon : icon,
@@ -390,22 +414,42 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Expanded(
-              child: navIcon(
-                  Icons.campaign_outlined, Icons.campaign, 'News', 0, 0)),
+            child: navIcon(
+              Icons.campaign_outlined,
+              Icons.campaign,
+              'News',
+              0,
+              0,
+            ),
+          ),
           Expanded(
-              child: navIcon(
-                  Icons.family_restroom_outlined,
-                  Icons.family_restroom,
-                  appState.isResident ? 'My Household' : 'Households',
-                  1,
-                  0)),
+            child: navIcon(
+              Icons.family_restroom_outlined,
+              Icons.family_restroom,
+              appState.isResident ? 'My Household' : 'Households',
+              1,
+              0,
+            ),
+          ),
           const SizedBox(width: 48), // space for FAB
           Expanded(
-              child: navIcon(
-                  Icons.qr_code_2_outlined, Icons.qr_code_2, 'Security', 3, 0)),
+            child: navIcon(
+              Icons.qr_code_2_outlined,
+              Icons.qr_code_2,
+              'Security',
+              3,
+              0,
+            ),
+          ),
           Expanded(
-              child: navIcon(Icons.notifications_outlined, Icons.notifications,
-                  'Notifications', 4, 0)),
+            child: navIcon(
+              Icons.notifications_outlined,
+              Icons.notifications,
+              'Notifications',
+              4,
+              0,
+            ),
+          ),
         ],
       ),
     );
@@ -428,8 +472,9 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: primary,
         shape: const CircleBorder(),
         onPressed: () {
-          final idx = visibleItems
-              .indexWhere((item) => item.label == 'Billing & Payments');
+          final idx = visibleItems.indexWhere(
+            (item) => item.label == 'Billing & Payments',
+          );
           if (idx >= 0) {
             setState(() {
               _selectedIndex = idx;
@@ -449,9 +494,10 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text(
               'Billing',
               style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600),
+                color: Colors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -461,6 +507,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _selectBottomTab(int tabIndex, List<_NavItem> visibleItems) {
     final label = _bottomNavLabels[tabIndex];
+    // Notifications is not in the drawer list — push it as a route instead.
+    if (label == 'Notifications') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const shared.NotificationsScreen()),
+      );
+      return;
+    }
     final idx = visibleItems.indexWhere((item) => item.label == label);
     if (idx >= 0) {
       setState(() {
@@ -471,7 +524,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer(
-      BuildContext context, AppState appState, List<_NavItem> visibleItems) {
+    BuildContext context,
+    AppState appState,
+    List<_NavItem> visibleItems,
+  ) {
     final email = Supabase.instance.client.auth.currentUser?.email ?? '';
     final roleLabel = _getRoleLabel(appState);
     final communityName = appState.activeCommunity?.name ?? 'HOApp';
@@ -493,10 +549,7 @@ class _HomeScreenState extends State<HomeScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  primary,
-                  primary.withValues(alpha: 0.85),
-                ],
+                colors: [primary, primary.withValues(alpha: 0.85)],
               ),
             ),
             child: Column(
@@ -510,8 +563,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            width: 2),
+                          color: Colors.white.withValues(alpha: 0.6),
+                          width: 2,
+                        ),
                       ),
                       child: CircleAvatar(
                         radius: 28,
@@ -552,7 +606,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
@@ -634,8 +690,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         title: Text(
                           item.label,
                           style: TextStyle(
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                             color: isSelected ? primary : Colors.grey.shade800,
                             fontSize: 14,
                           ),
@@ -664,20 +721,25 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
             child: Container(
               decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade200),
-                ),
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
               ),
               child: ListTile(
-                leading: Icon(Icons.logout_rounded,
-                    color: Colors.red.shade400, size: 22),
-                title: Text('Sign Out',
-                    style: TextStyle(
-                        color: Colors.red.shade400,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500)),
+                leading: Icon(
+                  Icons.logout_rounded,
+                  color: Colors.red.shade400,
+                  size: 22,
+                ),
+                title: Text(
+                  'Sign Out',
+                  style: TextStyle(
+                    color: Colors.red.shade400,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 onTap: () async {
                   final confirmed = await showDialog<bool>(
                     context: context,
@@ -692,7 +754,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(true),
                           style: TextButton.styleFrom(
-                              foregroundColor: Colors.red.shade400),
+                            foregroundColor: Colors.red.shade400,
+                          ),
                           child: const Text('Sign Out'),
                         ),
                       ],

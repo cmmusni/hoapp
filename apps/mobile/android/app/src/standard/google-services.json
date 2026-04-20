@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "431525120566",
+    "project_id": "hoapp-db",
+    "storage_bucket": "hoapp-db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:431525120566:android:24f41d35970f519dcbe697",
+        "android_client_info": {
+          "package_name": "com.hoapp.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "431525120566-6nng4m1ee8cno2pqpq4eb90kd3f7q8d0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiwWiC8oC1UNvoezIFN3bpAMcSwPWedQo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "431525120566-6nng4m1ee8cno2pqpq4eb90kd3f7q8d0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

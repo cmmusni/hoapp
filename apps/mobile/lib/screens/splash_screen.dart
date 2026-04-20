@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:core_data/core_data.dart';
 import 'package:core_ui/core_ui.dart';
 import '../services/role_loader.dart';
+import '../services/firebase_messaging_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -30,6 +31,9 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.of(context).pushReplacementNamed('/login');
       return;
     }
+
+    // User is authenticated — initialize push notifications
+    FirebaseMessagingService().initialize();
 
     // User is authenticated, check communities
     final communityRepo = context.read<CommunityRepository>();

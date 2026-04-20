@@ -4,11 +4,14 @@ import 'dart:js' as js;
 import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_strategy/url_strategy.dart';
 import 'package:core_data/core_data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'firebase_options.dart';
+import 'services/web_push_service.dart';
 import 'theme/theme.dart';
 import 'core/responsive.dart';
 import 'router.dart';
@@ -59,6 +62,17 @@ void main() async {
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseAnonKey,
   );
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize web push notifications (fire-and-forget)
+  // Only register token if user is authenticated
+  if (Supabase.instance.client.auth.currentUser != null) {
+    WebPushService().initialize();
+  }
 
   // Notify platform admin of site access (fire-and-forget, emails only on new device)
   final screen = html.window.screen;
