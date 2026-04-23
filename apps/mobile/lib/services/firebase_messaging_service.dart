@@ -28,6 +28,21 @@ class FirebaseMessagingService {
   final PushNotificationService _pushService = PushNotificationService();
   String? _currentToken;
 
+  // --- Debug surface (consumed by PushDebugScreen) ---
+  String? _lastError;
+  AuthorizationStatus? _permissionStatus;
+  bool _registeredInDb = false;
+  DateTime? _lastUpdated;
+
+  String? get currentToken => _currentToken;
+  String? get lastError => _lastError;
+  AuthorizationStatus? get permissionStatus => _permissionStatus;
+  bool get registeredInDb => _registeredInDb;
+  DateTime? get lastUpdated => _lastUpdated;
+
+  /// Re-run initialization on demand (used by the debug screen).
+  Future<void> refresh() => initialize();
+
   /// Initialize Firebase Messaging. Call after Firebase.initializeApp().
   Future<void> initialize() async {
     // Register background handler
@@ -40,8 +55,11 @@ class FirebaseMessagingService {
       sound: true,
       provisional: false,
     );
+    _permissionStatus = settings.authorizationStatus;
+    _lastUpdated = DateTime.now();
 
     if (settings.authorizationStatus == AuthorizationStatus.denied) {
+      _lastError = 'User denied notification permission';
       debugPrint('FCM: User denied notification permission');
       return;
     }
@@ -87,9 +105,18 @@ class FirebaseMessagingService {
       if (token != null) {
         _currentToken = token;
         await _pushService.registerToken(token);
+        _registeredInDb = true;
+        _lastError = null;
+        _lastUpdated = DateTime.now();
         debugPrint('FCM: Token registered: ${token.substring(0, 20)}...');
+      } else {
+        _lastError = 'getToken() returned null';
+        _lastUpdated = DateTime.now();
+        debugPrint('FCM: getToken() returned null');
       }
     } catch (e) {
+      _lastError = e.toString();
+      _lastUpdated = DateTime.now();
       debugPrint('FCM: Error getting token: $e');
     }
   }

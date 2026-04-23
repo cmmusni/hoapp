@@ -11,6 +11,7 @@ import '../amenities/amenities_screen.dart';
 import '../expenses/expense_income_chart_screen.dart';
 import '../registered_swimmers/registered_swimmers_screen.dart';
 import '../qr_scanner/qr_scanner_screen.dart';
+import '../push_debug/push_debug_screen.dart';
 import 'tabs/announcements_tab.dart';
 import 'tabs/violations_tab.dart';
 import 'tabs/tickets_tab.dart';
@@ -168,6 +169,13 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIcon: Icons.feedback,
         pageBuilder: () => const shared.FeedbackScreen(),
       ),
+      _NavItem(
+        label: 'Push Notifications Debug',
+        icon: Icons.bug_report_outlined,
+        selectedIcon: Icons.bug_report,
+        pageBuilder: () => const PushDebugScreen(),
+        adminOnly: true,
+      ),
     ];
   }
 
@@ -176,7 +184,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final isAdmin = appState.isAdmin;
 
     return _buildNavItems().where((item) {
-      if (item.label == 'Notifications') return false; // handled by AppBar bell
       if (item.adminOnly && !isAdmin) return false;
       if (item.staffOnly && !isStaff) return false;
       return true;
@@ -293,8 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final currentItem = visibleItems[_selectedIndex];
-    final totalBadge =
-        _pendingPayments +
+    final totalBadge = _pendingPayments +
         _openTickets +
         _pendingViolations +
         _openFeedback +
@@ -319,18 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.red.shade400,
               child: IconButton(
                 icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => shared.NotificationsScreen(
-                        onNavigate: (section) {
-                          Navigator.of(context).pop();
-                          _navigateToSection(section);
-                        },
-                      ),
-                    ),
-                  );
-                },
+                onPressed: () => _navigateToSection('Notifications'),
               ),
             ),
           ),
@@ -527,20 +522,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _selectBottomTab(int tabIndex, List<_NavItem> visibleItems) {
     final label = _bottomNavLabels[tabIndex];
-    // Notifications is not in the drawer list — push it as a route instead.
-    if (label == 'Notifications') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => shared.NotificationsScreen(
-            onNavigate: (section) {
-              Navigator.of(context).pop();
-              _navigateToSection(section);
-            },
-          ),
-        ),
-      );
-      return;
-    }
     final idx = visibleItems.indexWhere((item) => item.label == label);
     if (idx >= 0) {
       setState(() {
@@ -717,9 +698,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         title: Text(
                           item.label,
                           style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w400,
                             color: isSelected ? primary : Colors.grey.shade800,
                             fontSize: 14,
                           ),

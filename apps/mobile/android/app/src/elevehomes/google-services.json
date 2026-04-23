@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "431525120566-aqim3mhs4vqm6707nsfksqfi45ph1pci.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hoapp.elevehomes",
+            "certificate_hash": "98724dded49bb668c864d7d391c46cd2f5f33fa2"
+          }
+        },
+        {
+          "client_id": "431525120566-gme99tma0s1sj6876lfvdeh6k3qs44r6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hoapp.elevehomes",
+            "certificate_hash": "1e585e842296887335450e594cb941443d312b90"
+          }
+        },
+        {
           "client_id": "431525120566-6nng4m1ee8cno2pqpq4eb90kd3f7q8d0.apps.googleusercontent.com",
           "client_type": 3
         }

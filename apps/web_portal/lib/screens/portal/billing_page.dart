@@ -613,6 +613,9 @@ class _InvoiceListView extends StatefulWidget {
 
 class _InvoiceListViewState extends State<_InvoiceListView> {
   Future<List<Invoice>>? _invoicesFuture;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  Map<String, String> _unitNoMap = {};
 
   @override
   void initState() {
@@ -620,17 +623,101 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
     _loadInvoices();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   void _loadInvoices() {
     final appState = context.read<AppState>();
     final repo = context.read<BillingRepository>();
 
     if (appState.activeCommunityId != null) {
+      final future = widget.showMyInvoices
+          ? repo.getMyInvoices(appState.activeCommunityId!)
+          : repo.getInvoices(appState.activeCommunityId!);
       setState(() {
-        _invoicesFuture = widget.showMyInvoices
-            ? repo.getMyInvoices(appState.activeCommunityId!)
-            : repo.getInvoices(appState.activeCommunityId!);
+        _invoicesFuture = future;
       });
+      // Batch-fetch unit numbers so search can match on them.
+      future.then(_loadUnitNumbers).catchError((_) {});
     }
+  }
+
+  Future<void> _loadUnitNumbers(List<Invoice> invoices) async {
+    final unitIds = invoices.map((i) => i.unitId).toSet().toList();
+    if (unitIds.isEmpty) return;
+    try {
+      final rows = await Supabase.instance.client
+          .from('units')
+          .select('id, unit_no')
+          .inFilter('id', unitIds);
+      final map = <String, String>{};
+      for (final r in (rows as List)) {
+        final id = r['id'] as String?;
+        final no = r['unit_no'] as String?;
+        if (id != null && no != null) map[id] = no;
+      }
+      if (mounted) setState(() => _unitNoMap = map);
+    } catch (_) {}
+  }
+
+  bool _matchesSearch(Invoice inv) {
+    if (_searchQuery.isEmpty) return true;
+    final q = _searchQuery.toLowerCase();
+    final unitNo = _unitNoMap[inv.unitId] ?? '';
+    final shortId = inv.id.length >= 8 ? inv.id.substring(0, 8) : inv.id;
+    final status = inv.status == InvoiceStatus.paid
+        ? 'paid'
+        : (inv.isOverdue ? 'overdue' : 'unpaid');
+    final fields = <String>[
+      inv.description ?? '',
+      inv.amount.toStringAsFixed(2),
+      inv.category.name,
+      status,
+      shortId,
+      unitNo,
+    ];
+    return fields.any((s) => s.toLowerCase().contains(q));
+  }
+
+  Widget _buildSearchBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search by unit, description, amount, status...',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          isDense: true,
+          filled: true,
+          fillColor: Theme.of(context).colorScheme.surface,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary, width: 1.5),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        onChanged: (value) => setState(() => _searchQuery = value),
+      ),
+    );
   }
 
   @override
@@ -638,101 +725,129 @@ class _InvoiceListViewState extends State<_InvoiceListView> {
     final appState = context.watch<AppState>();
     final isStaff = appState.isStaff;
 
-    return RefreshIndicator(
-      onRefresh: () async => _loadInvoices(),
-      child: FutureBuilder<List<Invoice>>(
-        future: _invoicesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return Column(
+      children: [
+        _buildSearchBar(context),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async => _loadInvoices(),
+            child: FutureBuilder<List<Invoice>>(
+              future: _invoicesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Error: ${snapshot.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _loadInvoices,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry',
-                        style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w600)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline,
+                            size: 48, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Error: ${snapshot.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: _loadInvoices,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Retry',
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w600)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
+                  );
+                }
 
-          final invoices = snapshot.data ?? [];
+                final invoices = snapshot.data ?? [];
 
-          if (invoices.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.receipt_long, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.showMyInvoices
-                        ? 'No invoices yet'
-                        : 'No invoices in the system',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.showMyInvoices
-                        ? 'Invoices will appear here when issued'
-                        : 'Create the first invoice to get started',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            );
-          }
+                if (invoices.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.receipt_long,
+                            size: 64, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          widget.showMyInvoices
+                              ? 'No invoices yet'
+                              : 'No invoices in the system',
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.showMyInvoices
+                              ? 'Invoices will appear here when issued'
+                              : 'Create the first invoice to get started',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
-          // Admins can always submit payment; for My Invoices tab, everyone can.
-          final canSubmitPayment = widget.showMyInvoices || appState.isAdmin;
+                final filtered = invoices.where(_matchesSearch).toList();
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: invoices.length,
-            itemBuilder: (context, index) {
-              final invoice = invoices[index];
-              return _InvoiceCard(
-                invoice: invoice,
-                isStaff: isStaff,
-                isAdmin: appState.isAdmin,
-                canSubmitPayment: canSubmitPayment,
-                onRefresh: _loadInvoices,
-              );
-            },
-          );
-        },
-      ),
+                if (filtered.isEmpty && _searchQuery.isNotEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text('No invoices match "$_searchQuery"',
+                          style: TextStyle(color: Colors.grey[500])),
+                    ),
+                  );
+                }
+
+                // Admins can always submit payment; for My Invoices tab, everyone can.
+                final canSubmitPayment =
+                    widget.showMyInvoices || appState.isAdmin;
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final invoice = filtered[index];
+                    return _InvoiceCard(
+                      key: ValueKey(invoice.id),
+                      invoice: invoice,
+                      unitNo: _unitNoMap[invoice.unitId],
+                      isStaff: isStaff,
+                      isAdmin: appState.isAdmin,
+                      canSubmitPayment: canSubmitPayment,
+                      onRefresh: _loadInvoices,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _InvoiceCard extends StatefulWidget {
   final Invoice invoice;
+  final String? unitNo;
   final bool isStaff;
   final bool isAdmin;
   final bool canSubmitPayment;
   final VoidCallback onRefresh;
 
   const _InvoiceCard({
+    super.key,
     required this.invoice,
+    required this.unitNo,
     required this.isStaff,
     required this.isAdmin,
     required this.canSubmitPayment,
@@ -746,30 +861,16 @@ class _InvoiceCard extends StatefulWidget {
 class _InvoiceCardState extends State<_InvoiceCard> {
   bool _hasSubmittedPayment = false;
   bool _hasRejectedPayment = false;
-  String? _unitNo;
 
   Invoice get invoice => widget.invoice;
+  String? get _unitNo => widget.unitNo;
 
   @override
   void initState() {
     super.initState();
-    _loadUnitNo();
     if (invoice.status == InvoiceStatus.unpaid) {
       _checkLatestPaymentStatus();
     }
-  }
-
-  void _loadUnitNo() async {
-    try {
-      final result = await Supabase.instance.client
-          .from('units')
-          .select('unit_no')
-          .eq('id', invoice.unitId)
-          .maybeSingle();
-      if (result != null && mounted) {
-        setState(() => _unitNo = result['unit_no'] as String?);
-      }
-    } catch (_) {}
   }
 
   Future<void> _checkLatestPaymentStatus() async {
@@ -996,6 +1097,7 @@ class _InvoiceCardState extends State<_InvoiceCard> {
       context: context,
       builder: (context) => _InvoiceDetailsDialog(
         invoice: invoice,
+        unitNo: widget.unitNo,
         isStaff: widget.isStaff,
         isAdmin: widget.isAdmin,
         canSubmitPayment: widget.canSubmitPayment,
@@ -1007,6 +1109,7 @@ class _InvoiceCardState extends State<_InvoiceCard> {
 
 class _InvoiceDetailsDialog extends StatefulWidget {
   final Invoice invoice;
+  final String? unitNo;
   final bool isStaff;
   final bool isAdmin;
   final bool canSubmitPayment;
@@ -1014,6 +1117,7 @@ class _InvoiceDetailsDialog extends StatefulWidget {
 
   const _InvoiceDetailsDialog({
     required this.invoice,
+    required this.unitNo,
     required this.isStaff,
     required this.isAdmin,
     required this.canSubmitPayment,
@@ -1030,8 +1134,9 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
   bool _isDeleting = false;
   bool _isPrinting = false;
   bool _isPrintingAR = false;
-  String? _unitNo;
   late InvoiceStatus _currentStatus;
+
+  String? get _unitNo => widget.unitNo;
 
   @override
   void initState() {
@@ -1039,22 +1144,6 @@ class _InvoiceDetailsDialogState extends State<_InvoiceDetailsDialog> {
     _currentStatus = widget.invoice.status;
     _loadPayments();
     _loadLineItems();
-    _loadUnitNo();
-  }
-
-  void _loadUnitNo() async {
-    try {
-      final result = await Supabase.instance.client
-          .from('units')
-          .select('unit_no')
-          .eq('id', widget.invoice.unitId)
-          .maybeSingle();
-      if (result != null && mounted) {
-        setState(() {
-          _unitNo = result['unit_no'] as String?;
-        });
-      }
-    } catch (_) {}
   }
 
   void _loadLineItems() {
@@ -3462,11 +3551,102 @@ class _IncomeTrackerViewState extends State<_IncomeTrackerView> {
   double _manualTotal = 0;
   List<Payment> _verifiedPayments = [];
   List<ManualIncome> _manualEntries = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  String _incomeCategoryLabel(IncomeCategory c) {
+    switch (c) {
+      case IncomeCategory.dues:
+        return 'Monthly Dues';
+      case IncomeCategory.water:
+        return 'Water';
+      case IncomeCategory.amenity:
+        return 'Amenity';
+      case IncomeCategory.insurance:
+        return 'Insurance';
+      case IncomeCategory.rental:
+        return 'Rental';
+      case IncomeCategory.fee:
+        return 'Fee';
+      case IncomeCategory.donation:
+        return 'Donation';
+      case IncomeCategory.other:
+        return 'Other';
+    }
+  }
+
+  bool _matchesManual(ManualIncome e) {
+    if (_searchQuery.isEmpty) return true;
+    final q = _searchQuery.toLowerCase();
+    return [
+      e.description,
+      e.source ?? '',
+      e.notes ?? '',
+      e.amount.toStringAsFixed(2),
+      _incomeCategoryLabel(e.category),
+    ].any((s) => s.toLowerCase().contains(q));
+  }
+
+  bool _matchesPayment(Payment p) {
+    if (_searchQuery.isEmpty) return true;
+    final q = _searchQuery.toLowerCase();
+    final shortId = p.id.length >= 8 ? p.id.substring(0, 8) : p.id;
+    return [
+      p.amount.toStringAsFixed(2),
+      DateFormat('MMM dd, yyyy').format(p.postedAt),
+      p.status.name,
+      shortId,
+    ].any((s) => s.toLowerCase().contains(q));
+  }
+
+  Widget _buildSearchBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search income by description, amount, category...',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          isDense: true,
+          filled: true,
+          fillColor: Theme.of(context).colorScheme.surface,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary, width: 1.5),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        onChanged: (value) => setState(() => _searchQuery = value),
+      ),
+    );
   }
 
   Future<void> _loadData() async {
@@ -3511,6 +3691,8 @@ class _IncomeTrackerViewState extends State<_IncomeTrackerView> {
 
     final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final grandTotal = _verifiedTotal + _manualTotal;
+    final filteredManual = _manualEntries.where(_matchesManual).toList();
+    final filteredPayments = _verifiedPayments.where(_matchesPayment).toList();
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -3520,6 +3702,7 @@ class _IncomeTrackerViewState extends State<_IncomeTrackerView> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildSearchBar(context),
           // Summary cards
           _IncomeSummaryCards(
             grandTotal: grandTotal,
@@ -3566,8 +3749,16 @@ class _IncomeTrackerViewState extends State<_IncomeTrackerView> {
                 ),
               ),
             )
+          else if (filteredManual.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text('No manual entries match "$_searchQuery"',
+                    style: TextStyle(color: Colors.grey[500])),
+              ),
+            )
           else
-            ...(_manualEntries.map((entry) => _ManualIncomeCard(
+            ...(filteredManual.map((entry) => _ManualIncomeCard(
                   entry: entry,
                   currencyFormat: currencyFormat,
                   onDeleted: _loadData,
@@ -3608,8 +3799,16 @@ class _IncomeTrackerViewState extends State<_IncomeTrackerView> {
                 ),
               ),
             )
+          else if (filteredPayments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text('No payments match "$_searchQuery"',
+                    style: TextStyle(color: Colors.grey[500])),
+              ),
+            )
           else
-            ...(_verifiedPayments.map((payment) => _VerifiedPaymentCard(
+            ...(filteredPayments.map((payment) => _VerifiedPaymentCard(
                   payment: payment,
                   currencyFormat: currencyFormat,
                 ))),

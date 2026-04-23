@@ -34,7 +34,7 @@ All essential features are implemented and production-ready:
 - ✅ **Contact form** for public inquiries
 - ✅ **Announcement read tracking** and file attachments
 - ✅ **Anonymous violation reporting** with privacy protection
-- ✅ **OneSignal push notifications** with device token management
+- ✅ **Firebase Cloud Messaging (FCM) push notifications** with device token management
 - ✅ **QR scanner** for security pass validation
 - ✅ **Primary member household management**
 - ✅ **Member-level financial report access**

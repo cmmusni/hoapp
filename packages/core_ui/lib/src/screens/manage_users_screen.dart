@@ -136,100 +136,115 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     }
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async => _loadRoles(),
-        child: FutureBuilder<List<UserRole>>(
-          future: _rolesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting ||
-                _isLoadingProfiles) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            }
-            final roles = snapshot.data ?? [];
-            if (roles.isEmpty) {
-              return const Center(child: Text('No users yet'));
-            }
-
-            // Filter roles by search query (full name or email)
-            final query = _searchQuery.toLowerCase();
-            final filteredRoles = query.isEmpty
-                ? roles
-                : roles.where((r) {
-                    final profile = _userProfiles[r.userId];
-                    final name = (profile?.fullName ?? '').toLowerCase();
-                    final email =
-                        (profile?.email ?? _userEmails[r.userId] ?? '')
-                            .toLowerCase();
-                    return name.contains(query) || email.contains(query);
-                  }).toList();
-
-            final grouped = <Role, List<UserRole>>{};
-            for (final r in filteredRoles) {
-              grouped.putIfAbsent(r.role, () => []).add(r);
-            }
-
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search by name or email',
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, size: 20),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                            color: _getBrandColor(context), width: 1.5),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                    ),
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                  ),
+      body: Column(
+        children: [
+          // Sticky search bar — always visible, even during loading.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by name or email',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
-                if (filteredRoles.isEmpty && query.isNotEmpty)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 32),
-                      child: Text('No users match "$_searchQuery"',
-                          style: TextStyle(color: Colors.grey[500])),
-                    ),
-                  )
-                else
-                  for (final entry in grouped.entries)
-                    _RoleSection(
-                      role: entry.key,
-                      roles: entry.value,
-                      profiles: _userProfiles,
-                      emails: _userEmails,
-                      onEdit: _showEditRoleDialog,
-                      onDelete: _handleDeleteUser,
-                    ),
-                const SizedBox(height: 80),
-              ],
-            );
-          },
-        ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: _getBrandColor(context), width: 1.5),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                isDense: true,
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surface,
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async => _loadRoles(),
+              child: FutureBuilder<List<UserRole>>(
+                future: _rolesFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting ||
+                      _isLoadingProfiles) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  final roles = snapshot.data ?? [];
+                  if (roles.isEmpty) {
+                    return ListView(
+                      children: const [
+                        SizedBox(height: 120),
+                        Center(child: Text('No users yet')),
+                      ],
+                    );
+                  }
+
+                  // Filter roles by search query (full name or email)
+                  final query = _searchQuery.toLowerCase();
+                  final filteredRoles = query.isEmpty
+                      ? roles
+                      : roles.where((r) {
+                          final profile = _userProfiles[r.userId];
+                          final name = (profile?.fullName ?? '').toLowerCase();
+                          final email =
+                              (profile?.email ?? _userEmails[r.userId] ?? '')
+                                  .toLowerCase();
+                          return name.contains(query) || email.contains(query);
+                        }).toList();
+
+                  final grouped = <Role, List<UserRole>>{};
+                  for (final r in filteredRoles) {
+                    grouped.putIfAbsent(r.role, () => []).add(r);
+                  }
+
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    children: [
+                      if (filteredRoles.isEmpty && query.isNotEmpty)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 32),
+                            child: Text('No users match "$_searchQuery"',
+                                style: TextStyle(color: Colors.grey[500])),
+                          ),
+                        )
+                      else
+                        for (final entry in grouped.entries)
+                          _RoleSection(
+                            role: entry.key,
+                            roles: entry.value,
+                            profiles: _userProfiles,
+                            emails: _userEmails,
+                            onEdit: _showEditRoleDialog,
+                            onDelete: _handleDeleteUser,
+                          ),
+                      const SizedBox(height: 80),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: screenSizeOf(context) == ScreenSize.mobile
           ? FloatingActionButton(

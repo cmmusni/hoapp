@@ -63,7 +63,9 @@ hoapp/
 │       │       ├── auth/
 │       │       │   └── login_screen.dart
 │       │       └── home/
-│       │           └── home_screen.dart     # Bottom nav
+│       │       │   └── home_screen.dart     # Bottom nav
+│       │       └── push_debug/
+│       │           └── push_debug_screen.dart  # FCM diagnostics (admin)
 │       ├── android/
 │       │   ├── app/
 │       │   │   ├── build.gradle            # Android build config
@@ -124,7 +126,7 @@ hoapp/
 │   │   │   │   │   ├── recurring_billing_repository.dart
 │   │   │   │   │   └── security_pass_repository.dart
 │   │   │   │   └── services/
-│   │   │   │       ├── notification_service.dart   # OneSignal
+│   │   │   │       ├── notification_service.dart   # FCM push notifications
 │   │   │   │       ├── realtime_service.dart       # Supabase Realtime
 │   │   │   │       └── storage_service.dart        # File uploads
 │   │   ├── test/
@@ -181,13 +183,15 @@ hoapp/
 │   │   ├── review_pass/
 │   │   ├── validate_pass/
 │   │   ├── scan_invoice/
-│   │   ├── send_notification/
+│   │   ├── send_notification/        # FCM push notifications
 │   │   ├── delete_user/
 │   │   ├── batch_operations/
-│   │   └── onesignal_cleanup/
+│   │   └── payment_submitted_email/  # Admin payment notifications
 │   ├── manual-scripts/           # Utility SQL scripts
 │   └── snippets/                 # SQL snippets
 │
+├── store_assets/                # Play Store / App Store listing assets
+
 ├── .env.example                  # Environment template
 ├── .gitignore                    # Git ignore rules
 ├── Makefile                      # Development commands (18 targets)

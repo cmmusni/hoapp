@@ -81,3 +81,7 @@ proxy.py
 .vercel/
 .vercel
 .env*.local
+
+# OS files
+.DS_Store
+Thumbs.db

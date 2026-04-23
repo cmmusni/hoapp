@@ -169,12 +169,30 @@ jobs:
           flutter build apk --release \
             --dart-define=SUPABASE_URL=$SUPABASE_URL \
             --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
-      
+
+      - name: Build Android App Bundle (elevehomes, Play Store)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          cd apps/mobile
+          flutter build appbundle --flavor elevehomes --release \
+            --dart-define=FLAVOR=elevehomes \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
           name: android-apk
           path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Upload AAB (elevehomes)
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-aab-elevehomes
+          path: apps/mobile/build/app/outputs/bundle/elevehomesRelease/app-elevehomes-release.aab
           retention-days: 30
 
   deploy-supabase:

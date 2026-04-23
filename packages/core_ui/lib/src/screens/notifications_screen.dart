@@ -23,6 +23,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List<_NotificationItem> _items = [];
   bool _loading = true;
   String _filter = 'all';
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -31,7 +32,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
     try {
       final appState = context.read<AppState>();
       final communityId = appState.activeCommunityId;
@@ -258,13 +262,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       if (mounted) setState(() => _items = items);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+      final msg = _friendlyErrorMessage(e);
+      if (mounted) setState(() => _errorMessage = msg);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  String _friendlyErrorMessage(Object e) {
+    final s = e.toString();
+    if (s.contains('SocketException') ||
+        s.contains('Failed host lookup') ||
+        s.contains('No address associated with hostname') ||
+        s.contains('Network is unreachable') ||
+        s.contains('Connection refused')) {
+      return 'No internet connection. Please check your network and try again.';
+    }
+    if (s.contains('TimeoutException') || s.contains('timed out')) {
+      return 'Request timed out. Please try again.';
+    }
+    return 'Could not load notifications. Pull down to retry.';
   }
 
   List<_NotificationItem> get _filtered {
@@ -345,23 +362,53 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : RefreshIndicator(
                     onRefresh: _load,
-                    child: _filtered.isEmpty
+                    child: _errorMessage != null
                         ? ListView(children: [
-                            const SizedBox(height: 120),
-                            const Center(
-                                child: Text('No notifications',
-                                    style: TextStyle(color: Colors.grey))),
-                          ])
-                        : ListView.builder(
-                            itemCount: _filtered.length,
-                            itemBuilder: (_, i) => _NotificationTile(
-                              item: _filtered[i],
-                              onTap: widget.onNavigate != null
-                                  ? () => widget.onNavigate!(
-                                      _sectionForType(_filtered[i].type))
-                                  : null,
+                            const SizedBox(height: 80),
+                            Center(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 32),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.cloud_off_rounded,
+                                        size: 64, color: Colors.grey.shade400),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _errorMessage!,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize: 14),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    OutlinedButton.icon(
+                                      onPressed: _load,
+                                      icon: const Icon(Icons.refresh_rounded),
+                                      label: const Text('Retry'),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                          ])
+                        : _filtered.isEmpty
+                            ? ListView(children: [
+                                const SizedBox(height: 120),
+                                const Center(
+                                    child: Text('No notifications',
+                                        style: TextStyle(color: Colors.grey))),
+                              ])
+                            : ListView.builder(
+                                itemCount: _filtered.length,
+                                itemBuilder: (_, i) => _NotificationTile(
+                                  item: _filtered[i],
+                                  onTap: widget.onNavigate != null
+                                      ? () => widget.onNavigate!(
+                                          _sectionForType(_filtered[i].type))
+                                      : null,
+                                ),
+                              ),
                   ),
           ),
         ],
