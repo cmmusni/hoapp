@@ -1,145 +1,164 @@
--- Enhanced Diagnostic: Show ALL users and their status including pending metadata
--- Run this in Supabase Studio SQL Editor to see which users need fixing
+-- Enhanced Diagnostic: Show ALL users and their full membership status
+-- Checks profiles, household_members, and user_roles (mobile reads from profiles)
+-- Run in Supabase Studio SQL Editor.
+--
+-- TIP: To inspect ONE user, set the variable below; otherwise it shows everyone.
+-- Replace '' with an email like 'cristelleanneg@gmail.com' to filter.
 
--- Detailed view with metadata check
-SELECT 
+-- ============================================================================
+-- 1. PER-USER DETAIL (one row per user × profile)
+-- ============================================================================
+WITH params AS (SELECT lower('') AS filter_email)
+SELECT
     u.email,
-    u.created_at as user_created_at,
-    u.email_confirmed_at,
-    CASE 
-        WHEN u.email_confirmed_at IS NOT NULL THEN 'Yes'
-        ELSE 'No'
-    END as email_confirmed,
-    u.raw_user_meta_data->>'community_slug' as pending_community,
-    u.raw_user_meta_data->>'unit_number' as pending_unit,
-    CASE 
-        WHEN hm.id IS NOT NULL THEN 'Yes'
-        ELSE 'No'
-    END as has_household,
+    u.id AS user_id,
+    u.created_at AS signup_at,
+    u.last_sign_in_at,
+    CASE WHEN u.email_confirmed_at IS NOT NULL THEN 'Yes' ELSE 'No' END AS email_confirmed,
+
+    -- profiles (this is what the mobile splash screen reads)
+    p.community_id IS NOT NULL AS has_profile,
+    c.name AS profile_community,
+    c.slug AS profile_slug,
+
+    -- household membership (unit assignment)
+    hm.id IS NOT NULL AS has_household,
     hm.member_role,
-    CASE 
-        WHEN ur.id IS NOT NULL THEN 'Yes'
-        ELSE 'No'
-    END as has_role,
-    c.name as community,
-    un.unit_no as unit,
+    hc.name AS household_community,
+    un.unit_no AS unit,
+
+    -- role
+    ur.id IS NOT NULL AS has_role,
     ur.role,
+
+    -- pending signup metadata
+    u.raw_user_meta_data->>'community_slug' AS pending_community,
+    u.raw_user_meta_data->>'unit_number' AS pending_unit,
+
     CASE
-        -- Pending signup (has metadata but no assignment yet)
-        WHEN u.raw_user_meta_data->>'community_slug' IS NOT NULL 
-             AND u.raw_user_meta_data->>'unit_number' IS NOT NULL
-             AND hm.id IS NULL
-             AND u.email_confirmed_at IS NOT NULL
-        THEN '🔄 PENDING: Confirmed email, needs to login to complete assignment'
-        
-        WHEN u.raw_user_meta_data->>'community_slug' IS NOT NULL 
-             AND u.raw_user_meta_data->>'unit_number' IS NOT NULL
-             AND hm.id IS NULL
+        -- Profile present and matched with role + household → fully working
+        WHEN p.community_id IS NOT NULL AND hm.id IS NOT NULL AND ur.id IS NOT NULL
+            THEN '✅ Fully configured (mobile + web should both work)'
+
+        -- Profile exists but no household/role → mobile sees community but features may break
+        WHEN p.community_id IS NOT NULL AND (hm.id IS NULL OR ur.id IS NULL)
+            THEN '⚠️ Profile only — missing household or role'
+
+        -- Has household + role but NO profile row → mobile shows "Join Your Community"
+        --   (this is the most likely cause of the "newly installed app" bug)
+        WHEN p.community_id IS NULL AND hm.id IS NOT NULL
+            THEN '🐛 BROKEN: Has household but no profile row — mobile dialog will appear'
+
+        -- Pending email confirmation
+        WHEN p.community_id IS NULL AND hm.id IS NULL
+             AND u.raw_user_meta_data->>'community_slug' IS NOT NULL
              AND u.email_confirmed_at IS NULL
-        THEN '📧 PENDING: Awaiting email confirmation'
-        
-        -- Has unit but no role
-        WHEN hm.id IS NOT NULL AND ur.id IS NULL 
-        THEN '⚠️ NEEDS FIX: Has unit but no role'
-        
-        -- Regular user without community
-        WHEN hm.id IS NULL AND ur.id IS NULL 
-             AND u.raw_user_meta_data->>'community_slug' IS NULL
-        THEN 'ℹ️ Regular user (no community)'
-        
-        -- Properly configured
-        WHEN hm.id IS NOT NULL AND ur.id IS NOT NULL 
-        THEN '✅ Properly configured'
-        
-        -- Has role but no unit (unusual)
-        WHEN hm.id IS NULL AND ur.id IS NOT NULL 
-        THEN '⚠️ Has role but no unit (unusual)'
-        
+            THEN '📧 PENDING: awaiting email confirmation'
+
+        -- Confirmed but never assigned
+        WHEN p.community_id IS NULL AND hm.id IS NULL
+             AND u.raw_user_meta_data->>'community_slug' IS NOT NULL
+             AND u.email_confirmed_at IS NOT NULL
+            THEN '🔄 PENDING: confirmed, needs admin to assign unit / accept invite'
+
+        -- Truly new account, no metadata, no assignment
+        WHEN p.community_id IS NULL AND hm.id IS NULL AND ur.id IS NULL
+            THEN 'ℹ️ Unassigned user (no community yet)'
+
         ELSE '❓ Unknown state'
-    END as status
+    END AS status
 FROM auth.users u
-LEFT JOIN public.household_members hm ON hm.user_id = u.id
-LEFT JOIN public.user_roles ur ON ur.user_id = u.id AND ur.community_id = hm.community_id
-LEFT JOIN public.communities c ON c.id = hm.community_id
+CROSS JOIN params
+LEFT JOIN public.profiles p ON p.user_id = u.id
+LEFT JOIN public.communities c ON c.id = p.community_id
+LEFT JOIN public.household_members hm
+       ON hm.user_id = u.id
+      AND (p.community_id IS NULL OR hm.community_id = p.community_id)
+LEFT JOIN public.communities hc ON hc.id = hm.community_id
 LEFT JOIN public.units un ON un.id = hm.unit_id
-ORDER BY 
-    CASE 
-        -- Priority: Show problems first
-        WHEN hm.id IS NOT NULL AND ur.id IS NULL THEN 1  -- Needs fix (has unit, no role)
-        WHEN u.raw_user_meta_data->>'community_slug' IS NOT NULL 
-             AND hm.id IS NULL 
-             AND u.email_confirmed_at IS NOT NULL THEN 2  -- Pending login
-        WHEN u.raw_user_meta_data->>'community_slug' IS NOT NULL 
-             AND hm.id IS NULL 
-             AND u.email_confirmed_at IS NULL THEN 3  -- Pending email confirmation
-        WHEN hm.id IS NOT NULL AND ur.id IS NOT NULL THEN 4  -- Properly configured
-        WHEN hm.id IS NULL AND ur.id IS NULL THEN 5  -- Regular users
-        ELSE 6
+LEFT JOIN public.user_roles ur
+       ON ur.user_id = u.id
+      AND ur.community_id = COALESCE(p.community_id, hm.community_id)
+WHERE params.filter_email = '' OR lower(u.email) = params.filter_email
+ORDER BY
+    CASE
+        WHEN p.community_id IS NULL AND hm.id IS NOT NULL THEN 1   -- broken first
+        WHEN p.community_id IS NOT NULL AND (hm.id IS NULL OR ur.id IS NULL) THEN 2
+        WHEN p.community_id IS NULL AND u.raw_user_meta_data->>'community_slug' IS NOT NULL THEN 3
+        WHEN p.community_id IS NOT NULL THEN 4
+        ELSE 5
     END,
     u.email;
 
--- Summary count by status
-SELECT 
-    status,
-    COUNT(*) as user_count
+-- ============================================================================
+-- 2. SUMMARY COUNT BY STATUS
+-- ============================================================================
+SELECT status, COUNT(*) AS user_count
 FROM (
-    SELECT 
-        u.email,
+    SELECT
         CASE
-            -- Pending signup (has metadata but no assignment yet)
-            WHEN u.raw_user_meta_data->>'community_slug' IS NOT NULL 
-                 AND u.raw_user_meta_data->>'unit_number' IS NOT NULL
-                 AND hm.id IS NULL
-                 AND u.email_confirmed_at IS NOT NULL
-            THEN 'Pending: Confirmed email, needs to login'
-            
-            WHEN u.raw_user_meta_data->>'community_slug' IS NOT NULL 
-                 AND u.raw_user_meta_data->>'unit_number' IS NOT NULL
-                 AND hm.id IS NULL
+            WHEN p.community_id IS NOT NULL AND hm.id IS NOT NULL AND ur.id IS NOT NULL
+                THEN 'Fully configured'
+            WHEN p.community_id IS NOT NULL AND (hm.id IS NULL OR ur.id IS NULL)
+                THEN 'Profile only (missing household/role)'
+            WHEN p.community_id IS NULL AND hm.id IS NOT NULL
+                THEN 'BROKEN: household but no profile'
+            WHEN p.community_id IS NULL AND hm.id IS NULL
+                 AND u.raw_user_meta_data->>'community_slug' IS NOT NULL
                  AND u.email_confirmed_at IS NULL
-            THEN 'Pending: Awaiting email confirmation'
-            
-            WHEN hm.id IS NOT NULL AND ur.id IS NULL 
-            THEN 'Needs Fix: Has unit but no role'
-            
-            WHEN hm.id IS NULL AND ur.id IS NULL 
-                 AND u.raw_user_meta_data->>'community_slug' IS NULL
-            THEN 'Regular user (no community)'
-            
-            WHEN hm.id IS NOT NULL AND ur.id IS NOT NULL 
-            THEN 'Properly configured'
-            
-            WHEN hm.id IS NULL AND ur.id IS NOT NULL 
-            THEN 'Has role but no unit (unusual)'
-            
-            ELSE 'Unknown state'
-        END as status
+                THEN 'Pending email confirmation'
+            WHEN p.community_id IS NULL AND hm.id IS NULL
+                 AND u.raw_user_meta_data->>'community_slug' IS NOT NULL
+                THEN 'Pending: confirmed, awaiting assignment'
+            WHEN p.community_id IS NULL AND hm.id IS NULL
+                THEN 'Unassigned user (no community)'
+            ELSE 'Unknown'
+        END AS status
     FROM auth.users u
-    LEFT JOIN public.household_members hm ON hm.user_id = u.id
-    LEFT JOIN public.user_roles ur ON ur.user_id = u.id AND ur.community_id = hm.community_id
-) subquery
+    LEFT JOIN public.profiles p ON p.user_id = u.id
+    LEFT JOIN public.household_members hm
+           ON hm.user_id = u.id
+          AND (p.community_id IS NULL OR hm.community_id = p.community_id)
+    LEFT JOIN public.user_roles ur
+           ON ur.user_id = u.id
+          AND ur.community_id = COALESCE(p.community_id, hm.community_id)
+) sub
 GROUP BY status
-ORDER BY 
-    CASE 
-        WHEN status LIKE 'Needs Fix%' THEN 1
-        WHEN status LIKE 'Pending: Confirmed%' THEN 2
-        WHEN status LIKE 'Pending: Awaiting%' THEN 3
-        WHEN status = 'Properly configured' THEN 4
-        WHEN status = 'Regular user (no community)' THEN 5
-        ELSE 6
-    END;
+ORDER BY user_count DESC;
 
--- Additional check: Users with stale metadata (assigned but metadata not cleared)
-SELECT 
+-- ============================================================================
+-- 3. STALE METADATA (assigned but signup metadata still present)
+-- ============================================================================
+SELECT
     u.email,
-    c.name as assigned_community,
-    un.unit_no as assigned_unit,
-    u.raw_user_meta_data->>'community_slug' as metadata_community,
-    u.raw_user_meta_data->>'unit_number' as metadata_unit,
-    '⚠️ Stale metadata (should be cleared)' as issue
+    c.name AS assigned_community,
+    un.unit_no AS assigned_unit,
+    u.raw_user_meta_data->>'community_slug' AS metadata_community,
+    u.raw_user_meta_data->>'unit_number' AS metadata_unit,
+    '⚠️ Stale metadata (should be cleared)' AS issue
 FROM auth.users u
 JOIN public.household_members hm ON hm.user_id = u.id
 JOIN public.communities c ON c.id = hm.community_id
 JOIN public.units un ON un.id = hm.unit_id
-WHERE u.raw_user_meta_data->>'community_slug' IS NOT NULL 
+WHERE u.raw_user_meta_data->>'community_slug' IS NOT NULL
    OR u.raw_user_meta_data->>'unit_number' IS NOT NULL;
+
+-- ============================================================================
+-- 4. ORPHAN HOUSEHOLDS — has household_member row but missing profile row
+--     This is the exact data shape that triggers the mobile "Join Your Community" dialog.
+-- ============================================================================
+SELECT
+    u.email,
+    c.name AS community,
+    un.unit_no AS unit,
+    hm.member_role,
+    hm.created_at AS household_created_at,
+    'Run: INSERT INTO profiles(user_id, community_id) VALUES (''' || u.id || ''', ''' || hm.community_id || ''')' AS fix_sql
+FROM auth.users u
+JOIN public.household_members hm ON hm.user_id = u.id
+JOIN public.communities c ON c.id = hm.community_id
+JOIN public.units un ON un.id = hm.unit_id
+LEFT JOIN public.profiles p
+       ON p.user_id = u.id AND p.community_id = hm.community_id
+WHERE p.user_id IS NULL
+ORDER BY hm.created_at DESC;
